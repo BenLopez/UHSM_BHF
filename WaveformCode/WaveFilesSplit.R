@@ -1,9 +1,9 @@
 # Select directory containing source
-pathFiles = choose.dir()
+pathFiles = choose.dir(caption="Select folder with source code")
 pathFiles = paste0(pathFiles, "\\")
 
 ##### Select file PatientIndex.csv if it exists
-path_PatIndex = choose.files()
+path_PatIndex = choose.files(caption="Select 2017 PatientIndex.csv file")
 
 if(length(path_PatIndex)>0){
   PatIndex2017 = read.csv(file=path_PatIndex, stringsAsFactors = FALSE)
@@ -30,7 +30,7 @@ chooseWave2Read = select.list(DataTypes, preselect = DataTypes,
 source(paste0(pathFiles,"/sourceFunctions.R"))
 
 # Select directory containing all patients
-path = choose.dir()
+path = choose.dir(caption="Select folder containing data repository")
 #setwd(path)
 listAllPatients = list.dirs(path = path, full.names = FALSE, recursive = FALSE)
 
