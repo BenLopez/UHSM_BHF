@@ -59,7 +59,7 @@ for (PatientCode in subList){
 
 if(KeepCSVs == 0){
   for(PatientCode in subList){
-    pathIn = paste0("D:\\UHSM_Waveform\\",PatientCode)
+    pathIn = path
     unlink(paste0(pathIn,"\\Disc_clean"), recursive = TRUE)
     unlink(paste0(pathIn,"\\ECGI_clean"), recursive = TRUE)
     unlink(paste0(pathIn,"\\ECGII_clean"), recursive = TRUE)
