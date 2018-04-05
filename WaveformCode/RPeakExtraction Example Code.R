@@ -14,14 +14,13 @@ load(choose.files())
 HoursBeforeEnd = 1;
 WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] - HoursBeforeEnd*(60^2))  , 1:2]
 
-incriment <- 10000
+incriment <- 12000
 t <- WaveData$Date[1:incriment]
 f_t = WaveData$Value[1:incriment]
 
 functionoutputtest <- RPeakExtraction(t, f_t)
 par(mfrow = c(3 , 1))
 plot(t , f_t , type = 'l')
-points( functionoutputtest[,1] , functionoutputtest[,2] , col = 'blue' )
-plot( functionoutputtest[,1] ,   functionoutputtest[,2] , xlab="t", ylab="R-Amplitude" )
-plot( functionoutputtest[,1] ,   functionoutputtest[,3] , xlab="t", ylab="R-R Times" )
-
+points(functionoutputtest[,1] , functionoutputtest[,2] , col = 'blue' )
+plot(functionoutputtest[,1] ,   functionoutputtest[,2] )
+plot(functionoutputtest[,1] ,   functionoutputtest[,3] )
