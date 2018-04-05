@@ -8,20 +8,31 @@ setwd(pathFiles)
 source("LibrariesAndSettings.R" , print.eval  = TRUE )
 
 # load data % Tested on z1139.Rdata
-load(choose.files())
+FileLocation <- choose.files()
+load(FileLocation)
 
-# take a number of hours before the end of recording
+# take a number of hours before the end of recording to process
 HoursBeforeEnd = 1;
 WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] - HoursBeforeEnd*(60^2))  , 1:2]
 
-incriment <- 10000
-t <- WaveData$Date[1:incriment]
-f_t = WaveData$Value[1:incriment]
+# Check first chunk of data.
+regiontocheck <- c(1:4000);
+t <- WaveData$Date[ regiontocheck ]
+f_t = WaveData$Value[ regiontocheck ]
 
-functionoutputtest <- RPeakExtraction(t, f_t)
+RWaveExtractedDataTest <- RPeakExtraction(t, f_t)
 par(mfrow = c(3 , 1))
-plot(t , f_t , type = 'l')
-points( functionoutputtest[,1] , functionoutputtest[,2] , col = 'blue' )
-plot( functionoutputtest[,1] ,   functionoutputtest[,2] , xlab="t", ylab="R-Amplitude" )
-plot( functionoutputtest[,1] ,   functionoutputtest[,3] , xlab="t", ylab="R-R Times" )
+plot(t , f_t , type = 'l', ylab="H-z")
+points( RWaveExtractedDataTest[,1] ,   RWaveExtractedDataTest[,2] , col = 'blue' )
+plot(   RWaveExtractedDataTest[,1] ,   RWaveExtractedDataTest[,2] , xlab="t", ylab="R-Amplitude" )
+plot(   RWaveExtractedDataTest[,1] ,   RWaveExtractedDataTest[,3] , xlab="t", ylab="R-R Times" )
 
+# If the plot above look good, run this section.
+
+t <-  WaveData$Date
+f_t <- WaveData$Value
+RWaveExtractedData <- RPeakExtraction(t, f_t)
+
+# Save file
+SaveLocation <- choose.dir()
+paste0(test , '\\')

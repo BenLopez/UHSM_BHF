@@ -2,7 +2,6 @@
 
 RPeakExtraction <- function( Times , ECGWaveFormData )
 {
-  
   # Function to extract location of R peak times and amplitudes from ECG data.
   # The idea behind this approach is a heuristic attempt to finding the closest point
   # to where the second derivative is zero. "similar toR-peak detection algorithm for ECG using double difference and RR
@@ -36,7 +35,7 @@ RPeakExtraction <- function( Times , ECGWaveFormData )
   RA <- RAmplitudes2
   RR <- c(diff(Rtimes2) , mean(diff(Rtimes2)))
   
-  output <- data.frame(Rtimes2 , RAmplitudes2 , RR)
+  output <- data.frame(t , RA , RR)
     
   return(output)
 }
