@@ -8,7 +8,7 @@ library(signal)
 library(smoother)
 library(pdist)
 library(abind)
-
+library(wavelets)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
