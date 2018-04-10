@@ -17,6 +17,7 @@ source("FourierSourceFunctions.R")
 source("SourceFunctions.R")
 source("PeakExtractionSourceCode.R")
 source('EmulationSourceCode.R')
+source('BayesLinearDynamicUpdateSourceCode.R')
 
 print('Libraries, data options and source functions loaded.')
 
