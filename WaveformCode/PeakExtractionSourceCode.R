@@ -39,3 +39,63 @@ RPeakExtraction <- function( Times , ECGWaveFormData )
     
   return(output)
 }
+
+RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) )
+{
+# Function to detect R-peaks and RR wave times using a wavelet decomposition. 
+
+# Inputs : WaveData[date , wavefirm], Filter structure for wavelet package  
+# Ouputs: dataframe[peak times , peak amplitudes , peak R-R times]  
+
+# Extract data from dataframe  
+f_t <- WaveData$Value
+t <- WaveData$Date
+
+a <- c(1:nlevels)
+a <- a[ -ComponetsToRemove ]
+
+# Perform discrete wavelet transform on data.
+modoutput <-  modwt( f_t , Filter , nlevels)
+modoutputattributes <- attributes(modoutput)
+
+# set components to zero to supress unwanted data features.
+W <- slot(modoutput , 'W')
+V <- slot(modoutput , 'V')
+W <- SetElementsOfListoToZero( W , a )
+V <- SetElementsOfListoToZero( V , a )
+slot( modoutput , 'W' ) <- W
+slot( modoutput , 'V' ) <- V
+
+# Perform inverse discrete wavelet tramsform to recronstruct cleaned signal.
+imodoutput <- imodwt(modoutput, fast=TRUE)
+  
+# Find local maxima 
+stdresid = imodoutput/sqrt(var(imodoutput))
+
+# Only look for positive peaks
+stdresid[ stdresid < 0] = 0 
+Peakslogical = stdresid>2.8
+
+for (i in 1:length(Peakslogical))
+{
+  if(Peakslogical[i] == FALSE){ next }
+  if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
+  {# count logicals
+    j <- 1
+    while(Peakslogical[i + j] ==  TRUE ){ j <- (j+1) }
+  }  
+  # Find location of max stdresid in set
+  maxindex <- which.max(f_t[i:(i+j)])
+  Peakslogical[i:(i+j)] <- FALSE
+  Peakslogical[i + (maxindex -1)] <- TRUE
+}
+RPeakLocations <- t[Peakslogical == TRUE]
+RAmplitudes <- f_t[Peakslogical == TRUE ]
+
+t  <- RPeakLocations
+RA <- RAmplitudes
+RR <- c(diff(RPeakLocations) , mean(diff(RPeakLocations)))
+
+output <- data.frame(t , RA , RR)
+return(output)
+}

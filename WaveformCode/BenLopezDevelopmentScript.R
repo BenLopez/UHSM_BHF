@@ -42,87 +42,89 @@ SaveLocation <- paste0(SaveLocation , substr(FileLocation , Temp[[1]][1] + nchar
 rm(Temp,Temp2)
 save('RWaveExtractedData' , file = SaveLocation)
 
-
-# Camila's method
-# priors 
-PriorTimePeriod <- 2
-n <- 30
-SecondOrderSpecifiction <- BayesLinearDynamicUpdateAutomatedPrior(RWaveExtractedData , PriorTimePeriod , n)
-
-E_D_z <- matrix(0 , length(RWaveExtractedData$RA) , 2)
-stdresid <-matrix(0 , length(RWaveExtractedData$RA) , 2)
-discrepancyadjustedversion <-matrix(0 , length(RWaveExtractedData$RA) , 1)
-
-
-for(i in 1:length(RWaveExtractedData$RA))
-{
-if(i < (length(RWaveExtractedData$RA) - (n-1)))
-{  
-diff <- as.vector(cbind( RWaveExtractedData$RA[(1 + (i-1)):((n-1) + (i-1))] , RWaveExtractedData$RR[(1 + (i-1)):((n-1) + (i-1))]) - E_z )
-
-E_D_z[i , 1:2] <- E_x +  W%*%diff
-diff <- (E_D_z[i , 1:2] - cbind(RWaveExtractedData$RA[(n-1) + i] , RWaveExtractedData$RR[(n-1) + i]))
-stdresid[i,1:2] <- diff/(sqrt(cbind(V_D_z[1 , 1] , V_D_z[2 , 2])))
-discrepancyadjustedversion[i,1] <-diff%*%inv_V_D_z%*%t(diff)
-}
-}
-
-indexupperbound = 2000
-par(mfrow = c(3 , 1))
-plot(RWaveExtractedData$t[1:indexupperbound], stdresid[1:indexupperbound , 1] , ylim=c(-10, 10)  , xlab = 't' , ylab = 'Std')
-title('Standardised Error R-Wave Amplitude')
-abline( 3 ,0)
-abline(-3 ,0)
-plot(RWaveExtractedData$t[1:indexupperbound], stdresid[1:indexupperbound , 2] , ylim=c(-10, 10), xlab = 't', ylab = 'Std')
-abline( 3 ,0)
-abline(-3 ,0)
-title('Standardised Error RR-Wave Time')
-plot(RWaveExtractedData$t[1:indexupperbound], discrepancyadjustedversion[1:indexupperbound , 1] , ylim=c(0, 20) , xlab = 't' , ylab = 'Dis')
-abline( 8 ,0)
-title('Joint Discepancy')
-
-SecondOrderSpecifiction <- BayesLinearDynamicUpdateAutomatedPrior(RWaveExtractedData , PriorTimePeriod , n)
-AdjustedBeliefs <- BayesLinearDynamicUpdateCalulateAdjustedBeliefs(RWaveExtractedData , SecondOrderSpecifiction , n)
-
-par(mfrow = c(3 , 1))
-plot(RWaveExtractedData$t[1:indexupperbound], AdjustedBeliefs[["std_D_z"]][1:indexupperbound , 1] , ylim=c(-10, 10)  , xlab = 't' , ylab = 'Std')
-title('Standardised Error R-Wave Amplitude')
-abline( 3 ,0)
-abline(-3 ,0)
-plot(RWaveExtractedData$t[1:indexupperbound], AdjustedBeliefs[["std_D_z"]][1:indexupperbound , 2] , ylim=c(-10, 10), xlab = 't', ylab = 'Std')
-abline( 3 ,0)
-abline(-3 ,0)
-title('Standardised Error RR-Wave Time')
-plot(RWaveExtractedData$t[1:indexupperbound], AdjustedBeliefs[["dis_D_z"]][1:indexupperbound , 1] , ylim=c(0, 20) , xlab = 't' , ylab = 'Dis')
-abline( 8 ,0)
-title('Joint Discepancy')
-
 ## Wavelets
 
 
-Filter = wt.filter(filter = "d20" , modwt=TRUE, level=1)
+Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1)
 features <- attributes(Filter)
 
-par(mfrow = c( 3 , 1))
-modoutput <-  modwt( f_t[1000:2000] , Filter , 12)
+lengthoftime <- 0.001
+startoftime <- 1.9
+
+#rangetotest = ( ((t > (t[length(t)] - ((startoftime+lengthoftime)*(60^2))))*((t < (t[length(t)] - ((startoftime)*(60^2)))))) == 1 );
+rangetotest = c(1:1000);
+
+modoutput <-  modwt( f_t[rangetotest] , Filter , 12)
 modoutputattributes <- attributes(modoutput)
 W <- slot(modoutput , 'W')
 V <- slot(modoutput , 'V')
-W <- SetElementsOfListoToZero(W , c(5:12) )
-V <- SetElementsOfListoToZero(V , c(5:12) )
+W <- SetElementsOfListoToZero(W , c(1:2 , 5:12) )
+V <- SetElementsOfListoToZero(V , c(1:2 , 5:12) )
 slot(modoutput , 'W')<- W
 slot(modoutput , 'V')<- V
 imodoutput <- imodwt(modoutput, fast=TRUE)
-plot(t[1:1001] , f_t[1000:2000] , type = 'l')
-abline(0,0)
-plot(t[1:1001] , (imodoutput) , type = 'l')
-abline(0,0)
-plot(t[1:1001] , imodoutput - f_t[1000:2000] , type = 'l')
-abline(0,0)
 
-multiresolutionanalysis <- attributes(mra(f_t[1000:2000] , Filter ,  12  , boundary = 'periodic' , method = "modwt"))
+stdresid = imodoutput/sqrt(var(imodoutput))
+stdresid[ stdresid < 0] = 0 
+Peakslogical = stdresid>2.8
+Temp <- f_t[rangetotest]
+for (i in 1:length(Peakslogical))
+{
+  if(Peakslogical[i] == FALSE){ next }
+  if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
+  {# count logicals
+    j <- 1
+    while(Peakslogical[i + j] ==  TRUE ){ j <- (j+1) }
+  }  
+  # Find location of max stdresid in set
+  maxindex <- which.max(Temp[i:(i+j)])
+  Peakslogical[i:(i+j)] <- FALSE
+  Peakslogical[i + (maxindex -1)] <- TRUE
+}
+Temp <- t[rangetotest]
+RPeakLocations <- Temp[Peakslogical == TRUE]
+Temp <- f_t[rangetotest]
+RAmplitudes <- Temp[Peakslogical == TRUE ]
+
+par(mfrow = c( 2 , 1))
+plot(RPeakLocations , RAmplitudes, xlab = 't' , ylab = 'Hz')
+title('R-peak Amplitudes')
+plot(RPeakLocations  , c(diff(RPeakLocations) , mean(diff(RPeakLocations))) , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
+title('R-peak Times')
+
+RWaveExtractedData<-RPeakExtractionWavelet( WaveData[1:10000,] , Filter)
+
+par(mfrow = c( 3 , 1))
+plot(WaveData[1:10000 , 1] , WaveData[1:10000 , 2], type = 'l')
+points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
+title('ECG Wave Form')
+plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
+title('R-peak Amplitudes')
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
+title('R-peak Times')
+
+
+par(mfrow = c( 4 , 1))
+plot(t[rangetotest] , f_t[rangetotest] , type = 'l' , xlab = 't' , ylab = 'Hz')
+title('ECG WaveForm')
+abline(0,0)
+points(RPeakLocations , RAmplitudes  , col = 'blue')
+plot(t[rangetotest] , (imodoutput) , type = 'l', xlab = 't' , ylab = 'Hz')
+title('Wavelet Reconstruction (Noise and Drift Removed)')
+abline(0,0)
+abline(mean(imodoutput + 3*sqrt(var(imodoutput))),0 , col = 'red')
+abline(mean(imodoutput - 3*sqrt(var(imodoutput))),0 , col = 'red')
+plot(t[rangetotest] , stdresid , type = 'l', xlab = 't' , ylab = 'Std Error')
+abline(3,0)
+title('Standardised Residuals for Peak Detection')
+plot(t[rangetotest] ,-imodoutput + f_t[rangetotest] , type = 'l', xlab = 't' , ylab = 'Hz')
+abline(0,0)
+title('Difference Between Signal and Wavelet Reconstruction')
+
+
+multiresolutionanalysis <- attributes(mra(f_t[rangetotest] , Filter ,  12  , boundary = 'periodic' , method = "modwt"))
 par(mfrow = c(6 , 1))
-plot(t[1:1001] , f_t[1000:2000] , type = 'l')
+plot(t[rangetotest] , f_t[rangetotest] , type = 'l')
 plot(t[1:length( multiresolutionanalysis$S[[1]])] , multiresolutionanalysis$S[[1]] , type = 'l')
 plot(t[1:length( multiresolutionanalysis$S[[2]])] , multiresolutionanalysis$S[[2]] , type = 'l')
 plot(t[1:length( multiresolutionanalysis$S[[3]])] , multiresolutionanalysis$S[[3]] , type = 'l')
@@ -135,7 +137,7 @@ plot(t[1:length( multiresolutionanalysis$S[[4]])] , multiresolutionanalysis$S[[9
 plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$S[[10]] , type = 'l')
 
 par(mfrow = c(3 , 1))
-plot(t[1:1001] , f_t[1000:2000] , type = 'l',ann = FALSE)
+plot(t[rangetotest] , f_t[rangetotest] , type = 'l',ann = FALSE)
 plot(t[1:length( multiresolutionanalysis$S[[1]])] , multiresolutionanalysis$D[[1]] , type = 'l',ann = FALSE)
 plot(t[1:length( multiresolutionanalysis$S[[2]])] , multiresolutionanalysis$D[[2]] , type = 'l',ann = FALSE)
 plot(t[1:length( multiresolutionanalysis$S[[3]])] , multiresolutionanalysis$D[[3]] , type = 'l',ann = FALSE)
