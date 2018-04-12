@@ -56,7 +56,6 @@ a <- a[ -ComponetsToRemove ]
 
 # Perform discrete wavelet transform on data.
 modoutput <-  modwt( f_t , Filter , nlevels)
-modoutputattributes <- attributes(modoutput)
 
 # set components to zero to supress unwanted data features.
 W <- slot(modoutput , 'W')
@@ -76,19 +75,22 @@ stdresid = imodoutput/sqrt(var(imodoutput))
 stdresid[ stdresid < 0] = 0 
 Peakslogical = stdresid>2.8
 
-for (i in 1:length(Peakslogical))
+for (i in 1:(length(Peakslogical) -1))
 {
   if(Peakslogical[i] == FALSE){ next }
+  
   if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
-  {# count logicals
-    j <- 1
-    while(Peakslogical[i + j] ==  TRUE ){ j <- (j+1) }
-  }  
-  # Find location of max stdresid in set
+  {# Count number of conected logicals
+  j <- 1
+  while(Peakslogical[min(i + j , length(Peakslogical))] ==  TRUE & ((i + j) <  length(Peakslogical)) ){ j <- (j+1) }
+  }
+  if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == FALSE){j <- 0}
+  # Find location of max of f_t in set of connected logicals
   maxindex <- which.max(f_t[i:(i+j)])
   Peakslogical[i:(i+j)] <- FALSE
   Peakslogical[i + (maxindex -1)] <- TRUE
 }
+
 RPeakLocations <- t[Peakslogical == TRUE]
 RAmplitudes <- f_t[Peakslogical == TRUE ]
 

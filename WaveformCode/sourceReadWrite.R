@@ -1,9 +1,13 @@
 readWriteWave = function(Wave_files, cleanWave, sub_pat, choose_outputs, wavename,path,pathOutFilesExtra,use7z,useZip){
+
+  
   WaveData = lapply(Wave_files, cleanWave)
   print(paste0("Finished reading csv files - ",wavename))
+  
   WaveDataT = do.call("rbind",WaveData)
   print("Rbind complete")
   print(dim(WaveDataT))
+  
   if (nrow(WaveDataT)){
     WaveData = WaveDataT
     rm(WaveDataT)

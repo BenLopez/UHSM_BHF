@@ -61,8 +61,8 @@ cleanECG = function(filename){
   ECGfile$Date = as.double(ECGfile$Date)
   ECGfile$Value = as.numeric(ECGfile$Value)
   curr_time = as.numeric(Sys.time())
-  ECGfile$Date[ECGfile$Date>curr_time] = NA #Remove bad dates in future
-  ECGfile$Value[ECGfile$Value == -32768] = NA
+  ECGfile$Date[ECGfile$Date>curr_time] = NA # Remove bad dates in future
+  ECGfile$Value[ECGfile$Value == -32768] = NA 
   qcut = quantile(ECGfile$Value,c(0.005,0.995), na.rm = TRUE)
   ECGfile$Value[ECGfile$Value >= qcut[2] | ECGfile$Value <= qcut[1]] = NA
   ECGfile$Date = as.POSIXct(as.numeric(ECGfile$Date),origin = "1970-01-01")

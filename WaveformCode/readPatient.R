@@ -6,6 +6,7 @@ dir.create(path = paste0(path,"\\",PatientCode,"\\temp_zip"), showWarnings = FAL
 # Clear folder
 do.call(file.remove, list(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE)))
 
+# Create and execture shell script to unzip all zips in folder
 for (zipF in zip_files){
   unzipfile(paste0(zipF,"unzip.vbs",sep=""),zipF,paste0(path,"\\",PatientCode,"\\"))
 }
@@ -54,7 +55,7 @@ if(length(Disc_files)>0 & ("Discrete" %in% chooseWave2Read)){
 }
 
 # ECG Data ----------------------------------------------------------------
-
+# some options for saving .RData files
 options(digits = 15)
 options(digits.secs=3)
 

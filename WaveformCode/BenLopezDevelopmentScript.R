@@ -15,23 +15,17 @@ load(FileLocation)
 HoursBeforeEnd = 6;
 WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] - HoursBeforeEnd*(60^2))  , 1:2]
 
-# Check first chunk of data.
-regiontocheck <- c(1:2000);
-t <- WaveData$Date[ regiontocheck ]
-f_t = WaveData$Value[ regiontocheck ]
+RWaveExtractedData<-RPeakExtractionWavelet( WaveData , Filter)
+Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1)
 
-RWaveExtractedDataTest <- RPeakExtraction(t, f_t)
-par(mfrow = c(3 , 1))
-plot(t , f_t , type = 'l', ylab="H-z")
-points( RWaveExtractedDataTest[,1] ,   RWaveExtractedDataTest[,2] , col = 'blue' )
-plot(   RWaveExtractedDataTest[,1] ,   RWaveExtractedDataTest[,2] , xlab="t" , ylab="R-Amplitude" )
-plot(   RWaveExtractedDataTest[,1] ,   RWaveExtractedDataTest[,3] , xlab="t" , ylab="R-R Times" )
-
-# If the plot above looks good, run this section.
-
-t <-  WaveData$Date
-f_t <- WaveData$Value
-RWaveExtractedData <- RPeakExtraction(t, f_t)
+par(mfrow = c( 3 , 1))
+plot(WaveData[1:20000  , 1] , WaveData[1:20000 , 2], type = 'l')
+points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
+title('ECG Wave Form')
+plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
+title('R-peak Amplitudes')
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
+title('R-peak Times')
 
 # Save file
 Temp <-gregexpr('Zip_out' , FileLocation)
@@ -44,8 +38,6 @@ save('RWaveExtractedData' , file = SaveLocation)
 
 ## Wavelets
 
-
-Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1)
 features <- attributes(Filter)
 
 lengthoftime <- 0.001
@@ -92,16 +84,6 @@ title('R-peak Amplitudes')
 plot(RPeakLocations  , c(diff(RPeakLocations) , mean(diff(RPeakLocations))) , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
 title('R-peak Times')
 
-RWaveExtractedData<-RPeakExtractionWavelet( WaveData[1:10000,] , Filter)
-
-par(mfrow = c( 3 , 1))
-plot(WaveData[1:10000 , 1] , WaveData[1:10000 , 2], type = 'l')
-points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
-title('ECG Wave Form')
-plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
-title('R-peak Amplitudes')
-plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
-title('R-peak Times')
 
 
 par(mfrow = c( 4 , 1))

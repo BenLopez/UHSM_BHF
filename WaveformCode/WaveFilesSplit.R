@@ -1,4 +1,3 @@
-#can you see this?
 # Select directory containing source
 pathFiles = choose.dir(caption="Select folder with source code")
 pathFiles = paste0(pathFiles, "\\")
@@ -15,19 +14,23 @@ if(length(path_PatIndex)>0){
   sub_pat = list()
 }
 
-choose_outputs = c(1,0,1) #csv, mat, rdata --- DO NOT USE MAT, needs testing, very slow
+choose_outputs = c(0,0,1) #csv, mat, rdata --- DO NOT USE MAT, needs testing, very slow
 ## Install R.matlab library and uncomment next line if you want to generate mat files
 # library(R.matlab)
 
+# Option to choose maximium number of hours to process to prevent memory bottlenecks
+maxhourstoprocess <- 100
+
 Use7z = 1
 UseZip = 0
-KeepCSVs = 1
+KeepCSVs = 0
 
 
 DataTypes = c("Discrete", "ECGI", "ECGII", "ECGIII", "CVP", "ART", "SPO2", "Flow", "Paw")
 chooseWave2Read = select.list(DataTypes, preselect = DataTypes,
                               multiple = TRUE, graphics = TRUE, title = "Choose Waves to Read")
 
+# Run functions source file
 source(paste0(pathFiles,"/sourceFunctions.R"))
 
 # Select directory containing all patients
@@ -35,25 +38,32 @@ path = choose.dir(caption="Select folder containing data repository")
 #setwd(path)
 listAllPatients = list.dirs(path = path, full.names = FALSE, recursive = FALSE)
 
+#
 subList = select.list(listAllPatients, preselect = NULL, multiple = TRUE,
-            title = NULL, graphics = TRUE)
+            title = NULL, graphics = TRUE )
 
 # path = paste0(path, "\\")
 # findZ = regexpr("z[^z]*$", path)[1]
 # PatientCode = substr(path, findZ, nchar(path)-1)
-
 for (PatientCode in subList){
-  print(paste0("Processing ",PatientCode))
-  if(length(path_PatIndex)>0){
+if(length(path_PatIndex)>0)
+  {
     sub_pat = subset(PatIndex2017, PseudoId %in% PatientCode)
-    warning("Patient not in PatientIndex")
-    if (nrow(sub_pat) == 0){
-      sub_pat = list()
-    }
-  } else {
-    warning("No Patient Info provided")
+    # warning("Patient not in PatientIndex") # not sure this warning is in the right place
+  if(nrow(sub_pat) == 0){
     sub_pat = list()
+    print(paste0("Patient ", PatientCode , " not in PatientIndex: skipping to next patient"))
+    next }
+  } 
+else 
+  {
+    error("No Patient Info provided")
+    # sub_pat = list()
   }
+  if(sub_pat[["TotalITUTimeHRS" ]] < maxhourstoprocess){
+    print(paste0(PatientCode , " skipped as over max hours"))
+    next}
+  print(paste0("Processing ",PatientCode))
   source(paste0(pathFiles,"/readPatient.R"))
 }
 

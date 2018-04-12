@@ -8,7 +8,7 @@ source("LibrariesAndSettings.R" , print.eval  = TRUE )
 DataPath <- choose.files(caption = 'Choose R-R time and R-amplitube .Rdata files')
 load(DataPath)
 
-PriorTimePeriod <- 4 # Choose time period in minutes to specify priors
+PriorTimePeriod <- 2 # Choose time period in minutes to specify priors
 n<- 30
 
 SecondOrderSpecifiction <- BayesLinearDynamicUpdateAutomatedPrior(RWaveExtractedData , PriorTimePeriod , n)
