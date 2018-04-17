@@ -15,17 +15,17 @@ load(FileLocation)
 HoursBeforeEnd = 6;
 WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] - HoursBeforeEnd*(60^2))  , 1:2]
 
-RWaveExtractedData<-RPeakExtractionWavelet( WaveData , Filter)
-Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1)
+Filter <- wt.filter(filter = "d6" , modwt=TRUE, level=1)
+RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter)
 
 par(mfrow = c( 3 , 1))
-plot(WaveData[1:20000  , 1] , WaveData[1:20000 , 2], type = 'l')
+plot(WaveData[14000:18000  , 1] , WaveData[14000:18000 , 2], type = 'l')
 points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
 title('ECG Wave Form')
 plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
 title('R-peak Amplitudes')
-plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
-title('R-peak Times')
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0.6 , 1.2))
+title('RR-peak Times')
 
 # Save file
 Temp <-gregexpr('Zip_out' , FileLocation)
@@ -36,17 +36,13 @@ SaveLocation <- paste0(SaveLocation , substr(FileLocation , Temp[[1]][1] + nchar
 rm(Temp,Temp2)
 save('RWaveExtractedData' , file = SaveLocation)
 
-## Wavelets
-
-features <- attributes(Filter)
-
-lengthoftime <- 0.001
-startoftime <- 1.9
 
 #rangetotest = ( ((t > (t[length(t)] - ((startoftime+lengthoftime)*(60^2))))*((t < (t[length(t)] - ((startoftime)*(60^2)))))) == 1 );
-rangetotest = c(1:1000);
+rangetotest = c(1000:2000);
+tt <- WaveData$Date[rangetotest]
+f_tt <- WaveData$Value[rangetotest]
 
-modoutput <-  modwt( f_t[rangetotest] , Filter , 12)
+modoutput <-  modwt( f_tt  , Filter , 12)
 modoutputattributes <- attributes(modoutput)
 W <- slot(modoutput , 'W')
 V <- slot(modoutput , 'V')
@@ -56,33 +52,83 @@ slot(modoutput , 'W')<- W
 slot(modoutput , 'V')<- V
 imodoutput <- imodwt(modoutput, fast=TRUE)
 
-stdresid = imodoutput/sqrt(var(imodoutput))
-stdresid[ stdresid < 0] = 0 
-Peakslogical = stdresid>2.8
-Temp <- f_t[rangetotest]
-for (i in 1:length(Peakslogical))
-{
-  if(Peakslogical[i] == FALSE){ next }
-  if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
-  {# count logicals
-    j <- 1
-    while(Peakslogical[i + j] ==  TRUE ){ j <- (j+1) }
-  }  
-  # Find location of max stdresid in set
-  maxindex <- which.max(Temp[i:(i+j)])
-  Peakslogical[i:(i+j)] <- FALSE
-  Peakslogical[i + (maxindex -1)] <- TRUE
-}
-Temp <- t[rangetotest]
-RPeakLocations <- Temp[Peakslogical == TRUE]
-Temp <- f_t[rangetotest]
-RAmplitudes <- Temp[Peakslogical == TRUE ]
+stdresid <- imodoutput/sqrt(var(imodoutput))
+stdresid2 <- stdresid
+stdresid[ stdresid < 0] <- 0
+Rlogical <- FindLocalTurningPoints( stdresid>2.8 , f_tt )
+RPeakLocations <- tt[Rlogical == TRUE]
+RAmplitudes <- f_tt[Rlogical == TRUE ]
 
-par(mfrow = c( 2 , 1))
+par(mfrow = c(1 , 1))
+plot(tt , f_tt , type = 'l' , xlab = 't' , ylab = 'Hz')
+
+title('ECG WaveForm')
+abline(0,0)
+points(RPeakLocations , RAmplitudes  , col = 'red')
+
+stdresid2[stdresid2 > 0] = 0
+stdresid2 <- abs(stdresid2)
+stdresid2 <- stdresid2 > ( mean(stdresid2) + 2.5*sqrt( mean(stdresid2)) )
+
+# Use a filter to create a local clique for every R peak.
+Filter2 =  rep(1 , 41)
+Rregion <- (abs(convolve(Rlogical , Filter2 , type = "open")) < 0.5)
+Rregion <- Rregion[(length(Filter2)/2):(length(Rregion)-(length(Filter2)/2))]
+stdresid2[Rregion] = 0
+
+QSlogical <- FindLocalTurningPoints(stdresid2 , f_tt , 0)
+QSlocations <- tt[QSlogical == TRUE]
+QSValues <- f_tt[QSlogical == TRUE]
+
+# Find closest Neighbours
+Temp <- get.knnx(QSlocations , RPeakLocations , k = 2)
+Temp$nn.index <- t(apply(Temp$nn.index, 1 , sort))
+QLocations <- QSlocations[Temp$nn.index[ , 1]]
+SLocations <- QSlocations[Temp$nn.index[ , 2]]
+
+QAmplitudes <- QSValues[Temp$nn.index[ , 1]]
+SAmplitudes <- QSValues[Temp$nn.index[ , 2]]
+QStime <- t(apply(Temp$nn.dist , 1 , sum))
+
+par(mfrow = c(1 , 1))
+plot(tt , f_tt , type = 'l' , xlab = 't' , ylab = 'Hz')
+points(QLocations , QAmplitudes  , col = 'blue')
+points(SLocations , SAmplitudes  , col = 'green')
+title('ECG WaveForm')
+abline(0,0)
+points(RPeakLocations , RAmplitudes  , col = 'red')
+
+
+par(mfrow = c( 3 , 1))
 plot(RPeakLocations , RAmplitudes, xlab = 't' , ylab = 'Hz')
 title('R-peak Amplitudes')
-plot(RPeakLocations  , c(diff(RPeakLocations) , mean(diff(RPeakLocations))) , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 0.85))
+plot(RPeakLocations  , c(diff(RPeakLocations) , mean(diff(RPeakLocations))) , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 1))
 title('R-peak Times')
+plot(RPeakLocations , QStime)
+abline(mean(QStime) , 0 )
+abline(mean(QStime) + 2*sqrt(var(t(QStime))) , 0  , col = 'red')
+abline(mean(QStime) - 2*sqrt(var(t(QStime))) , 0 )
+title('QSTime')
+
+QRSLogical <- matrix(0 , length(tt) , 1)
+bandincrement <- 10*0.005
+
+for(i in 1:length(QLocations))
+{
+  QRSLogical[ ((tt >= ( QLocations[i] - bandincrement ) )*((tt <= (SLocations[i] + bandincrement)  ))) == 1 ] <- 1 +  QRSLogical[ ((tt >= (QLocations[i] - bandincrement)  )*((tt <= (SLocations[i] + bandincrement)  ))) == 1 ]
+}
+
+QRSWaveForm <- matrix(0 , length(tt) , 1)
+QRSWaveForm[QRSLogical == 1] <- f_tt[QRSLogical == 1]
+QRSWaveForm[QRSLogical == 0] <- NA
+QRSWaveForm[1] <- 0
+QRSWaveForm[length(QRSWaveForm)] <- 0
+QRSWaveForm <- na.approx(QRSWaveForm)
+
+ResidualWaveFrom <- matrix(0 , length(tt) , 1)
+ResidualWaveFrom[QRSLogical == 0] <- f_tt[QRSLogical == 0]
+ResidualWaveFrom[QRSLogical == 1] <- NA
+ResidualWaveFrom <- na.approx(ResidualWaveFrom)
 
 
 
