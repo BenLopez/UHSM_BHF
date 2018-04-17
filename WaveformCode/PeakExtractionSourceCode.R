@@ -126,3 +126,75 @@ FindLocalTurningPoints <- function(Peakslogical , f_t , maxormin = 1)
   }
 return(Peakslogical)
 }
+
+FindQRSComplex <- function( WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) , Filter2 = rep(1 , 41) )
+{
+# Function to find QRS complex from an ECG.   
+# Inputs :   
+  
+  tt <- WaveData$Date
+  f_tt <- WaveData$Value
+  
+  imodoutput <- waveletremovecompenentsandreconstruct(f_tt , Filter)
+  
+  stdresid <- imodoutput/sqrt(var(imodoutput))
+  stdresid2 <- stdresid
+  
+  stdresid[ stdresid < 0] <- 0
+  Rlogical <- FindLocalTurningPoints( stdresid > 2.8 , f_tt )
+  RPeakLocations <- tt[ Rlogical == TRUE ]
+  RAmplitudes <- f_tt[ Rlogical == TRUE ]  
+  
+  stdresid2[stdresid2 > 0] = 0
+  stdresid2 <- abs( stdresid2 )
+  stdresid2 <- (stdresid2 > ( mean(stdresid2) + 2*sqrt( var(stdresid2)) ))
+  
+  # Use a filter to create a local clique for every R peak.
+  Rregion <- ((imfiter1D( Rlogical , Filter2)) < 0.5)
+  stdresid2[Rregion] = 0
+  
+  QSlogical <- FindLocalTurningPoints(stdresid2 , f_tt , 0)
+  QSlocations <- tt[QSlogical == TRUE]
+  QSValues <- f_tt[QSlogical == TRUE]
+  
+  Temp <- get.knnx(QSlocations , RPeakLocations , k = 2)
+  Temp$nn.index <- t(apply(Temp$nn.index, 1 , sort))
+  QLocations <- QSlocations[Temp$nn.index[ , 1]]
+  SLocations <- QSlocations[Temp$nn.index[ , 2]]
+  
+  QAmplitudes <- QSValues[Temp$nn.index[ , 1]]
+  SAmplitudes <- QSValues[Temp$nn.index[ , 2]]
+  QStime <- t(apply(Temp$nn.dist , 1 , sum))
+  rm(Temp)
+  
+  Rt <- RPeakLocations
+  RA <- RAmplitudes
+  RR <- c(diff(RPeakLocations) , mean(diff(RPeakLocations)))
+  Qt <- QLocations
+  St <- SLocations
+  QA <- QAmplitudes
+  SA <- SAmplitudes
+  QS <- QStime
+  
+  output <- data.frame(Rt ,RA , RR , Qt , St , QA , SA ,  QS ) 
+  return(output)
+  
+}
+
+waveletremovecompenentsandreconstruct <- function(f_tt , Filter , nlevels = 12 , ComponetsToRemove = c(3,4))
+{
+  # Function to perform a wavelet decompostion remove components and reconstruct.
+  # Inputs: signal, filter structure, number of levels, components to remove.
+  # otuputs: Reconstructed signal
+  a <- c(1:nlevels)
+  a <- a[ -ComponetsToRemove ]
+  modoutput <-  modwt( f_tt  , Filter , nlevels)
+  W <- slot(modoutput , 'W')
+  V <- slot(modoutput , 'V')
+  W <- SetElementsOfListoToZero(W , a)
+  V <- SetElementsOfListoToZero(V , a )
+  slot(modoutput , 'W')<- W
+  slot(modoutput , 'V')<- V
+  imodoutput <- imodwt(modoutput, fast=TRUE)
+  return(imodoutput)
+}

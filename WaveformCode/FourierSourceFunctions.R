@@ -14,3 +14,11 @@ SetElementsOfListoToZero <- function(A , a)
   }
   return(A)
 }
+
+imfiter1D <- function(f_tt , Filter)
+{
+ # Function to convolve a signal with a filter.
+  output <- abs(convolve(f_tt , Filter , type = "open"))
+  output <- output[(length(Filter)/2):(length(output)-(length(Filter)/2))]
+  return(output)
+} 

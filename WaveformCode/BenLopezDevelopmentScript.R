@@ -38,66 +38,16 @@ save('RWaveExtractedData' , file = SaveLocation)
 
 
 #rangetotest = ( ((t > (t[length(t)] - ((startoftime+lengthoftime)*(60^2))))*((t < (t[length(t)] - ((startoftime)*(60^2)))))) == 1 );
-rangetotest = c(1000:2000);
-tt <- WaveData$Date[rangetotest]
-f_tt <- WaveData$Value[rangetotest]
 
-modoutput <-  modwt( f_tt  , Filter , 12)
-modoutputattributes <- attributes(modoutput)
-W <- slot(modoutput , 'W')
-V <- slot(modoutput , 'V')
-W <- SetElementsOfListoToZero(W , c(1:2 , 5:12) )
-V <- SetElementsOfListoToZero(V , c(1:2 , 5:12) )
-slot(modoutput , 'W')<- W
-slot(modoutput , 'V')<- V
-imodoutput <- imodwt(modoutput, fast=TRUE)
-
-stdresid <- imodoutput/sqrt(var(imodoutput))
-stdresid2 <- stdresid
-stdresid[ stdresid < 0] <- 0
-Rlogical <- FindLocalTurningPoints( stdresid>2.8 , f_tt )
-RPeakLocations <- tt[Rlogical == TRUE]
-RAmplitudes <- f_tt[Rlogical == TRUE ]
+QRSoutput <- FindQRSComplex(WaveData[rangetotest,] , Filter)
 
 par(mfrow = c(1 , 1))
 plot(tt , f_tt , type = 'l' , xlab = 't' , ylab = 'Hz')
-
+points(QRSoutput$Qt , QRSoutput$QA  , col = 'blue')
+points(QRSoutput$St , QRSoutput$SA  , col = 'green')
 title('ECG WaveForm')
 abline(0,0)
-points(RPeakLocations , RAmplitudes  , col = 'red')
-
-stdresid2[stdresid2 > 0] = 0
-stdresid2 <- abs(stdresid2)
-stdresid2 <- stdresid2 > ( mean(stdresid2) + 2.5*sqrt( mean(stdresid2)) )
-
-# Use a filter to create a local clique for every R peak.
-Filter2 =  rep(1 , 41)
-Rregion <- (abs(convolve(Rlogical , Filter2 , type = "open")) < 0.5)
-Rregion <- Rregion[(length(Filter2)/2):(length(Rregion)-(length(Filter2)/2))]
-stdresid2[Rregion] = 0
-
-QSlogical <- FindLocalTurningPoints(stdresid2 , f_tt , 0)
-QSlocations <- tt[QSlogical == TRUE]
-QSValues <- f_tt[QSlogical == TRUE]
-
-# Find closest Neighbours
-Temp <- get.knnx(QSlocations , RPeakLocations , k = 2)
-Temp$nn.index <- t(apply(Temp$nn.index, 1 , sort))
-QLocations <- QSlocations[Temp$nn.index[ , 1]]
-SLocations <- QSlocations[Temp$nn.index[ , 2]]
-
-QAmplitudes <- QSValues[Temp$nn.index[ , 1]]
-SAmplitudes <- QSValues[Temp$nn.index[ , 2]]
-QStime <- t(apply(Temp$nn.dist , 1 , sum))
-
-par(mfrow = c(1 , 1))
-plot(tt , f_tt , type = 'l' , xlab = 't' , ylab = 'Hz')
-points(QLocations , QAmplitudes  , col = 'blue')
-points(SLocations , SAmplitudes  , col = 'green')
-title('ECG WaveForm')
-abline(0,0)
-points(RPeakLocations , RAmplitudes  , col = 'red')
-
+points(QRSoutput$Rt , QRSoutput$RA  , col = 'red')
 
 par(mfrow = c( 3 , 1))
 plot(RPeakLocations , RAmplitudes, xlab = 't' , ylab = 'Hz')
@@ -129,7 +79,6 @@ ResidualWaveFrom <- matrix(0 , length(tt) , 1)
 ResidualWaveFrom[QRSLogical == 0] <- f_tt[QRSLogical == 0]
 ResidualWaveFrom[QRSLogical == 1] <- NA
 ResidualWaveFrom <- na.approx(ResidualWaveFrom)
-
 
 
 par(mfrow = c( 4 , 1))
