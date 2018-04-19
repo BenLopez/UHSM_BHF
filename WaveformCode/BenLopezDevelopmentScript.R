@@ -18,10 +18,11 @@ WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] -
 Filter <- wt.filter(filter = "d6" , modwt=TRUE, level=1)
 RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter)
 
-par(mfrow = c( 3 , 1))
-plot(WaveData[14000:18000  , 1] , WaveData[14000:18000 , 2], type = 'l')
+par(mfrow = c( 2 , 1))
+regionofinterest = regionofinterest + 5000
+plot(WaveData[regionofinterest  , 1] , WaveData[regionofinterest , 2], type = 'l', xlab = 't' , ylab = 'Hz')
 points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
-title('ECG Wave Form')
+title('z1127 ECG Wave Form')
 plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
 title('R-peak Amplitudes')
 plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0.6 , 1.2))
@@ -36,94 +37,56 @@ SaveLocation <- paste0(SaveLocation , substr(FileLocation , Temp[[1]][1] + nchar
 rm(Temp,Temp2)
 save('RWaveExtractedData' , file = SaveLocation)
 
-
 #rangetotest = ( ((t > (t[length(t)] - ((startoftime+lengthoftime)*(60^2))))*((t < (t[length(t)] - ((startoftime)*(60^2)))))) == 1 );
-
+rangetotest = c(1:10000)
 QRSoutput <- FindQRSComplex(WaveData[rangetotest,] , Filter)
+tt<- WaveData[rangetotest , 1]
+f_tt <- WaveData[rangetotest  , 2]
 
-par(mfrow = c(1 , 1))
+par(mfrow = c(2 , 1))
 plot(tt , f_tt , type = 'l' , xlab = 't' , ylab = 'Hz')
+title('z 1126 ECG WaveForm')
+
 points(QRSoutput$Qt , QRSoutput$QA  , col = 'blue')
 points(QRSoutput$St , QRSoutput$SA  , col = 'green')
-title('ECG WaveForm')
 abline(0,0)
 points(QRSoutput$Rt , QRSoutput$RA  , col = 'red')
 
-par(mfrow = c( 3 , 1))
-plot(RPeakLocations , RAmplitudes, xlab = 't' , ylab = 'Hz')
-title('R-peak Amplitudes')
-plot(RPeakLocations  , c(diff(RPeakLocations) , mean(diff(RPeakLocations))) , xlab = 'Index' , ylab = 't' , ylim = c(0.6 , 1))
-title('R-peak Times')
-plot(RPeakLocations , QStime)
-abline(mean(QStime) , 0 )
-abline(mean(QStime) + 2*sqrt(var(t(QStime))) , 0  , col = 'red')
-abline(mean(QStime) - 2*sqrt(var(t(QStime))) , 0 )
-title('QSTime')
+SeparatedWaveForms <- SeparateWaveQRSandPTWaveforms( WaveData[rangetotest,] , QRSoutput)
 
-QRSLogical <- matrix(0 , length(tt) , 1)
-bandincrement <- 10*0.005
+output <- waveletremovecompenentsandreconstruct(SeparatedWaveForms$PTWaveFrom , Filter  , 12 , 7)
+stdresid <- output/sqrt(var(output))
+stdresid[stdresid<0] = 0
+TLocations <- FindLocalTurningPoints(stdresid>mean(stdresid) , SeparatedWaveForms$PTWaveFrom , 1)
+TAmplitudes <- f_tt[TLocations]
+TLocations <- tt[TLocations]
 
-for(i in 1:length(QLocations))
-{
-  QRSLogical[ ((tt >= ( QLocations[i] - bandincrement ) )*((tt <= (SLocations[i] + bandincrement)  ))) == 1 ] <- 1 +  QRSLogical[ ((tt >= (QLocations[i] - bandincrement)  )*((tt <= (SLocations[i] + bandincrement)  ))) == 1 ]
-}
+output <- waveletremovecompenentsandreconstruct(SeparatedWaveForms$PTWaveFrom , Filter  , 12 , 6)
+stdresid <- output/sqrt(var(output))
+stdresid[stdresid<0] = 0
+PTLocations <- FindLocalTurningPoints(stdresid>mean(stdresid) , SeparatedWaveForms$PTWaveFrom , 1)
+PTAmplitudes <- f_tt[PTLocations]
+PTLocations <- tt[PTLocations]
 
-QRSWaveForm <- matrix(0 , length(tt) , 1)
-QRSWaveForm[QRSLogical == 1] <- f_tt[QRSLogical == 1]
-QRSWaveForm[QRSLogical == 0] <- NA
-QRSWaveForm[1] <- 0
-QRSWaveForm[length(QRSWaveForm)] <- 0
-QRSWaveForm <- na.approx(QRSWaveForm)
-
-ResidualWaveFrom <- matrix(0 , length(tt) , 1)
-ResidualWaveFrom[QRSLogical == 0] <- f_tt[QRSLogical == 0]
-ResidualWaveFrom[QRSLogical == 1] <- NA
-ResidualWaveFrom <- na.approx(ResidualWaveFrom)
-
-
-par(mfrow = c( 4 , 1))
-plot(t[rangetotest] , f_t[rangetotest] , type = 'l' , xlab = 't' , ylab = 'Hz')
-title('ECG WaveForm')
+plot(tt , f_tt , type = 'l')
+points(QRSoutput$Qt , QRSoutput$QA  , col = 'blue')
+points(QRSoutput$St , QRSoutput$SA  , col = 'green')
+title('z 1126 ECG WaveForm')
 abline(0,0)
-points(RPeakLocations , RAmplitudes  , col = 'blue')
-plot(t[rangetotest] , (imodoutput) , type = 'l', xlab = 't' , ylab = 'Hz')
-title('Wavelet Reconstruction (Noise and Drift Removed)')
-abline(0,0)
-abline(mean(imodoutput + 3*sqrt(var(imodoutput))),0 , col = 'red')
-abline(mean(imodoutput - 3*sqrt(var(imodoutput))),0 , col = 'red')
-plot(t[rangetotest] , stdresid , type = 'l', xlab = 't' , ylab = 'Std Error')
-abline(3,0)
-title('Standardised Residuals for Peak Detection')
-plot(t[rangetotest] ,-imodoutput + f_t[rangetotest] , type = 'l', xlab = 't' , ylab = 'Hz')
-abline(0,0)
-title('Difference Between Signal and Wavelet Reconstruction')
+points(QRSoutput$Rt , QRSoutput$RA  , col = 'red')
+points(PTLocations , PTAmplitudes , col = 'black')
+points(TLocations , TAmplitudes , col = 'yellow')
 
 
-multiresolutionanalysis <- attributes(mra(f_t[rangetotest] , Filter ,  12  , boundary = 'periodic' , method = "modwt"))
-par(mfrow = c(6 , 1))
-plot(t[rangetotest] , f_t[rangetotest] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[1]])] , multiresolutionanalysis$S[[1]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[2]])] , multiresolutionanalysis$S[[2]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[3]])] , multiresolutionanalysis$S[[3]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[4]])] , multiresolutionanalysis$S[[4]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$S[[5]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[1]])] , multiresolutionanalysis$S[[6]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[2]])] , multiresolutionanalysis$S[[7]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[3]])] , multiresolutionanalysis$S[[8]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[4]])] , multiresolutionanalysis$S[[9]] , type = 'l')
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$S[[10]] , type = 'l')
-
-par(mfrow = c(3 , 1))
-plot(t[rangetotest] , f_t[rangetotest] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[1]])] , multiresolutionanalysis$D[[1]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[2]])] , multiresolutionanalysis$D[[2]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[3]])] , multiresolutionanalysis$D[[3]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[4]])] , multiresolutionanalysis$D[[4]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[6]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[6]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[7]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[8]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[9]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[10]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[11]] , type = 'l',ann = FALSE)
-plot(t[1:length( multiresolutionanalysis$S[[5]])] , multiresolutionanalysis$D[[12]] , type = 'l',ann = FALSE)
+PQRSToutput <- ExtractPQRST( WaveData[1:4000000,] , Filter )
+par(mfrow = c(5 , 1))
+plot(PQRSToutput[['Pt']] , PQRSToutput[['PA']] , col = 'black' , xlab = 't', ylab = 'Hz' )
+title('P-Amplitudes')
+plot(PQRSToutput[['Qt']] , PQRSToutput[['QA']]  , col = 'blue' , xlab = 't', ylab = 'Hz')
+title('Q-Amplitudes')
+plot(PQRSToutput[['Rt']] , PQRSToutput[['RA']]  , col = 'red', xlab = 't', ylab = 'Hz')
+title('R-Amplitudes')
+plot(PQRSToutput[['St']] , PQRSToutput[['SA']]  , col = 'green', xlab = 't', ylab = 'Hz')
+title('S-Amplitudes')
+plot(PQRSToutput[['Tt']] , PQRSToutput[['TA']] , col = 'yellow', xlab = 't', ylab = 'Hz')
+title('T-Amplitudes')

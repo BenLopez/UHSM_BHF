@@ -181,20 +181,111 @@ FindQRSComplex <- function( WaveData , Filter , nlevels = 12 , ComponetsToRemove
   
 }
 
-waveletremovecompenentsandreconstruct <- function(f_tt , Filter , nlevels = 12 , ComponetsToRemove = c(3,4))
+waveletremovecompenentsandreconstruct <- function(f_tt , Filter , nlevels = 12 , ComponetsToKeep = c(3,4))
 {
   # Function to perform a wavelet decompostion remove components and reconstruct.
   # Inputs: signal, filter structure, number of levels, components to remove.
   # otuputs: Reconstructed signal
   a <- c(1:nlevels)
-  a <- a[ -ComponetsToRemove ]
+  a <- a[ -ComponetsToKeep ]
   modoutput <-  modwt( f_tt  , Filter , nlevels)
   W <- slot(modoutput , 'W')
   V <- slot(modoutput , 'V')
-  W <- SetElementsOfListoToZero(W , a)
+  W <- SetElementsOfListoToZero(W , a )
   V <- SetElementsOfListoToZero(V , a )
   slot(modoutput , 'W')<- W
   slot(modoutput , 'V')<- V
   imodoutput <- imodwt(modoutput, fast=TRUE)
   return(imodoutput)
+}
+
+SeparateWaveQRSandPTWaveforms <- function(WaveData , QRSoutput , bandincrement = (10*0.005))
+{
+# Function to separate QRS and PT Wave Forms  
+# Inputs: WaveData QRS complex locations and amplitudes, band incriment is a logical cliques round QRS complexes
+  
+  tt <- WaveData$Date
+  f_tt <- WaveData$Value
+  
+  # Preallocate matrix
+  QRSLogical <- matrix(0 , length(tt) , 1)
+  for(i in 1:length( QRSoutput$Qt ))
+  {
+    QRSLogical[ ((tt >= ( QRSoutput$Qt[i] - bandincrement ) )*((tt <= (QRSoutput$St[i] + bandincrement)  ))) == 1 ] <- 
+      1 +  QRSLogical[ ((tt >= (QRSoutput$Qt[i] - bandincrement)  )*((tt <= (QRSoutput$St[i] + bandincrement)  ))) == 1 ]
+  }
+  
+  QRSWaveForm <- matrix(0 , length(tt) , 1)
+  QRSWaveForm[QRSLogical == 1] <- f_tt[QRSLogical == 1]
+  QRSWaveForm[QRSLogical == 0] <- NA
+  QRSWaveForm[1] <- 0
+  QRSWaveForm[length(QRSWaveForm)] <- 0
+  QRSWaveForm <- na.approx(QRSWaveForm)
+  
+  PTWaveFrom <- matrix(0 , length(tt) , 1)
+  PTWaveFrom[QRSLogical == 0] <- f_tt[QRSLogical == 0]
+  PTWaveFrom[QRSLogical == 1] <- NA
+  PTWaveFrom[1] <- 0
+  PTWaveFrom[length(PTWaveFrom)] <- 0
+  PTWaveFrom <- na.approx(PTWaveFrom)
+  
+  output <- data.frame(QRSWaveForm , PTWaveFrom)
+  return(output)
+    
+}
+
+ExtractPQRST <- function( WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , ComponetsToKeep2 = 7 , ComponetsToKeep3 = 6 )
+{
+# A function to extract PQRST peaks for ECG waveform data.   
+# Inputs: WaveData, a filter struture, nlevels for wavelet decomposition, compents to keep for WRS detection, compnets to keep for P detection Components to keep for PT detection 
+  
+tt <- WaveData$Date
+f_tt <- WaveData$Value 
+   
+QRSoutput <- FindQRSComplex(WaveData , Filter)
+SeparatedWaveForms <- SeparateWaveQRSandPTWaveforms( WaveData , QRSoutput)
+
+# Find Pt locations
+output <- waveletremovecompenentsandreconstruct(SeparatedWaveForms$PTWaveFrom , Filter  , 12 , ComponetsToKeep3)
+stdresid <- output/sqrt(var(output))
+stdresid[stdresid<0] = 0
+PTLocations  <-  FindLocalTurningPoints(stdresid>mean(stdresid) , SeparatedWaveForms$PTWaveFrom , 1)
+PTAmplitudes <-  f_tt[PTLocations]
+PTLocations  <-  tt[PTLocations]
+
+# Find T locations
+output <- waveletremovecompenentsandreconstruct(SeparatedWaveForms$PTWaveFrom , Filter  , nlevels , ComponetsToKeep2)
+stdresid <- output/sqrt(var(output))
+stdresid[stdresid<0] = 0
+TLocations <- FindLocalTurningPoints(stdresid>mean(stdresid) , SeparatedWaveForms$PTWaveFrom , 1)
+TAmplitudes <- f_tt[TLocations]
+TLocations <- tt[TLocations]
+
+# Remove T locations to 
+Plocations <- PTLocations
+PAmpltidues <- PTAmplitudes
+for (i in 1:length(TLocations))
+{
+index <- which.min( abs(as.numeric(Plocations) - as.numeric(TLocations[i]) ) )
+Plocations<- Plocations[-index]
+PAmpltidues<- PAmpltidues[-index]
+}
+
+Rt <- QRSoutput$Rt
+RA <- QRSoutput$RA
+RR <- QRSoutput$RR
+Qt <- QRSoutput$Qt
+St <- QRSoutput$St
+QA <- QRSoutput$QA
+SA <- QRSoutput$SA
+Tt <- TLocations
+TA <- TAmplitudes
+Pt <- Plocations
+PA <- PAmpltidues
+
+output <- list(Rt , RA , RR , Qt , St , QA , SA , Tt , TA , Pt , PA  )
+outputnames <- c('Rt' , 'RA' , 'RR' , 'Qt' , 'St' , 'QA' , 'SA' , 'Tt' , 'TA' , 'Pt' , 'PA')
+output <- setNames( output , outputnames) 
+  
+return(output)
 }
