@@ -40,7 +40,7 @@ RPeakExtraction <- function( Times , ECGWaveFormData )
   return(output)
 }
 
-RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) , stdthresh = 2.8 )
+RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8 )
 {
   # Function to detect R-peaks and RR wave times using a wavelet decomposition. 
   
@@ -51,15 +51,16 @@ RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsT
   f_t <- WaveData$Value
   t <- WaveData$Date
   
-  imodoutput <- waveletremovecompenentsandreconstruct(f_t , Filter)
+  imodoutput <- waveletremovecompenentsandreconstruct(f_t , Filter , nlevels , ComponetsToKeep )
   
   # Find local maxima 
   stdresid = imodoutput/sqrt(var(imodoutput))
-  
+ 
   # Only look for positive peaks
   stdresid[ stdresid < 0] = 0 
   Peakslogical = stdresid > stdthresh
-  Peakslogical[f_t < 0] = 0
+  
+ #Peakslogical[f_t < 0] = FALSE
   Peakslogical <- FindLocalTurningPoints(Peakslogical , f_t , maxormin = 1)
   
   RPeakLocations <- t[Peakslogical == TRUE]
@@ -121,7 +122,7 @@ FindQRSComplex <- function( WaveData , Filter , nlevels = 12 , ComponetsToRemove
   stdresid2 <- (stdresid2 > ( mean(stdresid2) + 2*sqrt( var(stdresid2)) ))
   
   # Use a filter to create a local clique for every R peak.
-  Rregion <- ((imfiter1D( Rlogical , Filter2)) < 0.5)
+  Rregion <- ((imfilter1D( Rlogical , Filter2)) < 0.5)
   stdresid2[Rregion] = 0
   
   QSlogical <- FindLocalTurningPoints(stdresid2 , f_tt , 0)
@@ -239,9 +240,12 @@ PAmpltidues <- PTAmplitudes
 for (i in 1:length(TLocations))
 {
 index <- which.min( abs(as.numeric(Plocations) - as.numeric(TLocations[i]) ) )
-Plocations <- Plocations[-index]
-PAmpltidues <- PAmpltidues[-index]
+Plocations[index] <- NA
+PAmpltidues[index] <- NA
 }
+
+Plocations <- Plocations[is.na(Plocations) == FALSE]
+PAmpltidues <- PAmpltidues[is.na(PAmpltidues) == FALSE]
 
 Rt <- QRSoutput$Rt
 RA <- QRSoutput$RA
@@ -261,3 +265,17 @@ output <- setNames( output , outputnames)
   
 return(output)
 }
+
+ReturnWaveformwithPositiveOrientation <- function(WaveData)
+{  
+qus <- abs(quantile(WaveData$Value, probs = c(0.01 , 0.99)))
+if( as.numeric(qus[1]) > as.numeric(qus[2]) )
+{
+  Date   <-   WaveData$Date 
+  Value  <-  -WaveData$Value
+  WaveData <- data.frame(Date , Value)
+}
+output<-WaveData
+return(output)
+}
+

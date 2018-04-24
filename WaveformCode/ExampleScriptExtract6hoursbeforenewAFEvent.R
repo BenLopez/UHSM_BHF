@@ -36,7 +36,9 @@ HoursBeforeEnd <- 5
 # Extract last 6 hours before newAF event.
 if(is.na(sub_pat$FirstNewAF)  )
 {
-  WaveData <- WaveData[ WaveData$Data < (WaveData$Date[round(length(WaveData$Date)/2)] - HoursBeforeEnd*(60^2)) , ]
+  TimeofNAFEvent<-0
+  index = round(length(WaveData$Date)/2)
+  WaveData <- WaveData[  max(( index - ( HoursBeforeEnd*( (60^2) /0.005 ) ) ) , 1) : min(( index + (( (60^2) /0.005 ) ) )  , length(WaveData$Date)),  ]
 }
 
 if(is.na(sub_pat$FirstNewAF) == FALSE  )
@@ -50,13 +52,12 @@ if(is.na(sub_pat$FirstNewAF) == FALSE  )
 # Extact peak infomation.
 
 Filter <-  wt.filter(filter = "d6" , modwt=TRUE, level=1)
-Date   <-  WaveData$Date 
-Value  <-  WaveData$Value
-RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter)
-rm(Date , Value )
+WaveData <- ReturnWaveformwithPositiveOrientation(WaveData)
+RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2)
 
 par(mfrow = c( 3 , 1))
-regionofinterest = regionofinterest + 50000  #c( (length(WaveData[,1]) -  ((60^2)/0.005)  - 5000) :( length(WaveData[,1])  -  ((60^2)/0.005) ) )
+regionofinterest = regionofinterest #c( max((length(WaveData[,1]) -  ((60^2)/0.005)  - 5000) , 1) :( length(WaveData[,1])  -  ((60^2)/0.005) ) )
+if(regionofinterest[1]<0){error('Negative region of interst indicies')}
 plot(WaveData[regionofinterest  , 1] , WaveData[regionofinterest , 2], type = 'l', xlab = 't' , ylab = 'Hz')
 points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
 title(paste0(PatientCode , ' ECG Wave Form'))
@@ -64,10 +65,11 @@ plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
 title('R-peak Amplitudes')
 abline(v = TimeofNAFEvent , col = 'red')
 abline(v = WaveData[regionofinterest[1]  , 1] , col = 'blue')
-plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0 , 2))
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0.4 , 1.5))
 title('RR-peak Times')
 abline(v = TimeofNAFEvent , col = 'red')
 abline(v = WaveData[regionofinterest[1]  , 1] , col = 'blue')
+lines( RWaveExtractedData$t , (medfilt1(RWaveExtractedData$RR , 6/0.005)) , col ='red' )
 
 
 # Save file
@@ -80,7 +82,7 @@ rm(Temp,Temp2)
 save('RWaveExtractedData' , file = SaveLocation)
 
 
-PQRSToutput <- ExtractPQRST( WaveData , Filter )
+PQRSToutput <- ExtractPQRST( WaveData[1:100000,] , Filter )
 par(mfrow = c(5 , 1))
 plot(PQRSToutput[['Pt']] , PQRSToutput[['PA']] , col = 'black' , xlab = 't', ylab = 'Hz' )
 title('P-Amplitudes')
@@ -97,3 +99,5 @@ abline(v = TimeofNAFEvent , col = 'red')
 plot(PQRSToutput[['Tt']] , PQRSToutput[['TA']] , col = 'yellow', xlab = 't', ylab = 'Hz')
 title('T-Amplitudes')
 abline(v = TimeofNAFEvent , col = 'red')
+
+

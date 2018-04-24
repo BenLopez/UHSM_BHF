@@ -16,7 +16,7 @@ HoursBeforeEnd = 6;
 WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] - HoursBeforeEnd*(60^2))  , 1:2]
 
 Filter <- wt.filter(filter = "d6" , modwt=TRUE, level=1)
-RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter , stdthresh = 1.5)
+RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter  )
 
 par(mfrow = c( 3 , 1))
 regionofinterest = regionofinterest + 5000

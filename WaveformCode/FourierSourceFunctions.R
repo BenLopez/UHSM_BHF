@@ -15,7 +15,7 @@ SetElementsOfListoToZero <- function(A , a)
   return(A)
 }
 
-imfiter1D <- function(f_tt , Filter)
+imfilter1D <- function(f_tt , Filter)
 {
  # Function to convolve a signal with a filter.
   output <- abs(convolve(f_tt , Filter , type = "open"))
