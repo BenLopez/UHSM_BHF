@@ -16,16 +16,16 @@ HoursBeforeEnd = 6;
 WaveData <- WaveData[ ( WaveData$Date )> (WaveData$Date[length(WaveData$Date)] - HoursBeforeEnd*(60^2))  , 1:2]
 
 Filter <- wt.filter(filter = "d6" , modwt=TRUE, level=1)
-RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter)
+RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter , stdthresh = 1.5)
 
-par(mfrow = c( 2 , 1))
+par(mfrow = c( 3 , 1))
 regionofinterest = regionofinterest + 5000
 plot(WaveData[regionofinterest  , 1] , WaveData[regionofinterest , 2], type = 'l', xlab = 't' , ylab = 'Hz')
 points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
 title('z1127 ECG Wave Form')
 plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
 title('R-peak Amplitudes')
-plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0.6 , 1.2))
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0.65 , 0.8))
 title('RR-peak Times')
 
 # Save file
@@ -38,7 +38,7 @@ rm(Temp,Temp2)
 save('RWaveExtractedData' , file = SaveLocation)
 
 #rangetotest = ( ((t > (t[length(t)] - ((startoftime+lengthoftime)*(60^2))))*((t < (t[length(t)] - ((startoftime)*(60^2)))))) == 1 );
-rangetotest = c(1:10000)
+rangetotest = c(3000:5000)
 QRSoutput <- FindQRSComplex(WaveData[rangetotest,] , Filter)
 tt<- WaveData[rangetotest , 1]
 f_tt <- WaveData[rangetotest  , 2]
@@ -52,10 +52,10 @@ points(QRSoutput$St , QRSoutput$SA  , col = 'green')
 abline(0,0)
 points(QRSoutput$Rt , QRSoutput$RA  , col = 'red')
 
-SeparatedWaveForms <- SeparateWaveQRSandPTWaveforms( WaveData[rangetotest,] , QRSoutput)
+SeparatedWaveForms <- SeparateWaveQRSandPTWaveforms( WaveData[rangetotest,] , QRSoutput ,  bandincrement = (0*0.005))
 
 output <- waveletremovecompenentsandreconstruct(SeparatedWaveForms$PTWaveFrom , Filter  , 12 , 7)
-stdresid <- output/sqrt(var(output))
+stdresid <- output/sqrt( var(output) )
 stdresid[stdresid<0] = 0
 TLocations <- FindLocalTurningPoints(stdresid>mean(stdresid) , SeparatedWaveForms$PTWaveFrom , 1)
 TAmplitudes <- f_tt[TLocations]
@@ -68,6 +68,7 @@ PTLocations <- FindLocalTurningPoints(stdresid>mean(stdresid) , SeparatedWaveFor
 PTAmplitudes <- f_tt[PTLocations]
 PTLocations <- tt[PTLocations]
 
+par(mfrow = c(1,1))
 plot(tt , f_tt , type = 'l')
 points(QRSoutput$Qt , QRSoutput$QA  , col = 'blue')
 points(QRSoutput$St , QRSoutput$SA  , col = 'green')
@@ -77,8 +78,33 @@ points(QRSoutput$Rt , QRSoutput$RA  , col = 'red')
 points(PTLocations , PTAmplitudes , col = 'black')
 points(TLocations , TAmplitudes , col = 'yellow')
 
+par(mfrow = c(3,1))
+plot(tt , output , type = 'l')
+firstdiff = c(diff(output) , 0)
+seconddiff <- c(diff(diff(output)) ,0, 0)
+logicalforpeaks = ((abs(firstdiff) < (mean(firstdiff) + 2*sqrt(var(firstdiff)) ))*(seconddiff<0) == 1)
+points(tt[logicalforpeaks] , output[logicalforpeaks] , col = 'red')
+plot(tt , firstdiff , type = 'l')
+points(tt[logicalforpeaks ] , firstdiff[logicalforpeaks] , col = 'red')
+abline(0,0)
+plot(tt , seconddiff , type = 'l')
+points(tt[logicalforpeaks ] , seconddiff[logicalforpeaks] , col = 'red')
 
-PQRSToutput <- ExtractPQRST( WaveData[1:4000000,] , Filter )
+PTLocations <- FindLocalTurningPoints(logicalforpeaks , SeparatedWaveForms$PTWaveFrom , 1)
+PTAmplitudes <- f_tt[PTLocations]
+PTLocations <- tt[PTLocations]
+
+par(mfrow = c(1,1))
+plot(tt , f_tt , type = 'l')
+points(QRSoutput$Qt , QRSoutput$QA  , col = 'blue')
+points(QRSoutput$St , QRSoutput$SA  , col = 'green')
+title('z 1126 ECG WaveForm')
+abline(0,0)
+points(QRSoutput$Rt , QRSoutput$RA  , col = 'red')
+points(PTLocations , PTAmplitudes , col = 'black')
+points(TLocations , TAmplitudes , col = 'yellow')
+
+PQRSToutput <- ExtractPQRST( WaveData[1:1000000,] , Filter )
 par(mfrow = c(5 , 1))
 plot(PQRSToutput[['Pt']] , PQRSToutput[['PA']] , col = 'black' , xlab = 't', ylab = 'Hz' )
 title('P-Amplitudes')

@@ -40,7 +40,7 @@ RPeakExtraction <- function( Times , ECGWaveFormData )
   return(output)
 }
 
-RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) )
+RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) , stdthresh = 2.8 )
 {
   # Function to detect R-peaks and RR wave times using a wavelet decomposition. 
   
@@ -51,45 +51,16 @@ RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsT
   f_t <- WaveData$Value
   t <- WaveData$Date
   
-  a <- c(1:nlevels)
-  a <- a[ -ComponetsToRemove ]
-  
-  # Perform discrete wavelet transform on data.
-  modoutput <-  modwt( f_t , Filter , nlevels)
-  
-  # set components to zero to supress unwanted data features.
-  W <- slot(modoutput , 'W')
-  V <- slot(modoutput , 'V')
-  W <- SetElementsOfListoToZero( W , a )
-  V <- SetElementsOfListoToZero( V , a )
-  slot( modoutput , 'W' ) <- W
-  slot( modoutput , 'V' ) <- V
-  
-  # Perform inverse discrete wavelet tramsform to recronstruct cleaned signal.
-  imodoutput <- imodwt(modoutput, fast=TRUE)
+  imodoutput <- waveletremovecompenentsandreconstruct(f_t , Filter)
   
   # Find local maxima 
   stdresid = imodoutput/sqrt(var(imodoutput))
   
   # Only look for positive peaks
   stdresid[ stdresid < 0] = 0 
-  Peakslogical = stdresid>2.8
-  
-  for (i in 1:(length(Peakslogical) -1))
-  {
-    if(Peakslogical[i] == FALSE){ next }
-    
-    if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
-    {# Count number of conected logicals
-      j <- 1
-      while(Peakslogical[min(i + j , length(Peakslogical))] ==  TRUE & ((i + j) <  length(Peakslogical)) ){ j <- (j+1) }
-    }
-    if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == FALSE){j <- 0}
-    # Find location of max of f_t in set of connected logicals
-    maxindex <- which.max(f_t[i:(i+j)])
-    Peakslogical[i:(i+j)] <- FALSE
-    Peakslogical[i + (maxindex -1)] <- TRUE
-  }
+  Peakslogical = stdresid > stdthresh
+  Peakslogical[f_t < 0] = 0
+  Peakslogical <- FindLocalTurningPoints(Peakslogical , f_t , maxormin = 1)
   
   RPeakLocations <- t[Peakslogical == TRUE]
   RAmplitudes <- f_t[Peakslogical == TRUE ]
@@ -264,11 +235,12 @@ TLocations <- tt[TLocations]
 # Remove T locations to 
 Plocations <- PTLocations
 PAmpltidues <- PTAmplitudes
+
 for (i in 1:length(TLocations))
 {
 index <- which.min( abs(as.numeric(Plocations) - as.numeric(TLocations[i]) ) )
-Plocations<- Plocations[-index]
-PAmpltidues<- PAmpltidues[-index]
+Plocations <- Plocations[-index]
+PAmpltidues <- PAmpltidues[-index]
 }
 
 Rt <- QRSoutput$Rt
