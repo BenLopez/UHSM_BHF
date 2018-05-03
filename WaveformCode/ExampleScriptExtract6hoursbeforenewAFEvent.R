@@ -19,16 +19,17 @@ if(length(path_PatIndex)>0){
 }
 
 # Load in ECG data.
-FileLocation <- choose.files(caption="Select .Rdata file of cleaned ECG data")
-load(FileLocation)
+
+path = choose.dir(caption="Select folder containing data repository")
+listAllPatients = list.dirs(path = path, full.names = FALSE, recursive = FALSE)
+
+
+subList = select.list(listAllPatients, preselect = NULL, multiple = TRUE,
+                      title = NULL, graphics = TRUE )
+PatientCode = subList[1]
+load(paste0(path , '\\' , PatientCode , '\\' , 'Zip_out\\' , 'ECGI_', PatientCode , '.RData'))
 
 # get patient pusedo ID
-Temp <- gregexpr('Zip_out' , FileLocation)
-Temp2 <- gregexpr('.RData' , FileLocation)
-Filename <- substr(FileLocation , Temp[[1]][1] + nchar('Zip_out') +1 , Temp2[[1]][1] -1 )
-Temp2 <- gregexpr('_' , Filename)
-PatientCode = substr(Filename , Temp2[[1]][1] +1 , nchar(Filename)  )
-rm(Temp,Temp2)
 
 sub_pat = subset(PatIndex2017, PseudoId %in% PatientCode)
 HoursBeforeEnd <- 5
@@ -53,24 +54,49 @@ if(is.na(sub_pat$FirstNewAF) == FALSE  )
 
 Filter <-  wt.filter(filter = "d6" , modwt=TRUE, level=1)
 WaveData <- ReturnWaveformwithPositiveOrientation(WaveData)
-RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2)
+RWaveExtractedData <- RPeakExtractionWavelet( WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
 
+dev.off()
 par(mfrow = c( 3 , 1))
-regionofinterest = regionofinterest #c( max((length(WaveData[,1]) -  ((60^2)/0.005)  - 5000) , 1) :( length(WaveData[,1])  -  ((60^2)/0.005) ) )
-if(regionofinterest[1]<0){error('Negative region of interst indicies')}
+regionofinterest <-regionofinterest + 500000 #c(1:5000) #c( max((length(WaveData[,1]) -  ((60^2)/0.005)  - 5000) , 1) :( length(WaveData[,1])  -  ((60^2)/0.005) ) )
+if(regionofinterest[1]>0){
 plot(WaveData[regionofinterest  , 1] , WaveData[regionofinterest , 2], type = 'l', xlab = 't' , ylab = 'Hz')
 points(RWaveExtractedData$t , RWaveExtractedData$RA  , col = 'blue', xlab = 't' , ylab = 'Hz')
-title(paste0(PatientCode , ' ECG Wave Form'))
+title(paste0(subList , ' ECG Wave Form'))
 plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
 title('R-peak Amplitudes')
 abline(v = TimeofNAFEvent , col = 'red')
 abline(v = WaveData[regionofinterest[1]  , 1] , col = 'blue')
-plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0.4 , 1.5))
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0 , 2))
 title('RR-peak Times')
 abline(v = TimeofNAFEvent , col = 'red')
 abline(v = WaveData[regionofinterest[1]  , 1] , col = 'blue')
-lines( RWaveExtractedData$t , (medfilt1(RWaveExtractedData$RR , 6/0.005)) , col ='red' )
+#lines( RWaveExtractedData$t , (medfilt1(RWaveExtractedData$RR , 6/0.005)) , col ='red' )
+}
+if(regionofinterest[1]<0){print('Negative Indicies')}
 
+par(mfrow = c(2 , 1))
+Filter2 = rep(1 , 1200)/1200
+RWaveExtractedData$RR[RWaveExtractedData$RR > 2] <- 0.8
+E_med <- imfilter1D(as.numeric(RWaveExtractedData$RR) , Filter2 )
+Std_med <- (imfilter1D(as.numeric(RWaveExtractedData$RR)^2 , Filter2) - E_med^2)
+plot(RWaveExtractedData$t  , RWaveExtractedData$RR , xlab = 't' , ylab = 't' , ylim = c(0 , 2))
+lines( RWaveExtractedData$t , E_med  , col ='red' )
+lines( RWaveExtractedData$t , E_med + 2*sqrt(Std_med) , col ='blue' )
+lines( RWaveExtractedData$t , E_med - 2*sqrt(Std_med) , col ='blue' )
+title('RR Times Second Order Representation')
+E_med <- imfilter1D(as.numeric(RWaveExtractedData$RA) , Filter2 )
+Std_med <- (imfilter1D(as.numeric(RWaveExtractedData$RA)^2 , Filter2) - E_med^2)
+plot(RWaveExtractedData$t , RWaveExtractedData$RA, xlab = 't' , ylab = 'Hz')
+lines( RWaveExtractedData$t , E_med  , col ='red' )
+lines( RWaveExtractedData$t , E_med + 2*sqrt(Std_med) , col ='blue' )
+lines( RWaveExtractedData$t , E_med - 2*sqrt(Std_med) , col ='blue' )
+title('R-Amplitude Times Second Order Representation')
+
+par(mfrow=c(1,1))
+E_med <- imfilter1D(as.numeric(RWaveExtractedData$RR) , Filter2 )
+Std_med <- sqrt(imfilter1D(as.numeric(RWaveExtractedData$RR)^2 , Filter2) - E_med^2)
+plot(RWaveExtractedData$t, Std_med , type ='l')
 
 # Save file
 Temp <-gregexpr('Zip_out' , FileLocation)
@@ -80,6 +106,8 @@ Temp2 <- gregexpr('.RData' , FileLocation)
 SaveLocation <- paste0(SaveLocation , substr(FileLocation , Temp[[1]][1] + nchar('Zip_out') +1 , Temp2[[1]][1] -1 ) ,  '_RPeaks.RData' )
 rm(Temp,Temp2)
 save('RWaveExtractedData' , file = SaveLocation)
+
+
 
 
 PQRSToutput <- ExtractPQRST( WaveData[1:100000,] , Filter )
