@@ -55,3 +55,43 @@ for( i in c(1:length(DiscreteDataSet)) )
 
   return(AbnormalHeartRateLogical)
 }
+
+FindNumberUniques <- function(X)
+{
+  # Function to find number of unique values in a column vector.
+  values <- unique(X)
+  n <- matrix(0 , length(values) , 1)
+  nn <- matrix(0 , length(values) , 1)
+  for(i in 1:length(values))
+  {
+    n[i]<-sum( X == values[[i]])  
+    nn[i] <- values[[i]]
+  }
+ output <- data.frame( nn , n)
+ output <- setNames(output , c('values' , 'n'))
+ return(output) 
+}
+
+ExtractNumberofErrors <- function(Errorpatients)
+{
+
+Srinklist <- function(X){
+  X <- X[[1]]
+  return(X)
+}
+
+Totalfalsepositives <- as.matrix(Errorpatients[[1]][[1]])
+Totalfalsenegatives <- as.matrix(Errorpatients[[1]][[2]])
+
+# Count number of false positive and flase negatives 
+for( i in 2:length( Errorpatients ) )
+{
+  Totalfalsepositives <- rbind( Totalfalsepositives , as.matrix(Errorpatients[[i]][[1]]) )
+  Totalfalsenegatives <- rbind( Totalfalsenegatives , as.matrix(Errorpatients[[i]][[2]]) )
+}
+
+Totalfalsepositives <- FindNumberUniques(as.vector(lapply(Totalfalsepositives , Srinklist )))
+Totalfalsenegatives <- FindNumberUniques(as.vector(lapply(Totalfalsenegatives , Srinklist )))
+output <- list(Totalfalsepositives , Totalfalsenegatives)
+output <- setNames(output , c('FalsePositives' , 'FalseNegatives'))
+}

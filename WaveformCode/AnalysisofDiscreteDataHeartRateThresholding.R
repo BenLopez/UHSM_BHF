@@ -14,17 +14,14 @@ PatIndex2017  <- rbind(PatIndex2017 , read.csv(file=path_PatIndex, stringsAsFact
 # PatIndex2017$LastITUEntry=as.POSIXct(PatIndex2017$LastITUEntry, format="%d/%m/%Y %H:%M")
 
 # Choose data to process
-path = choose.dir(caption="Select folder containing data repository")
-listAllPatients = list.dirs(path = path, full.names = FALSE, recursive = FALSE)
-subList = select.list(listAllPatients, preselect = NULL, multiple = TRUE, title = NULL, graphics = TRUE )
-
-DataSet <- LoadSetofDiscreteDataHeartRates(subList , path)
+path <- choose.files()
+load(path)
 
 AFlogical <- matrix(0 , length(DataSet[["MetaData"]]) , 1)
 for( i in 1:length(DataSet[["MetaData"]]) )
 {
-  if(!is.na(DataSet[["MetaData"]][[i]]$FirstNewAF)){  AFlogical[i] <- 1 } 
-  if( DataSet[["MetaData"]][[i]]$Pre_OperativeHeartRhythm != "Sinus Rhythm" ){ AFlogical[i] <- 1 }
+  if(!is.na(DataSet[["MetaData"]][[i]]$FirstNewAF[1])){  AFlogical[i] <- 1 } 
+  if( DataSet[["MetaData"]][[i]]$Pre_OperativeHeartRhythm[1] != "Sinus Rhythm" ){ AFlogical[i] <- 1 }
 }
 
 HeartRatethreshold = c(100 , 110 , 120 , 130) 
@@ -36,6 +33,7 @@ Specificity <-  matrix(0 , length(HeartRatethreshold) , length(IntervalThreshold
 Accuracy <-  matrix(0 , length(HeartRatethreshold) , length(IntervalThreshold))
 Errorpatients <- list()
 counter <- 1
+
 for(ii in 1:length(HeartRatethreshold))
 {
   
@@ -136,3 +134,14 @@ abline(130,0 , col = 'red')
 abline(100,0 , col = 'pink')
 abline(v = TimeofDetection[waveformindex])
 title(DataSet[[2]][[waveformindex]]$PseudoId)
+
+TotalErrorRates <- ExtractNumberofErrors(Errorpatients)
+
+par( mfrow = c(1 , 2) )
+plot( TotalErrorRates$FalsePositives$n , ylab = 'Number of Errors' , xaxt='n' )
+title('False Positive')
+axis(1 , TotalErrorRates$FalsePositives$values , at = seq(1 , length(TotalErrorRates$FalsePositives$values) , 1 ) , las =2 ,
+     cex.axis=0.5, cex.lab=0.5, cex.main=0.5, cex.sub=0.5)
+plot( TotalErrorRates$FalseNegatives$n , ylab = 'Number of Errors' , xaxt='n')
+axis(1 , TotalErrorRates$FalseNegatives$values , at = seq(1 , length(TotalErrorRates$FalseNegatives$values) , 1 ) , las =2 )
+title('False Negative')
