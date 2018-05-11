@@ -19,6 +19,14 @@ load(path)
 DataSet <- DataSet[(as.matrix(lapply(DataSet , function(X){length(X[[1]]$tt)})) > 5000)]
 DataSet <- DataSet[(as.matrix(lapply(DataSet , function(X){X$MetaData$Pre_OperativeHeartRhythm[[1]] == "Sinus Rhythm"})) == TRUE )]
 
+AFlogical <- matrix(0 , length(DataSet) , 1)
+PreOpSRLogical <- matrix(0 , length(DataSet) , 1)
+for( i in 1:length(DataSet) )
+{
+  if(!is.na(DataSet[[i]][["MetaData"]]$FirstNewAF[1])){  AFlogical[i] <- 1 } 
+  if( DataSet[[i]][["MetaData"]]$Pre_OperativeHeartRhythm[1] == "Sinus Rhythm" ){ PreOpSRLogical[i] <- 1 }
+}
+
 # Process Data
 LocalAndGlobalComponents <- setNames(lapply( DataSet , ComputeLocalandGlobalSecondOrderStatistics ) , names(DataSet)) 
 
@@ -49,7 +57,6 @@ for( i in 1:length(GoodGroup) )
 E_Lo <- apply( SecondOrderStatisticsMatrix , 1 , sum ) / apply( SecondOrderStatisticsMatrix != 0 , 1 , sum )
 V_Lo <- (apply( SecondOrderStatisticsMatrix^2 , 1 , sum ) / apply( SecondOrderStatisticsMatrix != 0 , 1 , sum ) - E_Lo^2)
 
-
 SecondOrderStatisticsMatrix <- matrix( 0 , max(tslengths) , length(GoodGroup) )
 
 for( i in 1:length(GoodGroup) )
@@ -75,13 +82,13 @@ stdresid <- setNames(stdresid , names(DataSet))
 stdthresholdthreshold = c(2 , 3 , 4 , 5) 
 Window = 1000 
 IntervalThreshold = seq(25, 999 , 50)
-Sensitivity <- matrix(0 , length(HeartRatethreshold) , length(IntervalThreshold))
-Specificity <-  matrix(0 , length(HeartRatethreshold) , length(IntervalThreshold))
-Accuracy <-  matrix(0 , length(HeartRatethreshold) , length(IntervalThreshold))
+Sensitivity <- matrix(0 , length(stdthresholdthreshold) , length(IntervalThreshold))
+Specificity <-  matrix(0 , length(stdthresholdthreshold) , length(IntervalThreshold))
+Accuracy <-  matrix(0 , length(stdthresholdthreshold) , length(IntervalThreshold))
 Errorpatients <- list()
 counter <- 1
 
-for(ii in 1:length(HeartRatethreshold))
+for(ii in 1:length(stdthresholdthreshold))
 {
   
   output <- lapply( stdresid , function(X){ cumsum(X > stdthresholdthreshold[ii]) } )

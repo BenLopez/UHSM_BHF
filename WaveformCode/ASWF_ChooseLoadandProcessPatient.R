@@ -2,6 +2,8 @@ source('ASWF_ChoosePatient.R')
 
 
 # Plot discrete data
+plot(1)
+dev.off()
 df<- data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate )
 myplot <- ggplot( df , aes(x,y))  + geom_point(colour="blue", alpha=0.009) + 
   ggtitle(DataSet$MetaData$PseudoId) +
@@ -92,7 +94,7 @@ p2 <- ggplot(RWaveExtractedData , aes(t , RR)) +
   geom_point(colour="blue", alpha=0.01) +
   ggtitle('R-R times') +
   xlab("t") +
-  ylab("RR") + coord_cartesian(ylim = c(0.6, 2)) 
+  ylab("RR") + coord_cartesian(ylim = c(0.4, 1.2)) 
 
 p4 <- ggplot(DataSet$Data , aes(tt , HeartRate)) +
   geom_point(colour="blue", alpha=0.1) +

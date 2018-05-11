@@ -27,7 +27,7 @@ while(interactivemode == 1){
   if(UserResponse == 'YES')
   {
     
-    jumpschoices <- c('Next Segment' , 'Next 10' , 'next 100')
+    jumpschoices <- c('next Segment' , 'next 10' , 'next 100' , 'next 1000' , 'previous Segment' , 'previous 10' , 'previous 100' , 'previous 1000'  )
     jump <- select.list(  jumpschoices
                           , preselect = jumpschoices[1]
                           , multiple = FALSE
@@ -37,6 +37,14 @@ while(interactivemode == 1){
     if( jump == jumpschoices[1] ){regionofinterest <- regionofinterest + length(regionofinterest)}
     if( jump == jumpschoices[2] ){regionofinterest <- regionofinterest + 10*length(regionofinterest)}
     if( jump == jumpschoices[3] ){regionofinterest <- regionofinterest + 100*length(regionofinterest)}
+    if( jump == jumpschoices[4] ){regionofinterest <- regionofinterest + 1000*length(regionofinterest)}
+    if( jump == jumpschoices[5] ){regionofinterest <- regionofinterest - length(regionofinterest)}
+    if( jump == jumpschoices[6] ){regionofinterest <- regionofinterest - 10*length(regionofinterest)}
+    if( jump == jumpschoices[7] ){regionofinterest <- regionofinterest - 100*length(regionofinterest)}
+    if( jump == jumpschoices[8] ){regionofinterest <- regionofinterest - 1000*length(regionofinterest)}
+    if( regionofinterest[1] <= 0 ){regionofinterest <-  c(1:length(regionofinterest))}
+    if( regionofinterest[length(regionofinterest)]  >=  length(WaveData[ , 1]) ){regionofinterest  <- c(length(WaveData[ , 1]) - length(regionofinterest)):length(WaveData[ , 1])}
+    
     next 
   }
   
