@@ -41,18 +41,42 @@ return(output)
 
 }
 
+LoadSingleDiscreteDataHeartRates <- function(subList , path)
+{
+  # Function to load and process a set of discrete data files.
+  
+  PatientCode <- subList
+  load(paste0(path , '\\' , PatientCode , '\\' , 'Zip_out\\' , 'Discrete_', PatientCode , '.RData'))
+  sub_pat = subset(PatIndex2017, PseudoId %in% PatientCode)
+    
+  HeartRate <- ExtractHeartratefromDiscreteData(DiscDataTrim)
+  DiscreteDataSet <- HeartRate
+  MetaData <- sub_pat
+
+output <- list(DiscreteDataSet , MetaData)
+output <- setNames(output , c('Data' , 'MetaData'))
+return(output)
+}  
+
+
 DetectAFDiscreteHeartRateApproach <- function( DiscreteDataSet , HeartRatethreshold = 130 , Window = 100 )
 {
   
-Filter <- c(rep(1 , Window) , rep(0 , Window) )
+#Filter <- c(rep(1 , Window) , rep(0 , Window) )
 AbnormalHeartRateLogical <- list()
 
 for( i in c(1:length(DiscreteDataSet)) )
 {
-  AbnormalHeartRateLogical[[i]] <- DiscreteDataSet[[i]][[2]] > HeartRatethreshold
-  AbnormalHeartRateLogical[[i]] <- imfilter1D(AbnormalHeartRateLogical[[i]] , Filter)
+  if(length(DiscreteDataSet[[i]]$HeartRate$tt) < 1000)
+  {
+    AbnormalHeartRateLogical[[i]]<-0*DiscreteDataSet[[i]]$HeartRate$HeartRate
+    next
+  }
+    
+  AbnormalHeartRateLogical[[i]] <- cumsum(DiscreteDataSet[[i]]$HeartRate$HeartRate > HeartRatethreshold)
+  AbnormalHeartRateLogical[[i]] <- AbnormalHeartRateLogical[[i]][(Window+1):length(AbnormalHeartRateLogical[[i]])] - AbnormalHeartRateLogical[[i]][1:(length(AbnormalHeartRateLogical[[i]]) - Window)] 
+  #AbnormalHeartRateLogical[[i]] <- imfilter1D(AbnormalHeartRateLogical[[i]] , Filter)
 }
-
   return(AbnormalHeartRateLogical)
 }
 
@@ -94,4 +118,21 @@ Totalfalsepositives <- FindNumberUniques(as.vector(lapply(Totalfalsepositives , 
 Totalfalsenegatives <- FindNumberUniques(as.vector(lapply(Totalfalsenegatives , Srinklist )))
 output <- list(Totalfalsepositives , Totalfalsenegatives)
 output <- setNames(output , c('FalsePositives' , 'FalseNegatives'))
+}
+
+ComputeLocalandGlobalSecondOrderStatistics <- function(DiscreteDataSet , Window = 500  , Window2 = 100)
+{
+
+  DiscreteDataSet$HeartRate$HeartRate[is.na(DiscreteDataSet$HeartRate$HeartRate)] <- mean(DiscreteDataSet$HeartRate$HeartRate , rm.na = TRUE)
+  GlobalComponent <- smth( DiscreteDataSet$HeartRate$HeartRate , Window , method = 'sma')
+  LocalComponent <- smth( DiscreteDataSet$HeartRate$HeartRate - GlobalComponent , Window2, method = 'sma')
+  VarLocalCompnent <- smth( (DiscreteDataSet$HeartRate$HeartRate - GlobalComponent)^2 , Window2  , method = 'sma' ) - LocalComponent^2
+  output <- setNames( 
+    data.frame( DiscreteDataSet$HeartRate$tt[(Window + Window2) : length(GlobalComponent)]
+                , GlobalComponent[(Window + Window2) : length(GlobalComponent)] 
+                , LocalComponent[(Window + Window2) : length(GlobalComponent)] 
+                , VarLocalCompnent[(Window + Window2) : length(GlobalComponent)]) 
+                , c( 't', 'Glo' , 'Lo' , 'V_L'))
+  
+  return(output)
 }

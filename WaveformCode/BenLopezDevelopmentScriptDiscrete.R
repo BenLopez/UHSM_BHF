@@ -20,6 +20,7 @@ path = choose.dir(caption="Select folder containing data repository")
 listAllPatients = list.dirs(path = path, full.names = FALSE, recursive = FALSE)
 subList = select.list(listAllPatients, preselect = NULL, multiple = TRUE, title = NULL, graphics = TRUE )
 
+DataSet <- LoadSetofDiscreteDataHeartRates( subList , Path)
 
 j <- 1
 plot(DiscreteData[[j]]$tt - DiscreteData[[j]]$tt[1] , c((cumsum(DiscreteData[[j]]$HeartRate > 130))) , type ='l' , ylim = c(0,500) , xlab ='Time (seconds) from Beginning of Recording' , ylab ='Number of Intervals With HeartRate over 130')
