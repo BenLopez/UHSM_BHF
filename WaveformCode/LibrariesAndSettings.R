@@ -26,5 +26,6 @@ source("PeakExtractionSourceCode.R")
 source('EmulationSourceCode.R')
 source('BayesLinearDynamicUpdateSourceCode.R')
 source('DiscreteAnalysisSourceFunctions.R')
+source('ASWFSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

@@ -55,16 +55,37 @@ numberhoursafter = as.numeric(select.list(numberhours
                                           ,title = 'Select number of hours after.'
                                           , graphics = TRUE ))
 
-WaveData <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
-WaveData <- ReturnWaveformwithPositiveOrientation(WaveData)
+ECGI <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
+ECGI <- ReturnWaveformwithPositiveOrientation(ECGI)
 
-DataSet$Data <-  DataSet$Data[ ((DataSet$Data$tt > WaveData$Date[1])*(DataSet$Data$tt < WaveData$Date[length( WaveData$Date)]) == 1), ]
+# Load wave form data 
+for(i in 1:(numberrep+1))
+{
+  if(i > (numberrep))
+  {
+    stop('Error: No ECGII data processed.') 
+    break
+  }
+  if(file.exists(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGII_' , subList , '.RData' )))
+  {
+    load(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGII_' , subList , '.RData' ))
+    break 
+  }  
+}
+
+ECGII <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
+ECGII <- ReturnWaveformwithPositiveOrientation( ECGII )
+rm( WaveData )
+
+
+DataSet$Data <-  DataSet$Data[ ((DataSet$Data$tt > ECGI$Date[1])*(DataSet$Data$tt < ECGI$Date[length( ECGI$Date)]) == 1), ]
 
 print('Extracing RA and R-R times')
-RWaveExtractedData <- RPeakExtractionWavelet( WaveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
+RWaveExtractedDataI <- RPeakExtractionWavelet( ECGI , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
+#RWaveExtractedDataII <- RPeakExtractionWavelet( WaveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
 print('RA and R-R times Extracted')
 
-timelist <- as.vector(as.character(round.POSIXt(WaveData[, 1] , units = 'mins')))
+timelist <- as.vector(as.character(round.POSIXt(ECGI[, 1] , units = 'mins')))
 
 startindex = which(timelist == (select.list(unique(timelist)
                                             , preselect = NULL
@@ -80,17 +101,20 @@ timeinterval <- as.numeric(select.list(unique(timeintervaloptions)
                                        , title = 'Select number of seconds of full ECG to be viewed'
                                        , graphics = TRUE ))
 
-endindex <- startindex + (round(timeinterval / as.numeric(abs(WaveData$Date[1]- WaveData$Date[2]))))
+endindex <- startindex + (round(timeinterval / as.numeric(abs(ECGI$Date[1]- ECGI$Date[2]))))
 regionofinterest <- startindex:endindex
 
+startindex <- which.min( abs(ECGII[ , 1] - ECGI[ regionofinterest[1] , 1]) )
+endindex <- startindex + length(regionofinterest)
+regionofinterest2 <- startindex:endindex
 
-p1 <- ggplot(RWaveExtractedData , aes(t , RA)) + 
+p1 <- ggplot(RWaveExtractedDataI , aes(t , RA)) + 
   geom_point(colour="blue", alpha=0.01) +
   ggtitle('R-amplitudes') +
   xlab("t") +
   ylab("RA") + coord_cartesian(ylim = c(50, 200)) 
 
-p2 <- ggplot(RWaveExtractedData , aes(t , RR)) +
+p2 <- ggplot(RWaveExtractedDataI , aes(t , RR)) +
   geom_point(colour="blue", alpha=0.01) +
   xlab("t") +
   ylab("RR") + coord_cartesian(ylim = c(0.4, 1.2)) 

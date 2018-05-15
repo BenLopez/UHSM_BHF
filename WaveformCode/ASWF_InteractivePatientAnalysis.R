@@ -2,21 +2,25 @@
 interactivemode <- 1
 while(interactivemode == 1){
   
-  p3 <- ggplot(WaveData[regionofinterest , ] , aes(Date , Value)) +
+  p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
     geom_line(colour="blue") +
-    geom_point(data = RWaveExtractedData[ ((RWaveExtractedData$t > WaveData$Date[regionofinterest[1]])*(RWaveExtractedData$t < WaveData$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) )
+    geom_point(data = RWaveExtractedDataI[ ((RWaveExtractedDataI$t > ECGI$Date[regionofinterest[1]])*(RWaveExtractedDataI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) )
+  p5 <- ggplot(ECGII[regionofinterest2 , ] , aes(Date , Value)) +
+    geom_line(colour="blue")
+  
   dev.off(4)
-  x11(12,7)
-  print(grid.arrange(  p3 + ggtitle(paste0(DataSet$MetaData$PseudoId , '  ' ,  WaveData$Date[regionofinterest[1]])) ,
-                       p1 + geom_vline( xintercept = as.numeric(WaveData[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
-                         geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
+  x11(15,10)
+  print(grid.arrange(  p3 + ggtitle(paste0('ECGI ' , DataSet$MetaData$PseudoId , '  ' ,  ECGI$Date[regionofinterest[1]])) ,
+                       p5 + ggtitle('ECGII') , 
+                       p1 + geom_vline( xintercept = as.numeric(ECGI[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
+                         geom_vline( xintercept = as.numeric(ECGI[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
                          geom_vline( xintercept = as.numeric( as.POSIXct( DataSet$MetaData$FirstNewAF) ) , linetype="dashed" , color = "purple" ) ,
-                       p2 + geom_vline( xintercept = as.numeric(WaveData[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
-                         geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
+                       p2 + geom_vline( xintercept = as.numeric(ECGI[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
+                         geom_vline( xintercept = as.numeric(ECGI[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
                          geom_vline( xintercept = as.numeric( as.POSIXct( DataSet$MetaData$FirstNewAF) ) , linetype="dashed" , color = "purple" ) +
-                         ggtitle(paste0('R-R times ' , WaveData$Date[regionofinterest[1]] )) ,
+                         ggtitle('R-R times ' ) ,
                        p4,
-                       nrow = 4 ,
+                       nrow = 5 ,
                        ncol = 1) )
   Sys.sleep(0.1)
   UserResponse <- winDialog(type = c('yesnocancel') , message = 'Would you like to view another time period?')
@@ -37,16 +41,12 @@ if(UserResponse == 'YES')
                           , title = 'Select number of hours before.'
                           , graphics = TRUE )
     
-    if( jump == jumpschoices[1] ){ regionofinterest <- regionofinterest + length(regionofinterest) }
-    if( jump == jumpschoices[2] ){ regionofinterest <- regionofinterest + 10*length(regionofinterest) }
-    if( jump == jumpschoices[3] ){ regionofinterest <- regionofinterest + 100*length(regionofinterest) }
-    if( jump == jumpschoices[4] ){ regionofinterest <- regionofinterest + 1000*length(regionofinterest) }
-    if( jump == jumpschoices[5] ){ regionofinterest <- regionofinterest - length(regionofinterest) }
-    if( jump == jumpschoices[6] ){ regionofinterest <- regionofinterest - 10*length(regionofinterest) }
-    if( jump == jumpschoices[7] ){ regionofinterest <- regionofinterest - 100*length(regionofinterest) }
-    if( jump == jumpschoices[8] ){ regionofinterest <- regionofinterest - 1000*length(regionofinterest) }
-    if( regionofinterest[1] <= 0 ){ regionofinterest <-  c(1:length(regionofinterest)) }
-    if( regionofinterest[length(regionofinterest)]  >=  length(WaveData[ , 1]) ){regionofinterest  <- c(length(WaveData[ , 1]) - length(regionofinterest)):length(WaveData[ , 1])}
+    
+    regionofinterest <- ASWF_SegmentChange(regionofinterest , jump)
+    regionofinterest2 <- ASWF_SegmentChange(regionofinterest2 , jump)
+    regionofinterest <- ASWF_Truncatetoregionwithdata(regionofinterest , ECGI)
+    regionofinterest2 <- ASWF_Truncatetoregionwithdata(regionofinterest2 , ECGII)
+    
     next 
 }
   
