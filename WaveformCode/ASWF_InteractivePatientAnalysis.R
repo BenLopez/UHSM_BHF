@@ -6,7 +6,7 @@ while(interactivemode == 1){
     geom_line(colour="blue") +
     geom_point(data = RWaveExtractedData[ ((RWaveExtractedData$t > WaveData$Date[regionofinterest[1]])*(RWaveExtractedData$t < WaveData$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) )
   dev.off(4)
-  x11()
+  x11(12,7)
   print(grid.arrange(  p3 ,
                        p1 + geom_vline( xintercept = as.numeric(WaveData[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
                          geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) ,

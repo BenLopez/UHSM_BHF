@@ -13,7 +13,7 @@ myplot <- ggplot( df , aes(x,y))  + geom_point(colour="blue", alpha=0.009) +
   geom_hline( yintercept = 60  , linetype="dashed" , color = "blue" )  +
   geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$FirstNewAF[1])) , linetype="dashed" , color = "black" ) +
   geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$LastITUEntry[1])) , linetype="dashed" , color = "red" ) 
-x11()
+x11(12 , 7)
 print(myplot)
 
 interestingtimepoint <- which( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours')))) 
@@ -75,7 +75,7 @@ startindex <- startindex[1]
 
 timeintervaloptions <- as.character(c(1:100))
 timeinterval <- as.numeric(select.list(unique(timeintervaloptions)
-                                       , preselect = '25'
+                                       , preselect = '10'
                                        , multiple = FALSE
                                        , title = 'Select number of seconds of full ECG to be viewed'
                                        , graphics = TRUE ))
