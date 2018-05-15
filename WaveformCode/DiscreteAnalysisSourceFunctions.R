@@ -1,8 +1,8 @@
 ExtractHeartratefromDiscreteData <- function(DiscDataTrim)
 {
   # function to extract heartrate from discretedata and sort into appropriate order.
-  HeartRate <- DiscDataTrim$Value[DiscDataTrim$VarName == DiscDataTrim$VarName[3]]
-  tt <- DiscDataTrim$Date[DiscDataTrim$VarName == DiscDataTrim$VarName[3]]
+  HeartRate <- DiscDataTrim$Value[DiscDataTrim$VarName == 'HR']
+  tt <- DiscDataTrim$Date[DiscDataTrim$VarName == 'HR']
   HeartRate <- data.frame(tt , HeartRate)
   HeartRate <- HeartRate[order(HeartRate$tt) , ]
   output <- data.frame(HeartRate)

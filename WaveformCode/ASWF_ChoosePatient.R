@@ -15,7 +15,7 @@ for(i in 1:(numberrep+1))
   }
   if(file.exists(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'Discrete_' , subList , '.RData' )))
   {
-    DataSet <- LoadSingleDiscreteDataHeartRates( subList , path[[i]])
+    DataSet <- LoadSingleDiscreteDataHeartRates( subList , path[[i]] )
     break 
   }  
 }
