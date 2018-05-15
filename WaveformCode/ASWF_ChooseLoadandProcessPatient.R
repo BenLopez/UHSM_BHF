@@ -11,7 +11,8 @@ myplot <- ggplot( df , aes(x,y))  + geom_point(colour="blue", alpha=0.009) +
   geom_hline( yintercept = 130 , linetype="dashed" , color = "red" ) + 
   geom_hline( yintercept = 100 , linetype="dashed" , color = "black" ) +
   geom_hline( yintercept = 60  , linetype="dashed" , color = "blue" )  +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$FirstNewAF[1])) , linetype="dashed" , color = "black" ) 
+  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$FirstNewAF[1])) , linetype="dashed" , color = "black" ) +
+  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$LastITUEntry[1])) , linetype="dashed" , color = "red" ) 
 x11()
 print(myplot)
 
@@ -79,7 +80,7 @@ timeinterval <- as.numeric(select.list(unique(timeintervaloptions)
                                        , title = 'Select number of seconds of full ECG to be viewed'
                                        , graphics = TRUE ))
 
-endindex <- startindex + (round(timeinterval)/0.005)
+endindex <- startindex + (round(timeinterval / as.numeric(abs(WaveData$Date[1]- WaveData$Date[2]))))
 regionofinterest <- startindex:endindex
 
 
