@@ -11,9 +11,9 @@ path_PatIndex <- choose.files(caption="Select 2017 (2) PatientIndex.csv file")
 PatIndex2017  <- rbind(PatIndex2017 , read.csv(file=path_PatIndex, stringsAsFactors = FALSE))
 
 path <- choose.files(caption="choose ReducedExtractedDiscreteData.RData")
-load(path)
+load( path )
 path <- choose.files(caption="choose GroupofNonAFPatients.RData")
-load(path)
+load( path )
 
 # Remove data with under 100
 DataSet <- DataSet[(as.matrix(lapply(DataSet , function(X){length(X[[1]]$tt)})) > 5000)]

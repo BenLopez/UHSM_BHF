@@ -11,14 +11,13 @@ myplot <- ggplot( df , aes(x,y))  + geom_point(colour="blue", alpha=0.009) +
   geom_hline( yintercept = 130 , linetype="dashed" , color = "red" ) + 
   geom_hline( yintercept = 100 , linetype="dashed" , color = "black" ) +
   geom_hline( yintercept = 60  , linetype="dashed" , color = "blue" )  +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$FirstNewAF)) , linetype="dashed" , color = "black" ) 
+  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$FirstNewAF[1])) , linetype="dashed" , color = "black" ) 
 x11()
 print(myplot)
 
-
 interestingtimepoint <- which( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours')))) 
   == select.list(as.vector(as.character(unique(round.POSIXt(DataSet$Data$tt , units = c('hours')))))
-   , preselect = DataSet$MetaData$FirstNewAF
+   , preselect = DataSet$MetaData$FirstNewAF[1]
    , multiple = FALSE
    , title = 'Select Interest Time Point'
    , graphics = TRUE ))
@@ -92,7 +91,6 @@ p1 <- ggplot(RWaveExtractedData , aes(t , RA)) +
 
 p2 <- ggplot(RWaveExtractedData , aes(t , RR)) +
   geom_point(colour="blue", alpha=0.01) +
-  ggtitle('R-R times') +
   xlab("t") +
   ylab("RR") + coord_cartesian(ylim = c(0.4, 1.2)) 
 
