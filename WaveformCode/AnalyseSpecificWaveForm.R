@@ -20,5 +20,4 @@ if(i > 1){   listAllPatients <- rbind( listAllPatients , as.matrix(list.dirs(pat
 }
   
 source( 'ASWF_ChooseLoadandProcessPatient.R' )
-
-source( 'ASWF_InteractivePatientAnalysis.R' )
+source( 'ASWF_InteractivePatientAnalysis.R'  )

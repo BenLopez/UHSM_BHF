@@ -7,15 +7,17 @@ while(interactivemode == 1){
     geom_point(data = RWaveExtractedData[ ((RWaveExtractedData$t > WaveData$Date[regionofinterest[1]])*(RWaveExtractedData$t < WaveData$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) )
   dev.off(4)
   x11(12,7)
-  print(grid.arrange(  p3 ,
+  print(grid.arrange(  p3 + ggtitle(paste0(DataSet$MetaData$PseudoId , '  ' ,  WaveData$Date[regionofinterest[1]])) ,
                        p1 + geom_vline( xintercept = as.numeric(WaveData[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
-                         geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) ,
+                         geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
+                         geom_vline( xintercept = as.numeric( as.POSIXct( DataSet$MetaData$FirstNewAF) ) , linetype="dashed" , color = "purple" ) ,
                        p2 + geom_vline( xintercept = as.numeric(WaveData[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
-                         geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" )+
+                         geom_vline( xintercept = as.numeric(WaveData[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
+                         geom_vline( xintercept = as.numeric( as.POSIXct( DataSet$MetaData$FirstNewAF) ) , linetype="dashed" , color = "purple" ) +
                          ggtitle(paste0('R-R times ' , WaveData$Date[regionofinterest[1]] )) ,
                        p4,
                        nrow = 4 ,
-                       ncol = 1))
+                       ncol = 1) )
   Sys.sleep(0.1)
   UserResponse <- winDialog(type = c('yesnocancel') , message = 'Would you like to view another time period?')
   

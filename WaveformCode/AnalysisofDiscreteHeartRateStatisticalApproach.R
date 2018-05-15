@@ -10,9 +10,9 @@ PatIndex2017  <- read.csv(file=path_PatIndex, stringsAsFactors = FALSE)
 path_PatIndex <- choose.files(caption="Select 2017 (2) PatientIndex.csv file")
 PatIndex2017  <- rbind(PatIndex2017 , read.csv(file=path_PatIndex, stringsAsFactors = FALSE))
 
-path <- choose.files(caption="choose ReducedExtractedDiscreteData.RData")
+path <- choose.files( caption="choose ReducedExtractedDiscreteData.RData" )
 load( path )
-path <- choose.files(caption="choose GroupofNonAFPatients.RData")
+path <- choose.files( caption="choose GroupofNonAFPatients.RData" )
 load( path )
 
 # Remove data with under 100

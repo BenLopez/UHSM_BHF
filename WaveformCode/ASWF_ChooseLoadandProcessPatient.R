@@ -86,7 +86,7 @@ regionofinterest <- startindex:endindex
 
 p1 <- ggplot(RWaveExtractedData , aes(t , RA)) + 
   geom_point(colour="blue", alpha=0.01) +
-  ggtitle('R-amplitdes') +
+  ggtitle('R-amplitudes') +
   xlab("t") +
   ylab("RA") + coord_cartesian(ylim = c(50, 200)) 
 
