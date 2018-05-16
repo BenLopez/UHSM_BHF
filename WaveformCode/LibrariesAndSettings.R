@@ -27,5 +27,6 @@ source('EmulationSourceCode.R')
 source('BayesLinearDynamicUpdateSourceCode.R')
 source('DiscreteAnalysisSourceFunctions.R')
 source('ASWFSourceFunctions.R')
+source('AccessandLoadingDataSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

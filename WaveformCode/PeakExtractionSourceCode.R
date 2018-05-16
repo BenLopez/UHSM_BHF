@@ -279,3 +279,24 @@ output<-WaveData
 return(output)
 }
 
+CleanRpeaks <- function( RWaveExtractedData , threshold = 2 )
+{
+  
+  # Function to clean R peaks by removing outliers caused by data gaps and missed beats.
+  RWaveExtractedData$RR[RWaveExtractedData$RR > threshold] <- median(RWaveExtractedData$RR)
+  
+  m <- smth(RWaveExtractedData$RR , method = 'sma' , n = 100)
+  m[is.na(m)] <- mean( m  , rm.na = TRUE)
+  mm <- abs(RWaveExtractedData$RR - m)
+  
+  m <- smth(mm , method = 'sma' , n = 100)
+  m[is.na(m)] <- mean( m  , rm.na = TRUE)
+  
+  v <- smth(mm , method = 'sma' , n = 100) - m^2
+  v[is.na(m)] <- mean( v , rm.na = TRUE)
+  stdresid <- abs((mm - m)/sqrt(v)) 
+    
+  RWaveExtractedData$RR[stdresid > 2] <- median(RWaveExtractedData$RR)
+  
+  return(RWaveExtractedData)
+}

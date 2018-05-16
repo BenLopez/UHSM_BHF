@@ -3,6 +3,12 @@ pathFiles = choose.dir(caption="Select folder with source code")
 pathFiles = paste0(pathFiles, "\\")
 
 ##### Select file PatientIndex.csv if it exists
+
+filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
+            title = 'Choose File Type', graphics = TRUE )
+
+if(filetype == 'csv')
+{
 path_PatIndex = choose.files(caption="Select 2017 PatientIndex.csv file")
 
 if(length(path_PatIndex)>0){
@@ -12,6 +18,12 @@ if(length(path_PatIndex)>0){
 } else {
   warning("No Patient Info provided")
   sub_pat = list()
+}
+}
+if(filetype = 'RData')
+{
+  path_PatIndex =  choose.files()
+  load(path_PatIndex)
 }
 
 choose_outputs = c(0,0,1) #csv, mat, rdata --- DO NOT USE MAT, needs testing, very slow
