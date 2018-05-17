@@ -5,7 +5,7 @@ pathFiles = paste0(pathFiles, "\\")
 ##### Select file PatientIndex.csv if it exists
 
 filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
-            title = 'Choose File Type', graphics = TRUE )
+            title = 'Choose File Type For Patient Index', graphics = TRUE )
 
 if(filetype == 'csv')
 {

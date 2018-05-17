@@ -1,6 +1,5 @@
 source('ASWF_ChoosePatient.R')
 
-
 # Plot discrete data
 plot(1)
 dev.off()
@@ -24,8 +23,6 @@ interestingtimepoint <- which( as.vector(as.character(round.POSIXt(DataSet$Data$
    , graphics = TRUE ))
 
 
-
-
 # Load wave form data 
 for(i in 1:(numberrep+1))
 {
@@ -44,11 +41,13 @@ for(i in 1:(numberrep+1))
 timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint] , units = 'secs')) )
 
 numberhours <- c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
+
 numberhoursbefore = as.numeric(select.list(numberhours
                                            , preselect = '5'
                                            , multiple = FALSE
                                            ,title = 'Select number of hours before.'
                                            , graphics = TRUE ))
+
 numberhoursafter = as.numeric(select.list(numberhours
                                           , preselect = '1'
                                           , multiple = FALSE
@@ -117,7 +116,7 @@ p1 <- ggplot(RWaveExtractedDataI , aes(t , RA)) +
 p2 <- ggplot(RWaveExtractedDataI , aes(t , RR)) +
   geom_point(colour="blue", alpha=0.01) +
   xlab("t") +
-  ylab("RR") + coord_cartesian(ylim = c(0.4, 1.2)) 
+  ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2)) 
 
 p4 <- ggplot(DataSet$Data , aes(tt , HeartRate)) +
   geom_point(colour="blue", alpha=0.1) +
