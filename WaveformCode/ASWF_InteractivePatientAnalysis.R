@@ -36,7 +36,7 @@ while(interactivemode == 1){
 if(UserResponse == 'YES')
 {
     
-    jumpschoices <- c('next Segment' , 'next 10' , 'next 100' , 'next 1000' , 'previous Segment' , 'previous 10' , 'previous 100' , 'previous 1000'  )
+    jumpschoices <- c('next Segment' , 'next 10' , 'next 100' , 'next 500' , 'next 1000' , 'previous Segment' , 'previous 10' , 'previous 100' , 'previous 500' ,'previous 1000'  )
     jump <- select.list(  jumpschoices
                           , preselect = jumpschoices[1]
                           , multiple = FALSE
