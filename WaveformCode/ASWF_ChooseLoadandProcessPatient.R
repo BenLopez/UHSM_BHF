@@ -3,8 +3,7 @@ source('ASWF_ChoosePatient.R')
 # Plot discrete data
 plot(1)
 dev.off()
-df<- data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate )
-myplot <- ggplot( df , aes(x,y))  + geom_point(colour="blue", alpha=0.009) + 
+myplot <- ggplot( data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate ) , aes(x,y))  + geom_point(colour="blue", alpha=0.009) + 
   ggtitle(DataSet$MetaData$PseudoId) +
   xlab("Time") + ylab("Heart Rate") +
   geom_hline( yintercept = 130 , linetype="dashed" , color = "red" ) + 
@@ -71,6 +70,8 @@ for(i in 1:(numberrep+1))
     break 
   }  
 }
+
+timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint] , units = 'secs')) )
 
 ECGII <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
 ECGII <- ReturnWaveformwithPositiveOrientation( ECGII )

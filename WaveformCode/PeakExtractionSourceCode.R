@@ -268,7 +268,7 @@ return(output)
 
 ReturnWaveformwithPositiveOrientation <- function(WaveData)
 {  
-qus <- abs(quantile(WaveData$Value, probs = c(0.01 , 0.99)))
+qus <- abs(quantile(WaveData$Value, probs = c(0.01 , 0.99) , na.rm = TRUE ))
 if( as.numeric(qus[1]) > as.numeric(qus[2]) )
 {
   Date   <-   WaveData$Date 
