@@ -4,11 +4,13 @@ while(interactivemode == 1){
   
   p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
     geom_line(colour="blue") +
-    geom_point(data = RWaveExtractedDataI[ ((RWaveExtractedDataI$t > ECGI$Date[regionofinterest[1]])*(RWaveExtractedDataI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) )
+    geom_point(data = RWaveExtractedDataI[ ((RWaveExtractedDataI$t > ECGI$Date[regionofinterest[1]])*(RWaveExtractedDataI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
+    xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
   p5 <- ggplot(ECGII[regionofinterest2 , ] , aes(Date , Value)) +
-    geom_line(colour="blue")
+    geom_line(colour="blue")+
+    xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
   
-  dev.off(4)
+  dev.off()
   x11(15,10)
   print(grid.arrange(  p3 + ggtitle(paste0('ECGI ' , DataSet$MetaData$PseudoId , '  ' ,  ECGI$Date[regionofinterest[1]])) ,
                        p5 + ggtitle('ECGII') , 
@@ -46,6 +48,13 @@ if(UserResponse == 'YES')
     regionofinterest2 <- ASWF_SegmentChange(regionofinterest2 , jump)
     regionofinterest <- ASWF_Truncatetoregionwithdata(regionofinterest , ECGI)
     regionofinterest2 <- ASWF_Truncatetoregionwithdata(regionofinterest2 , ECGII)
+    
+    if( round(difftime(ECGI[regionofinterest[1] , 1] , ECGII[regionofinterest2[1] , 1] , units = 'secs')) != 0  )
+    {
+      print('Missing data realigning region of interest')
+      regionofinterest2  <- ASWF_AlignRegionofInterests(ECGI , ECGII , regionofinterest)
+    }
+    
     
     next 
 }

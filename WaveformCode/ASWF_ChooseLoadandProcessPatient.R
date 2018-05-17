@@ -103,6 +103,8 @@ timeinterval <- as.numeric(select.list(unique(timeintervaloptions)
 endindex <- startindex + (round(timeinterval / as.numeric(abs(ECGI$Date[1]- ECGI$Date[2]))))
 regionofinterest <- startindex:endindex
 
+regionofinterest2  <- ASWF_AlignRegionofInterests(ECGI , ECGII , regionofinterest)
+
 startindex <- which.min( abs(ECGII[ , 1] - ECGI[ regionofinterest[1] , 1]) )
 endindex <- startindex + length(regionofinterest)
 regionofinterest2 <- startindex:endindex

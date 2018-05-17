@@ -20,3 +20,11 @@ ASWF_Truncatetoregionwithdata <- function(regionofinterest , ECG)
 return(regionofinterest)
 }
   
+
+ASWF_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest)
+{
+  startindex <- which.min( abs(Waveform2[ , 1] - Waveform1[ regionofinterest[1] , 1]) )
+  endindex <- startindex + length(regionofinterest)
+  regionofinterest2 <- startindex:endindex
+  return(regionofinterest2)
+}
