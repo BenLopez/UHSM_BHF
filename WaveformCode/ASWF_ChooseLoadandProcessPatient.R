@@ -14,15 +14,8 @@ myplot <- ggplot( data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate )
 x11(12 , 7)
 print(myplot)
 
-interestingtimepoint <- which( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours')))) 
-  == select.list(as.vector(as.character(unique(round.POSIXt(DataSet$Data$tt , units = c('hours')))))
-   , preselect = DataSet$MetaData$FirstNewAF[1]
-   , multiple = FALSE
-   , title = 'Select Interest Time Point'
-   , graphics = TRUE ))
-
-
 # Load wave form data 
+print('Loading ECGI.')
 for(i in 1:(numberrep+1))
 {
   if(i > (numberrep))
@@ -36,8 +29,19 @@ for(i in 1:(numberrep+1))
     break 
   }  
 }
+print('ECGI Loaded.')
 
-timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint] , units = 'secs')) )
+interestingtimepoint <- which.min( abs( difftime(
+ as.POSIXct( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours'))))),
+   as.POSIXct(select.list(as.vector(as.character(unique(round.POSIXt(
+     WaveData$Date[seq(from = 1, to = length(WaveData$Date) , by =1000)] , units = c('hours')))))
+   , preselect = DataSet$MetaData$FirstNewAF[1]
+   , multiple = FALSE
+   , title = 'Select Interest Time Point'
+   , graphics = TRUE ) ), units ='hours') ))
+
+
+timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint[1]] , units = 'secs')) )
 
 numberhours <- c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
 
@@ -53,12 +57,12 @@ numberhoursafter = as.numeric(select.list(numberhours
                                           ,title = 'Select number of hours after.'
                                           , graphics = TRUE ))
 
-print('Loading ECGI.')
+
 ECGI <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
 ECGI <- ReturnWaveformwithPositiveOrientation(ECGI)
-print('ECGI Loaded.')
 
 # Load wave form data 
+print('Loading ECGII.')
 for(i in 1:(numberrep+1))
 {
   if(i > (numberrep))
@@ -72,13 +76,12 @@ for(i in 1:(numberrep+1))
     break 
   }  
 }
+print('ECGII loaded.')
 
 timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint] , units = 'secs')) )
 
-print('Load ECGII.')
 ECGII <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
 ECGII <- ReturnWaveformwithPositiveOrientation( ECGII )
-print('ECGII loaded.')
 rm( WaveData )
 
 DataSet$Data <-  DataSet$Data[ ((DataSet$Data$tt > ECGI$Date[1])*(DataSet$Data$tt < ECGI$Date[length( ECGI$Date)]) == 1), ]
