@@ -89,9 +89,9 @@ RWaveExtractedDataI <- CleanRpeaks(RPeakExtractionWavelet( ECGI , wt.filter(filt
 print('RA and R-R times Extracted.')
 
 AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
-StartEndTimesAF <- ASWF_GetStartEndAF(AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 150)  , minutethreshold = 9)
+StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 150)  , minutethreshold = 9)
 
-timelist <- as.vector(as.character(round.POSIXt(ECGI[, 1] , units = 'mins')))
+timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 
 startindex = which(timelist == (select.list(unique(timelist)
                                             , preselect = NULL
@@ -130,9 +130,13 @@ p2 <- ggplot() +
       xlab("t") +
       ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2))
 
+
+if(length(StartEndTimesAF$Start) > 0)
+{
 for( i in ( 1:length(StartEndTimesAF$Start) ) )
 {
   p2 <- p2 + annotate("rect" , xmin = StartEndTimesAF$Start[i], xmax = StartEndTimesAF$End[i], ymin = -1000, ymax= 1000 , fill = 'pink' , alpha = 0.25)
+}
 }
 
 p4 <- ggplot(DataSet$Data , aes(tt , HeartRate)) +
