@@ -3,11 +3,11 @@ interactivemode <- 1
 while(interactivemode == 1){
   
   p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
-    geom_line(colour="blue") +
+    geom_line(colour="blue") + ylab('Hz') +
     geom_point(data = RWaveExtractedDataI[ ((RWaveExtractedDataI$t > ECGI$Date[regionofinterest[1]])*(RWaveExtractedDataI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
   p5 <- ggplot(ECGII[regionofinterest2 , ] , aes(Date , Value)) +
-    geom_line(colour="blue")+
+    geom_line(colour="blue")+ ylab('Hz') +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
   
   dev.off()

@@ -284,6 +284,7 @@ CleanRpeaks <- function( RWaveExtractedData , threshold = 2 )
   
   # Function to clean R peaks by removing outliers caused by data gaps and missed beats.
   RWaveExtractedData$RR[RWaveExtractedData$RR > threshold] <- median(RWaveExtractedData$RR)
+  RWaveExtractedData$RR[RWaveExtractedData$RR < 0] <- median(RWaveExtractedData$RR)
   
   m <- smth(RWaveExtractedData$RR , method = 'sma' , n = 100)
   m[is.na(m)] <- mean( m  , rm.na = TRUE)
@@ -300,3 +301,19 @@ CleanRpeaks <- function( RWaveExtractedData , threshold = 2 )
   
   return(RWaveExtractedData)
 }
+
+ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3) , n = 250 )
+{
+  binmatrix <- matrix(0 , length( RWaveExtractedData$RR ) , length(binlims) - 1)
+  
+  for(i in 1:(length(binlims) - 1))
+  {
+    binmatrix[ , i] <- smth( (RWaveExtractedData$RR > binlims[i])*(RWaveExtractedData$RR <= binlims[i+1])  , method = 'sma'  , n = n)
+  }
+  
+  t <- RWaveExtractedData[!is.na(binmatrix[ , 1]) ,1] 
+  binmatrix <-  binmatrix[!is.na(binmatrix[ , 1]),]
+  output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , var)) , c('t' , 'IHAVFScore'))
+  return( output )
+}
+

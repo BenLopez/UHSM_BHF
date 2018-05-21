@@ -31,3 +31,15 @@ ASWF_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest
   regionofinterest2 <- startindex:endindex
   return(regionofinterest2)
 }
+
+ASWF_GetStartEndAF <- function( t , logicaltimeseries , minutethreshold = 10)
+{
+  d_logicaltimeseries <- diff(logicaltimeseries)
+  if(sum(d_logicaltimeseries) != 0)
+  {
+    d_logicaltimeseries[length(d_logicaltimeseries)] = -1
+  }
+  output <- setNames(data.frame( t[c(d_logicaltimeseries) == 1]  , t[c(d_logicaltimeseries) == -1]) , c("Start" , "End"))
+  output <- output[ difftime(output$End , output$Start , units = 'secs') > (minutethreshold*60) , ]
+  return(output)
+}

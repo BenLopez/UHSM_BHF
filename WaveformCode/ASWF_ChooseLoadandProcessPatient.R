@@ -53,8 +53,10 @@ numberhoursafter = as.numeric(select.list(numberhours
                                           ,title = 'Select number of hours after.'
                                           , graphics = TRUE ))
 
+print('Loading ECGI.')
 ECGI <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
 ECGI <- ReturnWaveformwithPositiveOrientation(ECGI)
+print('ECGI Loaded.')
 
 # Load wave form data 
 for(i in 1:(numberrep+1))
@@ -73,17 +75,21 @@ for(i in 1:(numberrep+1))
 
 timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint] , units = 'secs')) )
 
+print('Load ECGII.')
 ECGII <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
 ECGII <- ReturnWaveformwithPositiveOrientation( ECGII )
+print('ECGII loaded.')
 rm( WaveData )
-
 
 DataSet$Data <-  DataSet$Data[ ((DataSet$Data$tt > ECGI$Date[1])*(DataSet$Data$tt < ECGI$Date[length( ECGI$Date)]) == 1), ]
 
-print('Extracing RA and R-R times')
-RWaveExtractedDataI <- RPeakExtractionWavelet( ECGI , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
+print('Extracting RA and R-R times.')
+RWaveExtractedDataI <- CleanRpeaks(RPeakExtractionWavelet( ECGI , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8))
 #RWaveExtractedDataII <- RPeakExtractionWavelet( WaveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
-print('RA and R-R times Extracted')
+print('RA and R-R times Extracted.')
+
+AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
+StartEndTimesAF <- ASWF_GetStartEndAF(AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 150)  , minutethreshold = 9)
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[, 1] , units = 'mins')))
 
@@ -116,10 +122,18 @@ p1 <- ggplot(RWaveExtractedDataI , aes(t , RA)) +
   xlab("t") +
   ylab("RA") + coord_cartesian(ylim = c(50, 200)) 
 
-p2 <- ggplot(RWaveExtractedDataI , aes(t , RR)) +
-  geom_point(colour="blue", alpha=0.01) +
-  xlab("t") +
-  ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2)) 
+
+p2 <- ggplot() + 
+      geom_line( data = AFScore , aes(x = t , y = IHAVFScore/300) , colour ='red' , alpha = 0.25)  + 
+      geom_point(data = RWaveExtractedDataI  , aes(x = t , y = RR) , colour="blue", alpha=0.01)+
+      scale_y_continuous(sec.axis = sec_axis(~.*300, name = "AF Score")) +
+      xlab("t") +
+      ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2))
+
+for( i in ( 1:length(StartEndTimesAF$Start) ) )
+{
+  p2 <- p2 + annotate("rect" , xmin = StartEndTimesAF$Start[i], xmax = StartEndTimesAF$End[i], ymin = -1000, ymax= 1000 , fill = 'pink' , alpha = 0.25)
+}
 
 p4 <- ggplot(DataSet$Data , aes(tt , HeartRate)) +
   geom_point(colour="blue", alpha=0.1) +
