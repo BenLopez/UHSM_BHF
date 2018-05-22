@@ -1,3 +1,14 @@
+
+pathZIPs = paste0(path,"\\",PatientCode,"\\Zip_out\\")
+
+if ( file.exists(paste0( pathZIPs , 'ECGI_' ,  PatientCode , '.RData') )  & 
+     file.exists(paste0( pathZIPs , 'ECGII_' ,  PatientCode, '.RData') ) & 
+     file.exists(paste0( pathZIPs , 'ECGIII_' ,  PatientCode, '.RData') ) &
+     file.exists(paste0( pathZIPs , 'Discrete_' ,  PatientCode, '.RData') ) )
+{
+print(paste0('All ECG files processed for' , PatientCode , ' moving to next patient'))
+next}
+
 zip_files = list.files(path = paste0(path,"\\",PatientCode),pattern="*\\.zip*$")
 filesInZip = unlist(lapply(zip_files,function(filename){unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Name}))
 
@@ -49,7 +60,7 @@ dir.create(pathOutFilesExtra, showWarnings = FALSE)
 
 # Discrete Data -----------------------------------------------------------
 
-if(length(Disc_files)>0 & ("Discrete" %in% chooseWave2Read)){
+if(length(Disc_files)>0 & ("Discrete" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'Discrete_' ,  PatientCode, '.RData') ) == FALSE){
   print("Reading Discrete Data")
   source(paste0(pathFiles,"/sourceDiscrete.R"), echo = TRUE)
 }
@@ -64,7 +75,7 @@ pathIn = paste0(path,"\\",PatientCode,"\\")
 options(warn = -1)
 
 #### Lead I
-if (length(ECGI_files)>0 & ("ECGI" %in% chooseWave2Read)){
+if ( length(ECGI_files)>0 & ("ECGI" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'ECGI_' ,  PatientCode, '.RData') ) == FALSE ){
 readWriteWave(ECGI_files,
               cleanWave,
               sub_pat,
@@ -77,7 +88,7 @@ readWriteWave(ECGI_files,
 # path = pathIn
 
 #### Lead 2
-if (length(ECGII_files)>0 & ("ECGII" %in% chooseWave2Read)){
+if (length(ECGII_files)>0 & ("ECGII" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'ECGII_' ,  PatientCode, '.RData')) == FALSE){
 readWriteWave(ECGII_files,
               cleanWave,
               sub_pat,
@@ -85,7 +96,7 @@ readWriteWave(ECGII_files,
               "ECGII", pathIn, pathOutFilesExtra, Use7z, UseZip)
 }
 #### Lead 3
-if (length(ECGIII_files)>0 & ("ECGIII" %in% chooseWave2Read)){
+if (length(ECGIII_files)>0 & ("ECGIII" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'ECGIII_' ,  PatientCode, '.RData')) == FALSE){
 readWriteWave(ECGIII_files,
               cleanWave,
               sub_pat,

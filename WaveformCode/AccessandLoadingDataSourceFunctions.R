@@ -149,3 +149,20 @@ DP_CropWaveData <- function(WaveData , timeindex , HoursBeforeAndAFter)
   WaveData <- ReturnWaveformwithPositiveOrientation(WaveData)
   return(WaveData)
 }
+
+DP_FindNumberUniques <- function(X)
+{
+  # Function to find number of unique values in a column vector.
+  values <- unique(X)
+  n <- matrix(0 , length(values) , 1)
+  nn <- matrix(0 , length(values) , 1)
+  for(i in 1:length(values))
+  {
+    n[i] <- sum( X == values[[i]])  
+    
+    if(is.factor(values[[i]])){ nn[i] <- as.character(values[[i]])} else {nn[i] <- values[[i]]}
+  }
+  output <- data.frame( nn , n)
+  output <- setNames(output , c('values' , 'n'))
+  return(output) 
+}
