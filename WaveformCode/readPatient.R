@@ -3,8 +3,7 @@ pathZIPs = paste0(path,"\\",PatientCode,"\\Zip_out\\")
 
 if ( file.exists(paste0( pathZIPs , 'ECGI_' ,  PatientCode , '.RData') )  & 
      file.exists(paste0( pathZIPs , 'ECGII_' ,  PatientCode, '.RData') ) & 
-     file.exists(paste0( pathZIPs , 'ECGIII_' ,  PatientCode, '.RData') ) &
-     file.exists(paste0( pathZIPs , 'Discrete_' ,  PatientCode, '.RData') ) )
+     file.exists(paste0( pathZIPs , 'ECGIII_' ,  PatientCode, '.RData') ) )
 {
 print(paste0('All ECG files processed for' , PatientCode , ' moving to next patient'))
 next}

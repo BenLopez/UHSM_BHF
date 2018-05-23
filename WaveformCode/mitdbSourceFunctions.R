@@ -65,7 +65,7 @@ mitdb_ComputePeakresults <- function( WaveData , Annotation )
   
   ExtraPeaks <- minindex[minvalue > (4*0.005)] 
   FP <- length(ExtraPeaks)
-  TP <- P - length(ExtraPeaks)
+  TP <- P - length(MissedPeaks)
   
   Sen  <-  TP / P 
   Spec <-  TN / N

@@ -1,6 +1,4 @@
-pathFiles <- choose.dir(caption="Select folder with source code.")
-pathFiles <- paste0(pathFiles, "\\")
-setwd(pathFiles)
+pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
 
 source("LibrariesAndSettings.R" , print.eval  = TRUE )
 

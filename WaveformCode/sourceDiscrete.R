@@ -10,7 +10,10 @@ print("Discrete Combined")
 
 #Use Patient Index to trim data
 if(length(path_PatIndex)>0){
-  PatIndex2017 = read.csv(file=path_PatIndex, stringsAsFactors = FALSE)
+# Don't know why this is loaded in again.  
+  if(filetype == 'csv'){PatIndex2017 = read.csv(file=path_PatIndex, stringsAsFactors = FALSE)}
+  if(filetype == 'RData'){load(path_PatIndex)}
+  
   sub_pat = subset(PatIndex2017, PseudoId %in% PatientCode)
   if(nrow(sub_pat) >0){
   DiscData$FirstITUEntry = as.POSIXct(sub_pat$FirstITUEntry)
