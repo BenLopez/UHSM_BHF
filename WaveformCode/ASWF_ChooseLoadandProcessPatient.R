@@ -92,7 +92,7 @@ RWaveExtractedDataI <- CleanRpeaks(RPeakExtractionWavelet( ECGI , wt.filter(filt
 print('RA and R-R times Extracted.')
 
 AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
-StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 150)  , minutethreshold = 9)
+StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 145)  , minutethreshold = 9)
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 

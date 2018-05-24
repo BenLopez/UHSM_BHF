@@ -34,6 +34,7 @@ ASWF_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest
 
 ASWF_GetStartEndAF <- function( t , logicaltimeseries , minutethreshold = 10)
 {
+  logicaltimeseries[length(logicaltimeseries)] = FALSE
   d_logicaltimeseries <- diff(logicaltimeseries)
   if(sum(d_logicaltimeseries) == 1)
   {

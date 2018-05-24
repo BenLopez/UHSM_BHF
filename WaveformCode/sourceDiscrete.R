@@ -16,8 +16,8 @@ if(length(path_PatIndex)>0){
   
   sub_pat = subset(PatIndex2017, PseudoId %in% PatientCode)
   if(nrow(sub_pat) >0){
-  DiscData$FirstITUEntry = as.POSIXct(sub_pat$FirstITUEntry)
-  DiscData$LastITUEntry = as.POSIXct(sub_pat$LastITUEntry)
+  FirstITUEntry = as.POSIXct(sub_pat$FirstITUEntry)
+  LastITUEntry = as.POSIXct(sub_pat$LastITUEntry)
   } else{
     sub_pat = list()
     DiscData$FirstITUEntry = min(DiscData$Date)
@@ -39,7 +39,7 @@ if (choose_outputs[2] == 1){
 }
 
 #Remove excess data end
-DiscData$InInterval = DiscData$Date > DiscData$LastITUEntry
+DiscData$InInterval = DiscData$Date > LastITUEntry[1]
 
 DiscData = aggregate(Value ~ ., data = DiscData, mean, na.rm = TRUE)
 
@@ -61,7 +61,7 @@ if (dim(ExtraDisc)[1]>0){
 }
 
 #Remove excess data beginning
-DiscData$InInterval = DiscData$Date < DiscData$FirstITUEntry
+DiscData$InInterval = DiscData$Date < FirstITUEntry[1]
 ExtraDisc = subset(DiscData, DiscData$InInterval == TRUE)
 if (dim(ExtraDisc)[1]>0){
   ExtraDisc$LastITUEntry = NULL
@@ -80,7 +80,7 @@ if (dim(ExtraDisc)[1]>0){
 
 rm(ExtraDisc)
 
-DiscData$InInterval = (DiscData$Date > DiscData$LastITUEntry) | (DiscData$Date < DiscData$FirstITUEntry)
+DiscData$InInterval = (DiscData$Date > LastITUEntry[1]) | (DiscData$Date < FirstITUEntry)
 
 DiscDataTrim = subset(DiscData, DiscData$InInterval == FALSE)
 
