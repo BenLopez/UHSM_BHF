@@ -1,12 +1,15 @@
 
 pathZIPs = paste0(path,"\\",PatientCode,"\\Zip_out\\")
 
-if ( file.exists(paste0( pathZIPs , 'ECGI_' ,  PatientCode , '.RData') )  & 
-     file.exists(paste0( pathZIPs , 'ECGII_' ,  PatientCode, '.RData') ) & 
-     file.exists(paste0( pathZIPs , 'ECGIII_' ,  PatientCode, '.RData') ) & 
-     file.exists(paste0( pathZIPs , 'Discrete_' ,  PatientCode, '.RData') ) )
+# Check if data has already been processed.
+numberofprocessedfiles <- 0
+for(i in 1:length(chooseWave2Read))
 {
-  
+  numberofprocessedfiles <- numberofprocessedfiles + as.numeric(file.exists(paste0( pathZIPs , chooseWave2Read[i] , '_' ,  PatientCode , '.RData') ) )
+}
+
+if(numberofprocessedfiles == length(chooseWave2Read)   )
+{
 print(paste0('All ECG files processed for' , PatientCode , ' moving to next patient'))
 next}
 
