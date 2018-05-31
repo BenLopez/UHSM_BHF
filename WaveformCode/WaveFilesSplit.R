@@ -31,7 +31,7 @@ choose_outputs = c(0,0,1) #csv, mat, rdata --- DO NOT USE MAT, needs testing, ve
 # library(R.matlab)
 
 # Option to choose maximium number of hours to process to prevent memory bottlenecks
-maxhourstoprocess <- 100
+maxhourstoprocess <- 125
 
 Use7z = 1
 UseZip = 0

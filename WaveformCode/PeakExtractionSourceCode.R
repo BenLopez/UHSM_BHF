@@ -40,7 +40,7 @@ RPeakExtraction <- function( Times , ECGWaveFormData )
   return(output)
 }
 
-RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8 )
+RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5 )
 {
   # Function to detect R-peaks and RR wave times using a wavelet decomposition. 
   
@@ -304,16 +304,23 @@ CleanRpeaks <- function( RWaveExtractedData , threshold = 2 )
 
 ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3) , n = 250 )
 {
-  binmatrix <- matrix(0 , length( RWaveExtractedData$RR ) , length(binlims) - 1)
-  
-  for(i in 1:(length(binlims) - 1))
-  {
-    binmatrix[ , i] <- smth( (RWaveExtractedData$RR > binlims[i])*(RWaveExtractedData$RR <= binlims[i+1])  , method = 'sma'  , n = n)
-  }
-  
+  binmatrix <- CalulateBinMatrix(RWaveExtractedData , binlims , n = 250)
   t <- RWaveExtractedData[!is.na(binmatrix[ , 1]) ,1] 
   binmatrix <-  binmatrix[!is.na(binmatrix[ , 1]),]
   output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , var)) , c('t' , 'IHAVFScore'))
   return( output )
 }
+
+CalulateBinMatrix <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.8  , 0.05  )), n = 250)
+{
+  binmatrix <- matrix(0 , length( RWaveExtractedData$RR ) , length(binlims) - 1 )
+  
+  for(i in 1:(length(binlims) - 1))
+  {
+    binmatrix[ , i] <- smth( (RWaveExtractedData$RR > binlims[i])*(RWaveExtractedData$RR <= binlims[i+1])  , method = 'sma'  , n = n)
+  }
+  return( binmatrix )
+}
+
+
 

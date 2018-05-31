@@ -4,6 +4,8 @@ subList = select.list(listAllPatients
                       ,title = 'Select Patient to Analyse'
                       , graphics = TRUE )
 
+if(DP_checkfilesprocessed(path , subList , 'Discrete') == 1)
+{  
 # Load discrete data
 for(i in 1:(numberrep+1))
 {
@@ -19,3 +21,5 @@ for(i in 1:(numberrep+1))
     break 
   }  
 }
+}
+if(DP_checkfilesprocessed(path , subList , 'Discrete') == 0){warning('No discrete data processed.')}

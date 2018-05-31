@@ -5,9 +5,12 @@ source("LibrariesAndSettings.R" , print.eval  = TRUE )
 files = list.dirs( repositorylocation <- choose.dir(caption = 'Select files to check') , full.names = FALSE , recursive = FALSE)
 DataTypes = c("Discrete", "ECGI", "ECGII", "ECGIII", "CVP", "ART", "SPO2", "Flow", "Paw")
 
-load(choose.files(caption = "Select patientindexmaster.RData"))
+DP_LoadPatientIndex()
+HowtoFilterops <- read.csv(choose.files(caption = "Select listofopsSH") , stringsAsFactors = FALSE)
 
 Stocklist <- matrix(0 , length(files) ,  length(DataTypes) + 1)
+colnames( Stocklist ) <- c(DataTypes , 'TotalHours')
+rownames( Stocklist ) <- files
 
 for( i in 1:length(files))
 {
@@ -23,13 +26,31 @@ if(nrow( sub_pat ) > 0)
 {
 Stocklist[i , length(DataTypes) + 1] <- sub_pat$TotalITUTimeHRS[1]
 }
+
 if(nrow( sub_pat ) == 0)  
 {
 Stocklist[i , length(DataTypes) + 1] <- NA
-}
+next
 }
 
-colnames( Stocklist ) <- c(DataTypes , 'TotalHours')
-rownames( Stocklist ) <- files
+# Filter out ops and pre op AF
+index <- which(sub_pat$ProcDetails[1] == HowtoFilterops$Optype)
+#if(length(index) == 0){
+#Stocklist[i , length(DataTypes) + 1] <- NA
+#next
+#}
+
+if( sub_pat$Pre_OperativeHeartRhythm[1] !=  "Sinus Rhythm"){Stocklist[i , length(DataTypes) + 1] <- NA}
+if( !is.na(HowtoFilterops$Removal.all.data.if.they.ever.have.this.op[index]) & HowtoFilterops$Removal.all.data.if.they.ever.have.this.op[index] == 1 ){
+  Stocklist[ i , length(DataTypes) + 1 ] <- NA
+  Stocklist[ which( rownames(Stocklist) == rownames(Stocklist)[i] ) ,  length(DataTypes) + 1] <- NA  
+next
+}
+if( !is.na(HowtoFilterops$Remove.for.this.op[index]) & HowtoFilterops$Remove.for.this.op[index] == 1 ){Stocklist[i , length(DataTypes) + 1] <- NA
+next()}
+if( !is.na(HowtoFilterops$Keep[index]) & HowtoFilterops$Keep[index] == 1 ){next}
+
+}
+
 Stocklist <- data.frame(Stocklist)
-write.csv( Stocklist , file =  paste0('C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_13022018\\StockList' , Sys.Date() , '.csv'))
+write.csv( Stocklist , file =  paste0('C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_25052018\\StockList' , Sys.Date() , '.csv'))

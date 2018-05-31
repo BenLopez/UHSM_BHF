@@ -13,7 +13,7 @@ files <- choose.files(multi = FALSE)
   Annotation <- setNames(data.frame( round(tmp$Data[[3]]/2) ,  tmp$Data[[4]])  , c('Index' , 'Code'))
   stdthresh <- 2.5
   RData <- RPeakExtractionWavelet( waveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = stdthresh)
-  Results <- mitdb_ComputePeakresults( WaveData , Annotation , stdthresh = stdthresh )
+  Results <- mitdb_ComputePeakresults( waveData , Annotation , stdthresh = stdthresh )
   
 
 interestingpoint <- 3

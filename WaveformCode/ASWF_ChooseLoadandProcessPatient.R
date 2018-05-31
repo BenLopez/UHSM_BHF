@@ -1,110 +1,113 @@
 source('ASWF_ChoosePatient.R')
 
 # Plot discrete data
-plot(1)
-dev.off()
+if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){
 myplot <- ggplot( data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate ) , aes(x,y))  + geom_point(colour="blue", alpha=0.009) + 
   ggtitle(DataSet$MetaData$PseudoId) +
   xlab("Time") + ylab("Heart Rate") +
   geom_hline( yintercept = 130 , linetype="dashed" , color = "red" ) + 
   geom_hline( yintercept = 100 , linetype="dashed" , color = "black" ) +
   geom_hline( yintercept = 60  , linetype="dashed" , color = "blue" )  +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$FirstNewAF[1])) , linetype="dashed" , color = "black" ) +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DataSet$MetaData$LastITUEntry[1])) , linetype="dashed" , color = "red" ) 
+  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(DataSet$MetaData$FirstNewAF[1]))) , linetype="dashed" , color = "black" ) +
+  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(DataSet$MetaData$ConfirmedFirstNewAF[1]))) , linetype="dashed" , color = "grey" ) +
+  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(DataSet$MetaData$LastITUEntry[1]))) , linetype="dashed" , color = "red" ) 
 x11(12 , 7)
 print(myplot)
-
-# Load wave form data 
-print('Loading ECGI.')
-for(i in 1:(numberrep+1))
-{
-  if(i > (numberrep))
-  {
-    stop('Error: No ECGI data processed.') 
-    break
-  }
-  if(file.exists(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGI_' , subList , '.RData' )))
-  {
-    load(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGI_' , subList , '.RData' ))
-    break 
-  }  
 }
-print('ECGI Loaded.')
 
-interestingtimepoint <- which.min( abs( difftime(
- as.POSIXct( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours'))))),
-   as.POSIXct(select.list(as.vector(as.character(unique(round.POSIXt(
-     WaveData$Date[seq(from = 1, to = length(WaveData$Date) , by =1000)] , units = c('hours')))))
-   , preselect = DataSet$MetaData$FirstNewAF[1]
-   , multiple = FALSE
-   , title = 'Select Interest Time Point'
-   , graphics = TRUE ) ), units ='hours') ))
+# Ask user whether to used reduced file
+if( DP_CheckECGreducedfilesprocessed( path , subList  , "ECGI_reduced") ){
+  UseReduced <- winDialog(type = c('yesno') , message = 'A reduced ECGI_reduced has been processed. Would you like to use this?')
+}  
+if( !DP_CheckECGreducedfilesprocessed( path , subList  , "ECGI_reduced") ){
+  UseReduced <- "NO"
+}
+
+# Load ECGI
+if(UseReduced == "YES"){
+ print('Loading ECGI reduced.')
+ ECGI <- DP_LoadECGReduced(path , subList , numberrep , 1 )
+ print('ECGI reduced loaded.')
+}  
+if(UseReduced == "NO"){
+  # Load wave form data 
+  print('Loading ECGI.')
+  WaveData <- DP_LoadECG(path , subList , numberrep , ECGNum = 1 )
+  print('ECGI Loaded.')
+  interestingtimepoint <- which.min( abs( difftime(
+    as.POSIXct( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours'))))),
+    as.POSIXct(select.list(as.vector(as.character(unique(round.POSIXt(
+      WaveData$Date[seq(from = 1, to = length(WaveData$Date) , by =1000)] , units = c('hours')))))
+      , preselect = DataSet$MetaData$FirstNewAF[1]
+      , multiple = FALSE
+      , title = 'Select Interest Time Point'
+      , graphics = TRUE ) ), units ='hours') ))
+  
+  timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint[1]] , units = 'secs')) )
+  HoursBeforeAndAFter <- DP_SelectHoursBeforeandAfter()
+  
+  ECGI <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(WaveData , timeindex , HoursBeforeAndAFter))
+  
+}  
 
 
-timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint[1]] , units = 'secs')) )
-
-numberhours <- c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
-
-numberhoursbefore = as.numeric(select.list(numberhours
-                                           , preselect = '5'
-                                           , multiple = FALSE
-                                           ,title = 'Select number of hours before.'
-                                           , graphics = TRUE ))
-
-numberhoursafter = as.numeric(select.list(numberhours
-                                          , preselect = '1'
-                                          , multiple = FALSE
-                                          ,title = 'Select number of hours after.'
-                                          , graphics = TRUE ))
-
-
-ECGI <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
-ECGI <- ReturnWaveformwithPositiveOrientation(ECGI)
-
-# Load wave form data 
+# Load ECGII 
+if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "ECGII_reduced")){  
 print('Loading ECGII.')
-for(i in 1:(numberrep+1))
-{
-  if(i > (numberrep))
-  {
-    stop('Error: No ECGII data processed.') 
-    break
-  }
-  if(file.exists(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGII_' , subList , '.RData' )))
-  {
-    load(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGII_' , subList , '.RData' ))
-    break 
-  }  
+ECGII <- DP_LoadECG( path , subList , numberrep , ECGNum = 2 )
+
+if(DP_checkfilesprocessed(path , subList , 'ECGII') == 1 ){
+  
+{ 
+    numberhoursbefore = 0
+    numberhoursafter = abs( difftime( ECGI$Date[length(ECGI$Date)] , ECGI$Date[1]  , units ='hours' ))
+    HoursBeforeAndAFter = data.frame(numberhoursbefore , numberhoursafter)
 }
+  
+timeindex <- which.min( abs(difftime( ECGII$Date , ECGI$Date[1] , units = 'secs')) )
+ECGII <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(ECGII , timeindex , HoursBeforeAndAFter))
 print('ECGII loaded.')
+}
 
-timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint] , units = 'secs')) )
+if(DP_checkfilesprocessed(path , subList , 'ECGII') == 0 ){
+  ECGII = ECGI
+  warning('No ECGII processed.')}
+}
+if(UseReduced == "YES" &   DP_CheckECGreducedfilesprocessed( path , subList  , "ECGII_reduced")){
+  print('Loading ECGII reduced.')
+  ECGII <- DP_LoadECGReduced(path , subList , numberrep , 2 )
+  print('Loading ECGII reduced.')
+}
 
-ECGII <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/0.005)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/0.005)) ) , ]
-ECGII <- ReturnWaveformwithPositiveOrientation( ECGII )
-rm( WaveData )
-
+if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){  
 DataSet$Data <-  DataSet$Data[ ((DataSet$Data$tt > ECGI$Date[1])*(DataSet$Data$tt < ECGI$Date[length( ECGI$Date)]) == 1), ]
+}
 
-print('Extracting RA and R-R times.')
-RWaveExtractedDataI <- CleanRpeaks(RPeakExtractionWavelet( ECGI , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8))
-#RWaveExtractedDataII <- RPeakExtractionWavelet( WaveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
-print('RA and R-R times Extracted.')
+if( UseReduced == "NO"  || !DP_checkRpeaksfilesprocessed(path , subList) ){
+  print('Extracting RA and R-R times.')
+  RWaveExtractedDataI <- CleanRpeaks(RPeakExtractionWavelet( ECGI , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5))
+  #RWaveExtractedDataII <- RPeakExtractionWavelet( WaveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
+  print('RA and R-R times Extracted.')  
+}
+if( UseReduced == "YES" &  DP_checkRpeaksfilesprocessed(path , subList) ){
+print( 'Loading Rpeaks.' )  
+RWaveExtractedDataI <- DP_LoadRpeaksfileECGI(path , subList)
+print( 'Rpeaks loaded.' )  
+}
+
 
 AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
 StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 145)  , minutethreshold = 9)
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 
-startindex = which(timelist == (select.list(unique(timelist)
+startindex = which.min( abs( as.POSIXct( ECGI$Date ) - as.POSIXct(select.list(unique(timelist)
                                             , preselect = NULL
                                             , multiple = FALSE
                                             , title = 'Select time to view ECGI'
-                                            , graphics = TRUE ) ))
-startindex <- startindex[1]
+                                            , graphics = TRUE ) ) ) )[1]
 
-timeintervaloptions <- as.character(c(1:100))
-timeinterval <- as.numeric(select.list(unique(timeintervaloptions)
+timeinterval <- as.numeric(select.list(unique(as.character(c(1:100)))
                                        , preselect = '10'
                                        , multiple = FALSE
                                        , title = 'Select number of seconds of full ECG to be viewed'
@@ -147,3 +150,5 @@ p4 <- ggplot(DataSet$Data , aes(tt , HeartRate)) +
   ggtitle('Discrete Heart Rate') +
   xlab("t") +
   ylab("HR") 
+
+rm(WaveData)
