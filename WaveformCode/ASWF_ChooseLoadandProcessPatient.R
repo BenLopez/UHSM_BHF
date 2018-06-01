@@ -2,6 +2,8 @@ source('ASWF_ChoosePatient.R')
 
 # Plot discrete data
 if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){
+plot(1)
+dev.off()
 myplot <- ggplot( data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate ) , aes(x,y))  + geom_point(colour="blue", alpha=0.009) + 
   ggtitle(DataSet$MetaData$PseudoId) +
   xlab("Time") + ylab("Heart Rate") +
@@ -95,8 +97,13 @@ RWaveExtractedDataI <- DP_LoadRpeaksfileECGI(path , subList)
 print( 'Rpeaks loaded.' )  
 }
 
-
+TimeGaps <- ECGI$Date[c(0,abs(diff(ECGI$Date))) > (0.005*50)]
 AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
+
+TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min(abs(X - AFScore$t)) } )
+
+AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
+AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
 StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 145)  , minutethreshold = 9)
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
@@ -130,8 +137,8 @@ p1 <- ggplot(RWaveExtractedDataI , aes(t , RA)) +
 
 
 p2 <- ggplot() + 
-      geom_line( data = AFScore , aes(x = t , y = IHAVFScore/300) , colour ='red' , alpha = 0.25)  + 
-      geom_point(data = RWaveExtractedDataI  , aes(x = t , y = RR) , colour="blue", alpha=0.01)+
+      geom_line( data = AFScore , aes(x = t , y = IHAVFScore/300) , colour ='red' , alpha = 0.25 )  + 
+      geom_point(data = RWaveExtractedDataI  , aes(x = t , y = RR) , colour="blue", alpha=0.01 ) +
       scale_y_continuous(sec.axis = sec_axis(~.*300, name = "AF Score")) +
       xlab("t") +
       ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2))
