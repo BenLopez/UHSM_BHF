@@ -387,6 +387,7 @@ DP_LoadRpeaksfileECGI <- function(path , PatientsId )
   return(outputdata$ECGI)
 }  
 
+
 is.POSIXct <- function(X){ inherits(X, "POSIXct")}
 is.POSIXlt <- function(X){ inherits(X, "POSIXlt")}
 is.POSIXt <- function(X){ inherits(X, "POSIXt")}

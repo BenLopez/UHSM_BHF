@@ -98,13 +98,16 @@ print( 'Rpeaks loaded.' )
 }
 
 TimeGaps <- ECGI$Date[c(0,abs(diff(ECGI$Date))) > (0.005*50)]
+
 AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
+m <- mean( AFScore$IHAVFScore[(min(501 ,length(AFScore$IHAVFScore) ) -1):min(5000 , length(AFScore$IHAVFScore))] , rm.na = TRUE )
+AFScore$IHAVFScore <-  AFScore$IHAVFScore - m
 
 TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min(abs(X - AFScore$t)) } )
 
 AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
 AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
-StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 145)  , minutethreshold = 9)
+StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 70)  , minutethreshold = 9)
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 
@@ -137,9 +140,9 @@ p1 <- ggplot(RWaveExtractedDataI , aes(t , RA)) +
 
 
 p2 <- ggplot() + 
-      geom_line( data = AFScore , aes(x = t , y = IHAVFScore/300) , colour ='red' , alpha = 0.25 )  + 
+      geom_line( data = AFScore , aes(x = t , y = IHAVFScore/150) , colour ='red' , alpha = 0.25 )  + 
       geom_point(data = RWaveExtractedDataI  , aes(x = t , y = RR) , colour="blue", alpha=0.01 ) +
-      scale_y_continuous(sec.axis = sec_axis(~.*300, name = "AF Score")) +
+      scale_y_continuous(sec.axis = sec_axis(~.*150, name = "AF Score")) +
       xlab("t") +
       ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2))
 
