@@ -4,7 +4,7 @@ source('ASWF_ChoosePatient.R')
 if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){
 plot(1)
 dev.off()
-myplot <- ggplot( data.frame(x<- DataSet$Data$tt , y <- DataSet$Data$HeartRate ) , aes(x,y))  + geom_point(colour="blue", alpha=0.009) + 
+myplot <- ggplot( data.frame(x<- DataSet$Data$tt[seq(1,length(DataSet$Data$tt),3)] , y <- DataSet$Data$HeartRate[seq(1,length(DataSet$Data$tt),3)] ) , aes(x,y))  + geom_point(colour="blue", alpha=0.03) + 
   ggtitle(DataSet$MetaData$PseudoId) +
   xlab("Time") + ylab("Heart Rate") +
   geom_hline( yintercept = 130 , linetype="dashed" , color = "red" ) + 
