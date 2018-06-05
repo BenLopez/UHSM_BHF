@@ -1,6 +1,5 @@
 # Script with WaveForm data processing and access functions.
 
-
 DP_LoadPatientIndex <- function()
 {
   filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,

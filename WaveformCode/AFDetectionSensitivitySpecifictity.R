@@ -87,7 +87,7 @@ SenistivityUnConfirmed <- sum(Correctunconfirmed) / (apply(AFStatistics , 2 , su
 Sensitivity <- (sum(CorrectConfirmed) + sum(Correctunconfirmed)) / P
 
 PPV <- (sum(CorrectConfirmed) + sum(Correctunconfirmed))/ (sum(IncorrectNAF) + sum(CorrectConfirmed) + sum(Correctunconfirmed))
-NPV <- sum(CorrectNAF) /(sum(CorrectNAF) + sum(IncorrectunConfirmed) + sum(IncorrectConfirmed) )
+P <- sum(CorrectNAF) /(sum(CorrectNAF) + sum(IncorrectunConfirmed) + sum(IncorrectConfirmed) )
 
 Specifictity <- sum( CorrectNAF ) / N
 

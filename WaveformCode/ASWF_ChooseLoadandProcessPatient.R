@@ -97,17 +97,22 @@ RWaveExtractedDataI <- DP_LoadRpeaksfileECGI(path , subList)
 print( 'Rpeaks loaded.' )  
 }
 
-TimeGaps <- ECGI$Date[c(0,abs(diff(ECGI$Date))) > (0.005*50)]
+TimeGaps <- ECGI$Date[c(0,abs(diff(ECGI$Date))) > (200)]
 
-AFScore <- ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
-m <- mean( AFScore$IHAVFScore[(min(501 ,length(AFScore$IHAVFScore) ) -1):min(5000 , length(AFScore$IHAVFScore))] , rm.na = TRUE )
+AFScore <- AFD_ExtractIHVAFScore(RWaveExtractedDataI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
+NumberModes <- AFD_Calculatemodalmode( RWaveExtractedDataI )
+
+m <- AFD_CalulateMeanNormal(AFScore , NumberModes)
 AFScore$IHAVFScore <-  AFScore$IHAVFScore - m
 
-TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min(abs(X - AFScore$t)) } )
+TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min( abs(X - AFScore$t)  ) } )
 
 AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
 AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
-StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = (AFScore$IHAVFScore > 70)  , minutethreshold = 9)
+
+StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (AFScore$IHAVFScore > 70)*(NumberModes$NumModes < 2 )) == 1 , minutethreshold = 9)
+StartEndTimesMM <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (AFScore$IHAVFScore > 40)*(NumberModes$NumModes > 1 )) == 1 , minutethreshold = 4)
+
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 
@@ -154,6 +159,15 @@ for( i in ( 1:length(StartEndTimesAF$Start) ) )
   p2 <- p2 + annotate("rect" , xmin = StartEndTimesAF$Start[i], xmax = StartEndTimesAF$End[i], ymin = -1000, ymax= 1000 , fill = 'pink' , alpha = 0.25)
 }
 }
+
+if(length(StartEndTimesMM$Start) > 0)
+{
+  for( i in ( 1:length(StartEndTimesMM$Start) ) )
+  {
+    p2 <- p2 + annotate("rect" , xmin = StartEndTimesMM$Start[i], xmax = StartEndTimesMM$End[i], ymin = -1000, ymax= 1000 , fill = 'green' , alpha = 0.25)
+  }
+}
+
 
 p4 <- ggplot(DataSet$Data , aes(tt , HeartRate)) +
   geom_point(colour="blue", alpha=0.1) +

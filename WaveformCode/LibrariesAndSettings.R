@@ -22,13 +22,13 @@ options(digits.secs=3)
 
 source( "FourierSourceFunctions.R" )
 source( "SourceFunctions.R" )
-source( "PeakExtractionSourceCode.R" )
+source( "PeakExtractionSourceFunctions.R" )
 source( 'EmulationSourceCode.R' )
 source( 'BayesLinearDynamicUpdateSourceCode.R' )
 source( 'DiscreteAnalysisSourceFunctions.R' )
 source( 'ASWFSourceFunctions.R' )
 source( 'AccessandLoadingDataSourceFunctions.R' )
 source( 'mitdbSourceFunctions.R' )
-
+source( 'AFDetectionSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

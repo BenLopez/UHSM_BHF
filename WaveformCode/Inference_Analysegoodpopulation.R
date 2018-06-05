@@ -1,6 +1,5 @@
 ListGoodPatients <- PatientNames[CorrectNAF ==1]
 
-
 maxlength <- max(unlist(lapply(RPeaksData , function(X){length(X[[1]]) })))
 
 Moments = list( )
