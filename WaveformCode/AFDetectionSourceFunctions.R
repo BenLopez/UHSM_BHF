@@ -60,3 +60,59 @@ output <- mean(AFScore$IHAVFScore[logicalts == 1] )
 return(output)
 }
 
+AFD_CreateDefaultSettings <- function(){
+  SettingsAFDetection<-list()
+  SettingsAFDetection[[1]] <- 100
+  SettingsAFDetection[[2]] <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3)
+  SettingsAFDetection[[3]] <- 250
+  SettingsAFDetection[[4]] <- c(0, seq(from = 0.25  , to = 1.5  , 0.025  ))
+  SettingsAFDetection[[5]] <- 0.025
+  SettingsAFDetection[[6]] <- 500
+  SettingsAFDetection[[7]] <- 1
+  SettingsAFDetection[[8]] <- 9
+  SettingsAFDetection[[9]] <- 4
+  SettingsAFDetection[[10]] <- 70
+  SettingsAFDetection[[11]] <- 2
+  
+  
+  
+  SettingsAFDetection <- setNames(SettingsAFDetection ,
+                                  c('TimeGapThreshold',
+                                    'BinlimsScore',
+                                    'BandWidthScore' ,
+                                    'BinlimsMM',
+                                    'DensityThresholdMM',
+                                    'BadnWidthMM',
+                                    'InitialTimetoCalulateGlobalComponent',
+                                    'TimeinAFThresh',
+                                    'TimeinMMThresh',
+                                    'AFScoreThresh',
+                                    'ModeThresh'))  
+  
+  return(SettingsAFDetection)
+}
+
+AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_CreateDefaultSettings() ){
+  
+  AFScore <- AFD_ExtractIHVAFScore(RWaveExtractedDataI ,  binlims = SettingsAFDetection[['BinlimsScore']] , n = SettingsAFDetection[['BandWidthScore']] )
+  TimeGaps <- AFScore$t[c(0,abs(diff(as.numeric(AFScore$t)))) > SettingsAFDetection[['TimeGapThreshold']]]
+  
+  NumberModes <- AFD_Calculatemodalmode( RWaveExtractedDataI , 
+                                         binlims = SettingsAFDetection[['BinlimsMM']] , 
+                                         n = SettingsAFDetection[['BandWidthScore']] ,
+                                         densitythresh = SettingsAFDetection[['DensityThresholdMM']],
+                                         nn = SettingsAFDetection[['BadnWidthMM']])
+  
+  m <- AFD_CalulateMeanNormal(AFScore , NumberModes , initialtime = SettingsAFDetection[['InitialTimetoCalulateGlobalComponent']] )
+  AFScore$IHAVFScore <-  AFScore$IHAVFScore - m
+  
+  TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min( abs(X - AFScore$t)  ) } )
+  
+  AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
+  AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
+  
+  StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']])*(NumberModes$NumModes < SettingsAFDetection[['ModeThresh']] )) == 1 , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
+  StartEndTimesMM <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1) )) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
+
+  return(setNames(list(AFScore , StartEndTimesAF , StartEndTimesMM , m  ) , c('AFScore' , 'StartEndTimesAF' , 'StartEndTimesMM' , 'GlobalParameter')))
+}
