@@ -137,7 +137,7 @@ p2 <- ggplot() +
       geom_point(data = RWaveExtractedDataI  , aes(x = t , y = RR) , colour="blue", alpha=0.01 ) +
       scale_y_continuous(sec.axis = sec_axis(~.*150, name = "AF Score")) +
       xlab("t") +
-      ylab("RR") + coord_cartesian(ylim = c(0.2, 1.2))
+      ylab("RR") + coord_cartesian(ylim = c(0, 1.2))
 
 
 if(length(StartEndTimesAF$Start) > 0)

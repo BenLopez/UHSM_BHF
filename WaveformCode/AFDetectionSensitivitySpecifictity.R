@@ -14,43 +14,40 @@ ListConfirmedNoAF <- c( 'z380' , 'z950' , 'z1086' , 'z1163' , 'z1203' , 'z827' )
 
 RPeaksData <- list()
 SummaryStatistics <- matrix(0 , length(listAllPatients) , 2)
-  
-for(ii in 1:length(listAllPatients))
-{
+AFPeriods <- list()
+MMPeriods <- list()
+
+for(ii in 1:length(listAllPatients)){
   
   load(paste0(path , '\\' , listAllPatients[ii] , '\\Zip_out\\' , listAllPatients[ii] , '_RPeaks' , '.RData'))
   
-  AFScore <- ExtractIHVAFScore(outputdata$ECGI ,  binlims <- c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3))
   
-  TimeGaps <- AFScore$t[c(0,abs(diff(as.numeric(AFScore$t)))) > 100]
-  TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min(abs(X - AFScore$t)) } )
+  if(length(outputdata$ECGI$t) < 10000)
+  {
+    SummaryStatistics[ii , 2] <- 0
+    SummaryStatistics[ii , 1] <- 0
+    RPeaksData[[ii]] <- setNames(list(1 , outputdata$Meta_Data) , c('Nonsense' , 'MetaData'))
+    next 
+  }
   
-  AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
-  AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
-  
-  RPeaksData[[ii]] <- setNames(list( outputdata$ECGI$t , outputdata$ECGI$RR , outputdata$Meta_Data, AFScore) , c('t' , 'RR' , 'MetaData' , 'AFScore'))
-  SummaryStatistics[ii , 1] <- abs(difftime(outputdata$ECGI$t[1] , outputdata$ECGI$t[length(outputdata$ECGI$t)] , units = c("hours")))
-  SummaryStatistics[ii , 2] <- length(outputdata$ECGI$t)
+  InferenceOutput <- AFD_DetectionWrapper(outputdata$ECGI  )
+
+  RPeaksData[[ii]] <- setNames(list( outputdata$ECGI$t , outputdata$ECGI$RR , outputdata$Meta_Data, InferenceOutput$AFScore) , c('t' , 'RR' , 'MetaData' , 'AFScore'))
+  SummaryStatistics[ii , 1] <- abs(difftime(InferenceOutput$AFScore$t[1] , InferenceOutput$AFScore$t[length(InferenceOutput$AFScore$t)] , units = c("hours")))
+  SummaryStatistics[ii , 2] <- length(InferenceOutput$AFScore$IHAVFScore)
+    
+  AFPeriods[[ii]] <- InferenceOutput$StartEndTimesAF
+  MMPeriods[[ii]] <-  InferenceOutput$StartEndTimesMM 
     
   print(ii/length(listAllPatients))
 }
 
 RPeaksData <- setNames(RPeaksData , as.vector(listAllPatients))
 
-AFPeriods <- list()
 AFStatistics <- matrix(0 , length(RPeaksData) , 3)
-m <- matrix(0 , length(RPeaksData) , 3)
-for( ii in 1:length(RPeaksData) )
-{
-  m[ii] <- mean( RPeaksData[[ii]]$AFScore$IHAVFScore[(min(501 ,length(RPeaksData[[ii]]$AFScore$IHAVFScore) ) -1):min(5000 , length(RPeaksData[[ii]]$AFScore$IHAVFScore))] , rm.na = TRUE )
-  
-  
-  AFPeriods[[ii]] <- ASWF_GetStartEndAF(RPeaksData[[ii]]$AFScore$t , logicaltimeseries = (RPeaksData[[ii]]$AFScore$IHAVFScore - m[ii] > 70)  , minutethreshold = 9)
-  print(ii/length(RPeaksData))
-}
-
 AFResults <- matrix(0 , length(RPeaksData) , 1)
 AFStatistics <- matrix(0 , length(RPeaksData) , 3)
+
 for( ii in 1:length(RPeaksData) )
 {
   if( !is.na(RPeaksData[[ii]]$MetaData$FirstNewAF)  && !is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)){AFStatistics[ii , 1] <- 1}
@@ -87,7 +84,7 @@ SenistivityUnConfirmed <- sum(Correctunconfirmed) / (apply(AFStatistics , 2 , su
 Sensitivity <- (sum(CorrectConfirmed) + sum(Correctunconfirmed)) / P
 
 PPV <- (sum(CorrectConfirmed) + sum(Correctunconfirmed))/ (sum(IncorrectNAF) + sum(CorrectConfirmed) + sum(Correctunconfirmed))
-P <- sum(CorrectNAF) /(sum(CorrectNAF) + sum(IncorrectunConfirmed) + sum(IncorrectConfirmed) )
+NPV <- sum(CorrectNAF) /(sum(CorrectNAF) + sum(IncorrectunConfirmed) + sum(IncorrectConfirmed) )
 
 Specifictity <- sum( CorrectNAF ) / N
 

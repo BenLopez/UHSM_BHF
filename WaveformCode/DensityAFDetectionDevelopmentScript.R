@@ -25,13 +25,29 @@ p <- ggplot(RWaveExtractedData , aes(t , RR)) +
   ylab("RR") + coord_cartesian(ylim = c(0, 1.2)) +
   ggtitle( paste0(subList , " RR-times" ) ) 
 
-NumberModes <- AF_Calculatemodalmode( RWaveExtractedData )
 
+binMatrix <- AFD_CalulateBinMatrixKernelDensityEstimated(RWaveExtractedData , n = 100)
+
+#output <-  ExtractNumberofModes( RWaveExtractedData  , densitythresh = 0.025 )
+NumberModes <- AFD_Calculatemodalmode( RWaveExtractedData , binlims=  c(0, seq(from = 0  , to = 1.8  , 0.025  )) , n =100 , nn = 250  , densitythresh = 0.01 )
+
+
+NumberModes <- AFD_Calculatemodalmode( RWaveExtractedData , 
+                        binlims = SettingsAFDetection[['BinlimsMM']] , 
+                        n = SettingsAFDetection[['BandWidthScore']] ,
+                        densitythresh = SettingsAFDetection[['DensityThresholdMM']],
+                        nn = SettingsAFDetection[['BadnWidthMM']])
+
+AFScore<- AFD_ExtractIHVAFScore(RWaveExtractedData ,  binlims = SettingsAFDetection[['BinlimsScore']] , n = SettingsAFDetection[['BandWidthScore']] )
+
+indexOI <- 25000
+p2 <- ggplot(data.frame(x = c(1:dim(binMatrix)[2])  , y = binMatrix[indexOI , ]) , aes(x , y)) +
+      geom_line() + geom_hline(yintercept = 0.01)
 p3 <- ggplot( data.frame(x = NumberModes$t , y = NumberModes$NumModes) , aes(x , y) ) +
       geom_line( ) +
       ggtitle('Number of Modes')
 
-grid.arrange( p  , p3  , nrow = 2 , ncol =1 )
+grid.arrange( p + geom_vline(xintercept = as.numeric( NumberModes$t[indexOI]))  , p2, p3  , nrow = 3 , ncol =1 )
 
 
 
