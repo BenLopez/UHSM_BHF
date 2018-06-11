@@ -331,5 +331,49 @@ Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.2
   return(output)
 }
 
+PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.01 )
+{
+    # Calulate distance to closest peak 
+  mindistancesI <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
+  mindistancesII <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
+  
+  # Find good peaks
+  Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
+  
+  # Extract good peaks
+  tt_good <- outputdata$ECGIII$t[Goodlogical > 0]
+  tt_notgood <- outputdata$ECGIII$t[Goodlogical == 0]
+  
+  # Set of beats in ECGII which are classified as good.
+  goodlogical_2 <- apply( as.matrix(as.numeric(outputdata$ECGII$t)) , 1 , function(X){min(abs(X - as.numeric(tt_good))) <= thresh} )
+  
+  ttmp <- outputdata$ECGII$t[ goodlogical_2 == 0 ]
+  
+  mindistancesI <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
+  mindistancesII <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)))} )
+  
+  Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
+  
+  tt_good <- c( tt_good , outputdata$ECGII$t[Goodlogical > 0]  )
+  tt_notgood <- c( tt_notgood , outputdata$ECGII$t[Goodlogical == 0] )
+  
+  goodlogical_1 <- apply( as.matrix(as.numeric(outputdata$ECGI$t)) , 1 , function(X){min(abs(X - as.numeric(tt_good))) <= thresh} )
+  ttmp <- outputdata$ECGI$t[goodlogical_1 == 0 ]
+  
+  mindistancesI <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
+  mindistancesII <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)))} )
+  
+  Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
+  
+  tt_good <- sort(c(tt_good , outputdata$ECGI$t[Goodlogical > 0] ))
+  tt_notgood <- c(tt_notgood , outputdata$ECGI$t[Goodlogical == 0] )
+  
+  RR <- c(0 , diff(tt_good))
+  tt_good <- tt_good[((RR > 0.1)*(RR < 4)) == 1]
+  RR <- RR[((RR > 0.1)*(RR < 4)) == 1]
+  
+  ECG <- data.frame(t = tt_good , RA = 150 + 0*RR , RR = RR)
+}
+  
 
 

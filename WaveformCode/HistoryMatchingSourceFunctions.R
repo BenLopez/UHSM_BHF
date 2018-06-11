@@ -11,8 +11,6 @@ HM_LHD <- function(n , min_x , max_x ){
   
 }
 
-
-
 HM_LHD_Reduced<- function( n , min_x , max_x , reductionfunction = function(X){X} ){
  
   if(length(min_x) != length(max_x)){ stop('Dimesnions of bounds do notmatch.') }
@@ -27,16 +25,13 @@ HM_LHD_Reduced<- function( n , min_x , max_x , reductionfunction = function(X){X
   return(Sample)
 }
 
-
-HM_StdError <- function(z , f_x , V_me = 0 , V_md = 0 , V_f = 0)
-{
+HM_StdError <- function(z , f_x , V_me = 0 , V_md = 0 , V_f = 0){
   if(V_me !=0 || V_md!=0 || V_f !=0 ){ return((z - f_x)/sqrt(V_me + V_md + V_f))}
   if(V_me == 0 & V_md== 0 & V_f == 0 ){ return( (z - f_x) )}
 }
 
-HM_StdError <- function(z , f_x , V_me = 0 , V_md = 0 , V_f = 0)
-{
-  return(mean(HM_StdError(z , f_x , V_me  , V_md  , V_f )))
+HM_MeanStdError <- function(z , f_x , V_me = 0 , V_md = 0 , V_f = 0){
+  return(mean(abs(HM_StdError(z , f_x , V_me  , V_md  , V_f )) , na.rm = T))
 }
 
 HM_monoIm <- function(z , f_x , V_me = 0 , V_md = 0 , V_f = 0){

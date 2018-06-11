@@ -1,7 +1,6 @@
 # Script with WaveForm data processing and access functions.
 
-DP_LoadPatientIndex <- function()
-{
+DP_LoadPatientIndex <- function(){
   filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
                          title = 'Choose File Type For Patient Index', graphics = TRUE )
 if(filetype == 'csv')
@@ -14,9 +13,7 @@ if(filetype == 'RData')
   PatIndex2017 <<- PatIndex2017
 }
 }
-
-DP_ChooseDataReps <- function( )
-{
+DP_ChooseDataReps <- function( ){
   
 setofrepositorynumbers = c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
 numberrep <<-  as.numeric(select.list(setofrepositorynumbers, preselect = setofrepositorynumbers[1], multiple = FALSE,
@@ -33,27 +30,21 @@ for(i in 1:numberrep)
 
 
 }
-
-DP_choosepatient <- function(listAllPatients)
-{
+DP_choosepatient <- function(listAllPatients){
   subList <<- select.list(listAllPatients
                         , preselect = NULL
                         , multiple = FALSE
                         , title = 'Select Patient to Analyse'
                         , graphics = TRUE )
 }
-
-DP_choosepatients <- function(listAllPatients)
-{
+DP_choosepatients <- function(listAllPatients){
   subList <<- select.list(listAllPatients
                           , preselect = NULL
                           , multiple = TRUE
                           , title = 'Select Patient to Analyse'
                           , graphics = TRUE )
 }
-
-DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 )
-{
+DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 ){
   # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
   if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
   {
@@ -111,9 +102,7 @@ DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 )
   
   return(WaveData)
 }
-  
-DP_SelectInterestingTimePoint <- function(Wavedata , sub_pat)
-{
+DP_SelectInterestingTimePoint <- function(Wavedata , sub_pat){
   subdata <-  unique(as.vector(as.character(round.POSIXt(Wavedata$Date , units = c('hours')))))   
 if(!is.na(as.POSIXct(sub_pat$FirstNewAF[1])))
   {
@@ -150,9 +139,7 @@ if(!is.na(as.POSIXct(sub_pat$FirstNewAF[1])))
   
 return(interestingtimepoint[1])
 }
-
-DP_SelectHoursBeforeandAfter <- function()
-{ 
+DP_SelectHoursBeforeandAfter <- function(){ 
   numberhours <- c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
   numberhoursbefore <- as.numeric(select.list(numberhours
                                              , preselect = '5'
@@ -166,9 +153,7 @@ DP_SelectHoursBeforeandAfter <- function()
                                             , graphics = TRUE ))
 return(setNames(list(numberhoursbefore , numberhoursafter) , c('numberhoursbefore' , 'numberhoursafter')))
 }
-
-DP_CropWaveData <- function(WaveData , timeindex , HoursBeforeAndAFter)
-{
+DP_CropWaveData <- function(WaveData , timeindex , HoursBeforeAndAFter){
   numberhoursbefore <- HoursBeforeAndAFter[['numberhoursbefore']]
   numberhoursafter <- HoursBeforeAndAFter[['numberhoursafter']]
   indent <- as.numeric(abs(WaveData[1 , 1] - WaveData[2 , 1]))
@@ -177,9 +162,7 @@ DP_CropWaveData <- function(WaveData , timeindex , HoursBeforeAndAFter)
   WaveData <- ReturnWaveformwithPositiveOrientation(WaveData)
   return(WaveData)
 }
-
-DP_FindNumberUniques <- function(X)
-{
+DP_FindNumberUniques <- function(X){
   # Function to find number of unique values in a column vector.
   values <- unique(X)
   n <- matrix(0 , length(values) , 1)
@@ -194,9 +177,7 @@ DP_FindNumberUniques <- function(X)
   output <- setNames(output , c('values' , 'n'))
   return(output) 
 }
-
-DP_StripTime <- function(X)
-{
+DP_StripTime <- function(X){
   if(is.POSIXct(X)){output <- X}
   if(!is.POSIXct(X))
   {
@@ -205,25 +186,19 @@ DP_StripTime <- function(X)
   }
 return(output)    
 } 
-
-DP_ChooseECGstoProcess <- function( )
-{
+DP_ChooseECGstoProcess <- function( ){
   DataTypes = c("ECGI", "ECGII", "ECGIII")
   chooseWave2Read = select.list(DataTypes, preselect = DataTypes,
                                 multiple = TRUE, graphics = TRUE, title = "Choose Waves to Read")
   return(chooseWave2Read)
 }
-
-DP_ChooseWaveformstoProcess <- function( )
-{
+DP_ChooseWaveformstoProcess <- function( ){
   DataTypes = c("Discrete", "ECGI", "ECGII", "ECGIII", "CVP", "ART", "SPO2", "Flow", "Paw")
   chooseWave2Read = select.list(DataTypes, preselect = DataTypes,
                                 multiple = TRUE, graphics = TRUE, title = "Choose Waves to Read")
   return(chooseWave2Read)
 }
-
-DP_checkfilesprocessed <- function(path , PatientsId , FilestoProcess)
-{
+DP_checkfilesprocessed <- function(path , PatientsId , FilestoProcess){
   output <- rep(0 , length(FilestoProcess) , 1)
   for( i in 1:length(FilestoProcess) )
   {
@@ -231,56 +206,40 @@ DP_checkfilesprocessed <- function(path , PatientsId , FilestoProcess)
   }
 return(output)
 }
-
-DP_existsinpatientindex <- function(PatIndex2017 , PatientsId)
-{
+DP_existsinpatientindex <- function(PatIndex2017 , PatientsId){
 return(nrow(subset( PatIndex2017, PseudoId %in% PatientsId )) > 0)  
 }
-
-DP_isusable <- function(PatIndex2017 , PatientsId)
-{
+DP_isusable <- function(PatIndex2017 , PatientsId){
 sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
 return(sub_pat$Usable[1] == 1)    
 }
-
-DP_numberhoursgreaterthan <- function(PatIndex2017 , PatientsId , numberofhours = 6)
-{
+DP_numberhoursgreaterthan <- function(PatIndex2017 , PatientsId , numberofhours = 6){
   sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
   output <- sub_pat$TotalITUTimeHRS[1] >= numberofhours
   if(is.na(output)){output = FALSE}
   return(output)    
 }
-
-DP_ReturnPatientNumber <- function(PatientsId)
-{
+DP_ReturnPatientNumber <- function(PatientsId){
   return(as.numeric(substr(PatientsId , start = 2 , stop = min(nchar(PatientsId)  , 6) )))
 }
-
-DP_FilterbySinusRhythum <- function(PatIndex2017 , PatientsId)
-{
+DP_FilterbySinusRhythum <- function(PatIndex2017 , PatientsId){
   sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
   return(sub_pat$Pre_OperativeHeartRhythm[1] == 'Sinus Rhythm')
 }
-
-DP_FilterbyOps <- function(PatIndex2017 , PatientsId , HowtoFilterops)
-{
+DP_FilterbyOps <- function(PatIndex2017 , PatientsId , HowtoFilterops){
   sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
   
   index <- lapply(sub_pat$ProcDetails , function(X){which(X == HowtoFilterops$Optype)} )
   keep <- as.matrix(lapply(index , function(X){DP_Filtbyopsindividualrecord(X , HowtoFilterops = HowtoFilterops)}))
   return( sum(keep == 0) == 0)
 }
-
-DP_Filtbyopsindividualrecord <- function(index, HowtoFilterops)  
-{
+DP_Filtbyopsindividualrecord <- function(index, HowtoFilterops)  {
   if(!is.na(HowtoFilterops$Keep[index]) ){keep = 1}
   if(!is.na(HowtoFilterops$Remove.for.this.op[index])){keep = 1}
   if(!is.na(HowtoFilterops$Removal.all.data.if.they.ever.have.this.op[index])){keep = 0}  
   return(keep)
 }  
-  
-DP_FilterPatients<-function(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
-{
+DP_FilterPatients<-function(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess){
   # Remove early records.
   Patientnumber <- lapply(listAllPatients , DP_ReturnPatientNumber)
   Patientnumberlogical <- lapply(Patientnumber , function(X){X > 124})
@@ -306,22 +265,16 @@ DP_FilterPatients<-function(listAllPatients , PatIndex2017 , HowtoFilterops , pa
 
   return(listAllPatients)
 }
-
-DP_checkRpeaksfilesprocessed<- function(path , PatientsId )
-{
+DP_checkRpeaksfilesprocessed<- function(path , PatientsId ){
   
   output <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData')  )
   return(output)
 }
-
-DP_CheckECGreducedfilesprocessed <- function( path , PatientsId  , Filestoprocess)
-{
+DP_CheckECGreducedfilesprocessed <- function( path , PatientsId  , Filestoprocess){
   output <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_', Filestoprocess , '.RData')  )
   return(output)
 }
-
-DP_LoadECGReduced <- function(path , subList , numberrep=1 , ECGNum = 1 )
-{
+DP_LoadECGReduced <- function(path , subList , numberrep=1 , ECGNum = 1 ){
     # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
   if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
   {
@@ -379,16 +332,45 @@ if(ECGNum  == 3 || ECGNum  == 'III'|| ECGNum  == 'ECGIII')
 
 return(WaveData)  
 }
-
-DP_LoadRpeaksfileECGI <- function(path , PatientsId )
-{
+DP_LoadRpeaksfileECGI <- function(path , PatientsId ){
   load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
   return(outputdata$ECGI)
 }  
+DP_ChooseRegionofInterest <- function(ECG ){
+  timelist <- as.vector(as.character(round.POSIXt(ECG[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
+  
+  startindex <- which.min( abs( as.POSIXct( ECGI$Date ) - as.POSIXct(select.list(unique(timelist)
+                                                                                , preselect = NULL
+                                                                                , multiple = FALSE
+                                                                                , title = 'Select time to view ECGI'
+                                                                                , graphics = TRUE ) ) ) )[1]
+  
+  timeinterval <- as.numeric(select.list(unique(as.character(c(1:100)))
+                                         , preselect = '10'
+                                         , multiple = FALSE
+                                         , title = 'Select number of seconds of full ECG to be viewed'
+                                         , graphics = TRUE ))
+  
+  endindex <- startindex + (round(timeinterval / as.numeric(abs(ECG$Date[1]- ECG$Date[2]))))
+  regionofinterest <- startindex:endindex
+  return(regionofinterest)
+}
+DP_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest){
+  startindex <- which.min( abs(Waveform2[ , 1] - Waveform1[ regionofinterest[1] , 1]) )
+  endindex <- startindex + length(regionofinterest)
+  regionofinterest2 <- startindex:endindex
+  return(regionofinterest2)
+}
 
 
-is.POSIXct <- function(X){ inherits(X, "POSIXct")}
-is.POSIXlt <- function(X){ inherits(X, "POSIXlt")}
-is.POSIXt <- function(X){ inherits(X, "POSIXt")}
-is.Date <- function(X){ inherits(X, "Date")}
+size <- function(X){
+  dim(X)}
+is.POSIXct <- function(X){ 
+  inherits(X, "POSIXct")}
+is.POSIXlt <- function(X){ 
+  inherits(X, "POSIXlt")}
+is.POSIXt <- function(X){ 
+  inherits(X, "POSIXt")}
+is.Date <- function(X){ 
+  inherits(X, "Date")}
 

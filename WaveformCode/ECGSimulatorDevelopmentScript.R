@@ -44,7 +44,7 @@ WaveData <- DP_LoadECGReduced(path , subList , numberrep , 1 )
 
 t_observation <- as.numeric((WaveData$Date[100:250] -WaveData$Date[1]))
 z <- WaveData$Value[100:250]           
-
+plot(t_observation , z , type = 'l', xlab ='t' , ylab ='Hz')
 
 # Define input names
 {
@@ -105,7 +105,7 @@ V_me <- 2
 lines(t_observation , z + 3*sqrt(V_md + V_me) , col ='blue')
 lines(t_observation , z - 3*sqrt(V_md + V_me) , col ='blue')
 
-Im <- HM_maxIm(z , ECG , V_me , V_md)
+Im <- HM_MeanStdError(z , ECG , V_me , V_md)
 }
 
 # define bounds for prior nonimplausible set.
@@ -171,8 +171,8 @@ max_x <- c( 16    ,
   x[17] <- 20
   x[18] <- -2.5
   
-  min_x <- (x - 0.1*abs(x)) 
-  max_x <- (x + 0.1*abs(x)) }
+  min_x <- (x - 0.3*abs(x)) 
+  max_x <- (x + 0.3*abs(x)) }
 
 reductionfunction <- function(X ,  InputNames)
 {
@@ -182,22 +182,31 @@ reductionfunction <- function(X ,  InputNames)
         ( X[ , which(InputNames == 'Scen')] < X[ , which(InputNames == 'Tcen')] )) ==1 , ]
 }
 
+
+Non_implausible <- t(as.matrix(c(x , Im)))
+counter <- 1
+Im_thresh <- 2
+while( dim(Non_implausible)[1] < 300 )
+{
+  
 numberofsamples <- 1000000
 LHSample <- HM_LHD_Reduced(numberofsamples , min_x , max_x , reductionfunction = function(X){ reductionfunction(X , InputNames) } )
 colnames(LHSample) <- InputNames
 
+F_matrix <- t(apply(LHSample , 1 , function(X){ECGSim_WrapperSingleBeat( X , t_observation )} ))
 
-F_matrix <- matrix( 0 , numberofsamples ,  length(t_observation) )
-for(i in 1:numberofsamples)
-{
-  F_matrix[i,] <- ECGSim_WrapperSingleBeat( LHSample[i,] , t_observation )
-  
+Implausability <- apply( F_matrix , 1 , function(X){(HM_MeanStdError(z , X , V_me , V_md)) } )
+
+if(sum(Implausability < Im_thresh) > 1){
+  print('Non-implausible point found.')
+  Non_implausible <- rbind(Non_implausible , cbind(as.matrix(LHSample[Implausability < Im_thresh,]) , as.matrix(Implausability[Implausability < Im_thresh]))  )}
+counter <- counter + 1
+print( counter )
 }
 
-min(apply( F_matrix , 1 , function(X){HM_maxIm(z , X , V_me , V_md)} ))
 
-plot(t_observation , F_matrix[which.min(apply( F_matrix , 1 , function(X){HM_maxIm(z , X , V_me , V_md)} )),] , type = 'l' , col = 'red')
+plot(  t_observation , F_matrix[which.min(apply( F_matrix , 1 , function(X){(HM_MeanStdError(z , X , V_me , V_md))} )),] , type = 'l' , col = 'red')
 lines( t_observation , z )
 lines( t_observation , z + 3*sqrt( V_md + V_me ) , col ='blue')
 lines( t_observation , z - 3*sqrt( V_md + V_me ) , col ='blue')
-title(paste0('Minimum Implausability = ' , min(apply( F_matrix , 1 , function(X){HM_maxIm(z , X , V_me , V_md)} ))))
+title( paste0('Minimum Implausability = ' , min(apply( F_matrix , 1 , function(X){HM_MeanStdError(z , X , V_me , V_md)} ))) )
