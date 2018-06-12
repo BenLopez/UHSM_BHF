@@ -2,18 +2,24 @@
 interactivemode <- 1
 while(interactivemode == 1){
   
-  p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
+{  p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
     geom_line(colour="blue") + ylab('Hz') +
-    geom_point(data = RWaveExtractedDataI[ ((RWaveExtractedDataI$t > ECGI$Date[regionofinterest[1]])*(RWaveExtractedDataI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
+    geom_point(data = outputdata$ECGI[ ((outputdata$ECGI$t > ECGI$Date[regionofinterest[1]])*(outputdata$ECGI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
   p5 <- ggplot(ECGII[regionofinterest2 , ] , aes(Date , Value)) +
-    geom_line(colour="blue")+ ylab('Hz') +
+    geom_point(data = outputdata$ECGII[ ((outputdata$ECGII$t > ECGII$Date[regionofinterest2[1]])*(outputdata$ECGII$t < ECGII$Date[regionofinterest2[length(regionofinterest2)]]) == 1) , ] , aes(t , RA) ) +
+    geom_line(colour="red")+ ylab('Hz') +
+    xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )
+  p6 <- ggplot(ECGIII[regionofinterest3 , ] , aes(Date , Value)) +
+    geom_point(data = outputdata$ECGIII[ ((outputdata$ECGIII$t > ECGIII$Date[regionofinterest3[1]])*(outputdata$ECGIII$t < ECGIII$Date[regionofinterest3[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
+    geom_line(colour="green")+ ylab('Hz') +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
-  
+  plot(1)
   dev.off()
   x11(15,10)
   print(grid.arrange(  p3 + ggtitle(paste0('ECGI ' , DataSet$MetaData$PseudoId , '  ' ,  ECGI$Date[regionofinterest[1]])) ,
                        p5 + ggtitle('ECGII') , 
+                       p6 ,
                        p1 + geom_vline( xintercept = as.numeric(ECGI[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
                          geom_vline( xintercept = as.numeric(ECGI[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
                          geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$FirstNewAF)) ) , linetype="dashed" , color = "purple" ) +
@@ -23,9 +29,9 @@ while(interactivemode == 1){
                          geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$FirstNewAF)) ) , linetype="dashed" , color = "purple" ) +
                          geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$ConfirmedFirstNewAF)) )  , color = "purple" ) +
                          ggtitle('R-R times ' ) ,
-                       p4,
+                       
                        nrow = 5 ,
-                       ncol = 1) )
+                       ncol = 1) )}
   Sys.sleep(0.1)
   UserResponse <- winDialog(type = c('yesnocancel') , message = 'Would you like to view another time period?')
   
@@ -55,14 +61,14 @@ if(UserResponse == 'YES')
     {
       print('Missing data realigning region of interest')
       regionofinterest2  <- ASWF_AlignRegionofInterests(ECGI , ECGII , regionofinterest)
-    }
+      regionofinterest3  <- ASWF_AlignRegionofInterests(ECGI , ECGIII , regionofinterest)
+          }
     
     
     next 
 }
   
-if(UserResponse == 'NO')
-{
+if(UserResponse == 'NO'){
   UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to save the reduced waveforms?')
   if(UserResponse == 'YES'){
     WaveData <- ECGI
@@ -70,14 +76,13 @@ if(UserResponse == 'NO')
     WaveData <- ECGII
     save( WaveData , file = paste0(path , '\\' , subList , '\\Zip_out\\' ,   subList  , '_' , 'ECGII'  , '_reduced.RData' ) )
     rm(WaveData)
-  }
+    WaveData <- ECGIII
+    save( WaveData , file = paste0(path , '\\' , subList , '\\Zip_out\\' ,   subList  , '_' , 'ECGIII'  , '_reduced.RData' ) )
+    rm(WaveData)
+}
   
   UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to save the RpeaksFile?')
   if(UserResponse == 'YES'){
-  outputdata <- list()
-  outputdata[[1]] <- RWaveExtractedDataI 
-  outputdata[[2]] <- DataSet$MetaData
-  outputdata <- setNames( outputdata , c('ECGI' , 'Meta_Data') )
   print( 'Saving output.' )
   save( outputdata , file = paste0(path , '\\' , subList , '\\Zip_out\\' ,  subList  , '_RPeaks.RData' ) )
   print( 'Output saved.' )

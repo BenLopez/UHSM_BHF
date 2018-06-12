@@ -342,9 +342,8 @@ DP_LoadRpeaksfileECGI <- function(path , PatientsId ){
 }  
 DP_LoadRpeaksfile <- function(path , PatientsId ){
   load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
-  return(outputdata)
+  return(outputdataó)
 }  
-
 DP_ChooseRegionofInterest <- function(ECG ){
   timelist <- as.vector(as.character(round.POSIXt(ECG[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
   
@@ -370,7 +369,8 @@ DP_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest){
   regionofinterest2 <- startindex:endindex
   return(regionofinterest2)
 }
-
+DP_ValidateRPeaks<-function(RPeaksOutput){
+  return(sum(names(RPeaksOutput) == c("ECGI","ECGII","ECGIII","Meta_Data","RRCombined")) ==5) }
 
 size <- function(X){
   dim(X)}
