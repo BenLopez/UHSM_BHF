@@ -5,7 +5,6 @@ AFD_ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from 
   output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , var)) , c('t' , 'IHAVFScore'))
   return( output )
 }
-
 AFD_CalulateBinMatrix <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.8  , 0.05  )), n = 250){
   binmatrix <- matrix(0 , length( RWaveExtractedData$RR ) , length(binlims) - 1 )
   
@@ -15,7 +14,6 @@ AFD_CalulateBinMatrix <- function(RWaveExtractedData , binlims= c(0, seq(from = 
   }
   return( binmatrix )
 }
-
 AFD_CalulateBinMatrixKernelDensityEstimated <- function(RWaveExtractedData , binlims=  c(0, seq(from = 0  , to = 1.8  , 0.025  )) , n = 250 , window = 0.1){
   binMatrix <- AFD_CalulateBinMatrix(RWaveExtractedData , binlims , n )
   #binMatrix <- binMatrix[!is.na(binMatrix[ , 1]) , ] 
@@ -23,7 +21,6 @@ AFD_CalulateBinMatrixKernelDensityEstimated <- function(RWaveExtractedData , bin
   #binMatrix <- binMatrix[, !is.na(binMatrix[ 1 , ])] 
   return(binMatrix)
 }
-
 AFD_ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3) , n = 250 ){
   binmatrix <- CalulateBinMatrix(RWaveExtractedData , binlims , n )
   t <- RWaveExtractedData[!is.na(binmatrix[ , 1]) ,1] 
@@ -31,7 +28,6 @@ AFD_ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from 
   output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , var)) , c('t' , 'IHAVFScore'))
   return( output )
 }
-
 AFD_ExtractNumberofModes <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.5  , 0.025  )), n = 250 , densitythresh = 0.025){
   # Function to calulate the number of modes in a local region
   
@@ -44,7 +40,6 @@ AFD_ExtractNumberofModes <- function(RWaveExtractedData , binlims= c(0, seq(from
   return(data.frame(t = tbin, NumModes = NumberModes))
   
 }
-
 AFD_Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.5  , 0.025  )), n = 250 , densitythresh = 0.025 , nn = 500){
   
   output <- AFD_ExtractNumberofModes(RWaveExtractedData , binlims, n  , densitythresh )
@@ -55,7 +50,6 @@ AFD_Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from =
   output$NumModes[output$NumModes < 1] = 1;
   return(output)
 }
-
 AFD_CalulateMeanNormal <- function(AFScore , NumberModes , initialtime = 1){
   
 logicalts <- (abs(difftime( NumberModes$t , NumberModes$t[1] , units = c('hours') )) < initialtime)*(NumberModes$NumModes < 2);   
@@ -69,7 +63,6 @@ output <- mean(AFScore$IHAVFScore[logicalts == 1] )
 }
 return(output)
 }
-
 AFD_CreateDefaultSettings <- function(){
   SettingsAFDetection<-list()
   SettingsAFDetection[[1]] <- 100
@@ -101,7 +94,6 @@ AFD_CreateDefaultSettings <- function(){
   
   return(SettingsAFDetection)
 }
-
 AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_CreateDefaultSettings() ){
   
   AFScore <- AFD_ExtractIHVAFScore(RWaveExtractedData ,  binlims = SettingsAFDetection[['BinlimsScore']] , n = SettingsAFDetection[['BandWidthScore']] )
@@ -125,4 +117,15 @@ AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_
   StartEndTimesMM <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1) )) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
 
   return(setNames(list(AFScore , StartEndTimesAF , StartEndTimesMM , m , NumberModes  ) , c('AFScore' , 'StartEndTimesAF' , 'StartEndTimesMM' , 'GlobalParameter' , 'NumberModes')))
+}
+AFD_ExtractModeStatistics <- function( f_t , binlimits = SettingsAFDetection$BinlimsMM[2:length(SettingsAFDetection$BinlimsMM)] , thresh1 = 0.025){
+  
+  d1 <- c(0,diff(f_t))
+  d2 <- c(0,0,diff(diff(f_t)))
+  peakslogical<- ((d1<thresh1)*(d2<0)*(f_t>0.01)) ==1
+  peakslogical[is.na(peakslogical)]=FALSE
+  peakslogical <- FindLocalTurningPoints(peakslogical ,f_t)
+  
+  return( data.frame(locations = binlimits[peakslogical], densities = f_t[peakslogical])) 
+  
 }

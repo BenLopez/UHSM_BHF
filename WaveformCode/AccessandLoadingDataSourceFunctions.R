@@ -36,6 +36,7 @@ DP_choosepatient <- function(listAllPatients){
                         , multiple = FALSE
                         , title = 'Select Patient to Analyse'
                         , graphics = TRUE )
+  return(subList)
 }
 DP_choosepatients <- function(listAllPatients){
   subList <<- select.list(listAllPatients
@@ -152,6 +153,9 @@ DP_SelectHoursBeforeandAfter <- function(){
                                             ,title = 'Select number of hours after.'
                                             , graphics = TRUE ))
 return(setNames(list(numberhoursbefore , numberhoursafter) , c('numberhoursbefore' , 'numberhoursafter')))
+}
+DP_ChooseHoursBeforeandAfter <- function(){ 
+  return(DP_SelectHoursBeforeandAfter())
 }
 DP_CropWaveData <- function(WaveData , timeindex , HoursBeforeAndAFter){
   numberhoursbefore <- HoursBeforeAndAFter[['numberhoursbefore']]
@@ -336,6 +340,11 @@ DP_LoadRpeaksfileECGI <- function(path , PatientsId ){
   load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
   return(outputdata$ECGI)
 }  
+DP_LoadRpeaksfile <- function(path , PatientsId ){
+  load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
+  return(outputdata)
+}  
+
 DP_ChooseRegionofInterest <- function(ECG ){
   timelist <- as.vector(as.character(round.POSIXt(ECG[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
   

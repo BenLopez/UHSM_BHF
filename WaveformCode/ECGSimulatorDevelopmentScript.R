@@ -1,8 +1,7 @@
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
-
-t <- seq(-pi,pi,0.001)
+t <- seq(-pi,pi,0.04)
 
 Rcen <- 0
 Rwidth <- 0.05
@@ -28,13 +27,13 @@ Tslant <- -3
 
 Baseline <- 1
 
-ECG <- Baseline + RA*ECGSim_Rpeak( t , Rcen , Rwidth ) +
-       QA*ECGSim_Rpeak( t , Qcen , Qwidth  ) +
-       SA*ECGSim_Rpeak( t , Scen , Swidth  ) +
+ECG <- Baseline + RA*ECGSim_Gaussian( t , Rcen , Rwidth ) +
+       QA*ECGSim_Gaussian( t , Qcen , Qwidth  ) +
+       SA*ECGSim_Gaussian( t , Scen , Swidth  ) +
        PA*ECGSim_SkewGaussian(t , Pcen , Pwidth , Pslant ) +
        TA*ECGSim_SkewGaussian(t , Tcen , Twidth , Tslant)
 
-plot(t ,  ECG , xlab ='t' , ylab ='Hz')
+plot(t ,  ECG , xlab ='t' , ylab ='Hz' , type ='l' )
 title('Simulated ECG')
 
 
@@ -58,14 +57,18 @@ InputNames <- c('Baseline',
                 'Scen',
                 'Swidth',
                 'SA',
-                'Pcen',
-                'Pwidth',
-                'PA',
-                'Pslant',
-                'Tcen',
-                'Twidth',
-                'TA',
-                'Tslant')
+                'PcenL',
+                'PwidthL',
+                'PAL',
+                'PcenR',
+                'PwidthR',
+                'PAR',
+                'TcenL',
+                'TwidthL',
+                'TAL',
+                'TcenR',
+                'TwidthR',
+                'TAR')
 }
 
 # Manual history match
@@ -73,28 +76,32 @@ InputNames <- c('Baseline',
 
 x = rep(0 , 18)
 
-x[1] <- -8
-x[2] <- 0.775000095367432
-x[3] <- 0.01
-x[4] <- 158
-x[5] <- 0.75
-x[6] <- 0.01
-x[7] <- -30
-x[8] <-   0.795
-x[9] <- 0.012
-x[10] <- -38
-x[11] <- 0.67
-x[12] <- 0.02
-x[13] <- 14
-x[14] <- 1
-x[15] <- 1.005
-x[16] <- 0.05
-x[17] <- 20
-x[18] <- -2.5
+x[1] <- -8 # Baseline
+x[2] <- 0.775000095367432 #Rceb
+x[3] <- 0.01 #Rwidth
+x[4] <- 164 #RA
+x[5] <- 0.755 #Qcen
+x[6] <- 0.01 #Qwidth
+x[7] <- -23 #QA
+x[8] <-   0.79 #Scen
+x[9] <- 0.012 #Swidth
+x[10] <- -30 #SA
+x[11] <- 0.62 # PcenL
+x[12] <- 0.01 # PWidthL
+x[13] <- 8 # PAL
+x[14] <- 0.67 #PcenR
+x[15] <- 0.02 #PenR
+x[16] <- 12 #PAR
+x[17] <- 1.01 #TcenL
+x[18] <- 0.03 #TwidthL
+x[19] <- 11 #TwidthL
+x[20] <- 1.02 #TcenR
+x[21] <- 0.03 #TwidthR
+x[22] <- 8 #TAR
 
 x <- setNames(x ,  InputNames)
 
-ECG <- ECGSim_WrapperSingleBeat(x , t_observation )
+ECG <- ECGSim_WrapperSingleBeat_m2(x , t_observation )
 
 lines(t_observation , ECG , col ='red')
 title('Simulated ECG')
@@ -152,34 +159,43 @@ max_x <- c( 16    ,
 
 { x = rep(0 , 18)
   
-  x[1] <- -8
-  x[2] <- 0.775000095367432
-  x[3] <- 0.01
-  x[4] <- 158
-  x[5] <- 0.75
-  x[6] <- 0.01
-  x[7] <- -30
-  x[8] <-   0.795
-  x[9] <- 0.012
-  x[10] <- -38
-  x[11] <- 0.67
-  x[12] <- 0.02
-  x[13] <- 14
-  x[14] <- 1
-  x[15] <- 1.005
-  x[16] <- 0.05
-  x[17] <- 20
-  x[18] <- -2.5
+  x[1] <- -8 # Baseline
+  x[2] <- 0.775000095367432 #Rceb
+  x[3] <- 0.01 #Rwidth
+  x[4] <- 164 #RA
+  x[5] <- 0.755 #Qcen
+  x[6] <- 0.01 #Qwidth
+  x[7] <- -23 #QA
+  x[8] <-   0.79 #Scen
+  x[9] <- 0.012 #Swidth
+  x[10] <- -30 #SA
+  x[11] <- 0.62 # PcenL
+  x[12] <- 0.01 # PWidthL
+  x[13] <- 8 # PAL
+  x[14] <- 0.67 #PcenR
+  x[15] <- 0.02 #PenR
+  x[16] <- 12 #PAR
+  x[17] <- 1.01 #TcenL
+  x[18] <- 0.03 #TwidthL
+  x[19] <- 11 #TwidthL
+  x[20] <- 1.02 #TcenR
+  x[21] <- 0.03 #TwidthR
+  x[22] <- 8 #TAR
+  
+  x <- setNames(x ,  InputNames)
+  
   
   min_x <- (x - 0.3*abs(x)) 
   max_x <- (x + 0.3*abs(x)) }
 
 reductionfunction <- function(X ,  InputNames)
 {
-  X[(   ( X[ , which(InputNames == 'Pcen')] < X[ , which(InputNames == 'Qcen')] )*
+  X[(   ( X[ , which(InputNames == 'PcenL')] < X[ , which(InputNames == 'PcenR')] )*   
+        ( X[ , which(InputNames == 'PcenR')] < X[ , which(InputNames == 'Qcen')] )*
         ( X[ , which(InputNames == 'Qcen')] < X[ , which(InputNames == 'Rcen')] )*
         ( X[ , which(InputNames == 'Rcen')] < X[ , which(InputNames == 'Scen')] )*
-        ( X[ , which(InputNames == 'Scen')] < X[ , which(InputNames == 'Tcen')] )) ==1 , ]
+        ( X[ , which(InputNames == 'Scen')] < X[ , which(InputNames == 'TcenL')] )*
+        ( X[ , which(InputNames == 'TcenL')] < X[ , which(InputNames == 'TcenR')] )) ==1 , ]
 }
 
 
@@ -193,20 +209,41 @@ numberofsamples <- 1000000
 LHSample <- HM_LHD_Reduced(numberofsamples , min_x , max_x , reductionfunction = function(X){ reductionfunction(X , InputNames) } )
 colnames(LHSample) <- InputNames
 
-F_matrix <- t(apply(LHSample , 1 , function(X){ECGSim_WrapperSingleBeat( X , t_observation )} ))
+F_matrix <- t(apply(LHSample , 1 , function(X){ECGSim_WrapperSingleBeat_m2( X , t_observation )} ))
 
 Implausability <- apply( F_matrix , 1 , function(X){(HM_MeanStdError(z , X , V_me , V_md)) } )
 
 if(sum(Implausability < Im_thresh) > 1){
   print('Non-implausible point found.')
-  Non_implausible <- rbind(Non_implausible , cbind(as.matrix(LHSample[Implausability < Im_thresh,]) , as.matrix(Implausability[Implausability < Im_thresh]))  )}
+  C <- rbind(Non_implausible , cbind(as.matrix(LHSample[Implausability < Im_thresh,]) , as.matrix(Implausability[Implausability < Im_thresh]))  )}
 counter <- counter + 1
 print( counter )
 }
 
 
-plot(  t_observation , F_matrix[which.min(apply( F_matrix , 1 , function(X){(HM_MeanStdError(z , X , V_me , V_md))} )),] , type = 'l' , col = 'red')
+MeanNonIm <- apply( Non_implausible[, 1:18] , 2, mean )
+NonIm_F <- apply( Non_implausible[, 1:18] , 1 , function(X){ECGSim_WrapperSingleBeat(X , t_observation)} )
+
+plot(  t_observation ,  apply(NonIm_F , 1 , mean) , type = 'l' , col = 'red' , ylim = c(-40,170) , xlab = c('t') , ylab = 'Hz')
 lines( t_observation , z )
 lines( t_observation , z + 3*sqrt( V_md + V_me ) , col ='blue')
 lines( t_observation , z - 3*sqrt( V_md + V_me ) , col ='blue')
-title( paste0('Minimum Implausability = ' , min(apply( F_matrix , 1 , function(X){HM_MeanStdError(z , X , V_me , V_md)} ))) )
+title( paste0('Mean Non-Implausibe Output')  )
+abline( v = MeanNonIm[2] , col ='yellow' )
+abline( v =  MeanNonIm[5] , col ='yellow')
+abline( v =  MeanNonIm[8] , col ='yellow')
+abline( v =  MeanNonIm[11] , col ='yellow')
+abline( v =  MeanNonIm[15] , col ='yellow')
+
+abline( h = MeanNonIm[4] , col ='green' )
+abline( h =  MeanNonIm[7] , col ='green')
+abline( h =  MeanNonIm[8] , col ='green')
+abline( h =  MeanNonIm[10] , col ='green')
+abline( h =  MeanNonIm[13] , col ='green')
+abline( h =  MeanNonIm[17] , col ='green')
+
+
+
+
+
+

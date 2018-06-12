@@ -1,6 +1,5 @@
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
+{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
 DP_LoadPatientIndex()
 DP_ChooseDataReps()
@@ -28,6 +27,7 @@ p <- ggplot(RWaveExtractedData , aes(t , RR)) +
 
 binMatrix <- AFD_CalulateBinMatrixKernelDensityEstimated(RWaveExtractedData , n = 100)
 
+SettingsAFDetection <- AFD_CreateDefaultSettings()
 #output <-  ExtractNumberofModes( RWaveExtractedData  , densitythresh = 0.025 )
 NumberModes <- AFD_Calculatemodalmode( RWaveExtractedData , 
                         binlims = SettingsAFDetection[['BinlimsMM']] , 
@@ -47,5 +47,12 @@ p3 <- ggplot( data.frame(x = NumberModes$t , y = NumberModes$NumModes) , aes(x ,
 grid.arrange( p + geom_vline(xintercept = as.numeric( NumberModes$t[indexOI]))  , p2, p3  , nrow = 3 , ncol =1 )
 
 
+binlimits = (c(1:dim(binMatrix)[2])/73)*1.8
 
-
+plot(binlimits , binMatrix[indexOI , ] , type ='l')
+d1 <- c(0,diff(binMatrix[indexOI , ]))
+d2 <- c(0,0,diff(diff(binMatrix[indexOI , ])))
+peakslogical<- ((d1<0.025)*(d2<0)) ==1
+peakslogical[is.na(peakslogical)]=FALSE
+peakslogical <- FindLocalTurningPoints(peakslogical , binMatrix[indexOI , ])
+points( binlimits[peakslogical] , binMatrix[indexOI , peakslogical])

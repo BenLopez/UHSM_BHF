@@ -38,7 +38,6 @@ RPeakExtraction <- function( Times , ECGWaveFormData ){
   
   return(output)
 }
-
 RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5 ){
   # Function to detect R-peaks and RR wave times using a wavelet decomposition. 
   
@@ -71,7 +70,6 @@ RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsT
   output <- data.frame(t , RA , RR)
   return(output)
 }
-
 FindLocalTurningPoints <- function(Peakslogical , f_t , maxormin = 1){
   # Function to find max in sets of logicals in a times series
   # Inputs: Peakslogical, a series of logicals definning the local regions with turning points.
@@ -95,7 +93,6 @@ FindLocalTurningPoints <- function(Peakslogical , f_t , maxormin = 1){
   }
 return(Peakslogical)
 }
-
 FindQRSComplex <- function( WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) , Filter2 = rep(1 , 41) ){
 # Function to find QRS complex from an ECG.   
 # Inputs :   
@@ -148,7 +145,6 @@ FindQRSComplex <- function( WaveData , Filter , nlevels = 12 , ComponetsToRemove
   return(output)
   
 }
-
 waveletremovecompenentsandreconstruct <- function(f_tt , Filter , nlevels = 12 , ComponetsToKeep = c(3,4)){
   # Function to perform a wavelet decompostion remove components and reconstruct.
   # Inputs: signal, filter structure, number of levels, components to remove.
@@ -165,7 +161,6 @@ waveletremovecompenentsandreconstruct <- function(f_tt , Filter , nlevels = 12 ,
   imodoutput <- imodwt(modoutput, fast=TRUE)
   return(imodoutput)
 }
-
 SeparateWaveQRSandPTWaveforms <- function(WaveData , QRSoutput , bandincrement = (10*0.005)){
 # Function to separate QRS and PT Wave Forms  
 # Inputs: WaveData QRS complex locations and amplitudes, band incriment is a logical cliques round QRS complexes
@@ -199,7 +194,6 @@ SeparateWaveQRSandPTWaveforms <- function(WaveData , QRSoutput , bandincrement =
   return(output)
     
 }
-
 ExtractPQRST <- function( WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , ComponetsToKeep2 = 7 , ComponetsToKeep3 = 6 ){
 # A function to extract PQRST peaks for ECG waveform data.   
 # Inputs: WaveData, a filter struture, nlevels for wavelet decomposition, compents to keep for WRS detection, compnets to keep for P detection Components to keep for PT detection 
@@ -257,7 +251,6 @@ output <- setNames( output , outputnames)
   
 return(output)
 }
-
 ReturnWaveformwithPositiveOrientation <- function(WaveData){  
 qus <- abs(quantile(WaveData$Value, probs = c(0.01 , 0.99) , na.rm = TRUE ))
 if( as.numeric(qus[1]) > as.numeric(qus[2]) )
@@ -269,7 +262,6 @@ if( as.numeric(qus[1]) > as.numeric(qus[2]) )
 output<-WaveData
 return(output)
 }
-
 CleanRpeaks <- function( RWaveExtractedData , threshold = 2 ){
   
   # Function to clean R peaks by removing outliers caused by data gaps and missed beats.
@@ -291,7 +283,6 @@ CleanRpeaks <- function( RWaveExtractedData , threshold = 2 ){
   
   return(RWaveExtractedData)
 }
-
 ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3) , n = 250 ){
   binmatrix <- CalulateBinMatrix(RWaveExtractedData , binlims , n )
   t <- RWaveExtractedData[!is.na(binmatrix[ , 1]) ,1] 
@@ -299,7 +290,6 @@ ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from = 0.
   output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , var)) , c('t' , 'IHAVFScore'))
   return( output )
 }
-
 CalulateBinMatrix <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.8  , 0.05  )), n = 250){
   binmatrix <- matrix(0 , length( RWaveExtractedData$RR ) , length(binlims) - 1 )
   
@@ -309,7 +299,6 @@ CalulateBinMatrix <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25
   }
   return( binmatrix )
 }
-
 ExtractNumberofModes <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.5  , 0.025  )), n = 250 , densitythresh = 0.025){
   # Function to calulate the number of modes in a local region
   
@@ -321,7 +310,6 @@ ExtractNumberofModes <- function(RWaveExtractedData , binlims= c(0, seq(from = 0
   return(data.frame(t = tbin, NumModes = NumberModes))
 
 }
-
 Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.5  , 0.025  )), n = 250 , densitythresh = 0.025 , nn = 500){
 
   output <- ExtractNumberofModes(RWaveExtractedData , binlims, n  , densitythresh )
@@ -330,9 +318,7 @@ Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.2
   output$NumModes[(length(output$NumModes) - nn) : length(output$NumModes)] <- output$NumModes[length(output$NumModes) - nn -1 ]
   return(output)
 }
-
-PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.01 )
-{
+PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.01 ){
     # Calulate distance to closest peak 
   mindistancesI <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
   mindistancesII <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )

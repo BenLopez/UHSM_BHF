@@ -7,15 +7,8 @@ DP_choosepatient(listAllPatients)
 
 ECGI <- DP_LoadECGReduced(path , subList   , numberrep , 1)
 ECGII <- DP_LoadECGReduced(path , subList , numberrep , 2)
-ECGIII <-  DP_LoadECG(path , subList , numberrep , 3)
+ECGIII <-  DP_LoadECGReduced(path , subList , numberrep , 3)
 sub_pat <- subset(PatIndex2017, PseudoId %in% subList)
-
-
-timeindex <- which.min( abs(difftime( ECGIII$Date , ECGI$Date[1] , units = 'secs')) )
-numberhoursbefore = 0
-numberhoursafter = abs( difftime( ECGI$Date[length(ECGI$Date)] , ECGI$Date[1]  , units ='hours' ))
-HoursBeforeAndAFter = data.frame(numberhoursbefore , numberhoursafter)
-ECGIII <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(ECGIII , timeindex , HoursBeforeAndAFter))
 
 outputdata<- list()
 outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGI   , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
@@ -24,7 +17,6 @@ outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGIII , wt.filter(filter
 outputdata[[4]] <- sub_pat
 
 outputdata <- setNames(outputdata , c('ECGI' , 'ECGII' , 'ECGIII' , 'Meta_Data'))
-
 
 regionofinterestI   <-  DP_ChooseRegionofInterest( ECGI )
 regionofinterestII  <-  DP_AlignRegionofInterests( ECGI , ECGII , regionofinterestI )
@@ -62,7 +54,7 @@ p <- ggplot( ) +
 x11(15,10)
 grid.arrange(p1,p2,p3 , p , nrow = 4, ncol = 1)
 
-output1 <- PE_MultipleECGRPeaks(outputdata , thresh = 0.0075)
+output1 <- PE_MultipleECGRPeaks(outputdata , thresh = 0.001)
 
 p5 <- ggplot( ) + 
   geom_point( data = output1  , aes(x = t , y = RR) , colour="blue" , alpha=0.01 ) +
