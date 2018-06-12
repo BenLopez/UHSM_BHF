@@ -136,7 +136,7 @@ if(DP_ValidateRPeaks(outputdata) == FALSE){
   outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGIII , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[4]] <- DataSet$MetaData
   outputdata <- setNames(outputdata , setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' ) ))
-  outputdata[[length(outputdata) + 1]] <- PE_MultipleECGRPeaks(outputdata)
+  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , thresh = 0.01)
   outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' , 'RRCombined') )
 }
 print( 'Rpeaks loaded.' )  
