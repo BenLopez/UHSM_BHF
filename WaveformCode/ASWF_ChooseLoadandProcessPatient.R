@@ -89,7 +89,7 @@ if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "
     
     timeindex <- which.min( abs(difftime( ECGIII$Date , ECGI$Date[1] , units = 'secs')) )
     ECGIII <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(ECGIII , timeindex , HoursBeforeAndAFter))
-    print('ECGII loaded.')
+    print('ECGIII loaded.')
   }
   
   if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 0 ){

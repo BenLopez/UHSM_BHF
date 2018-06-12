@@ -359,6 +359,7 @@ PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.01 ){
   RR <- RR[((RR > 0.1)*(RR < 4)) == 1]
   
   ECG <- data.frame(t = tt_good , RA = 150 + 0*RR , RR = RR)
+  return(ECG)
 }
   
 
