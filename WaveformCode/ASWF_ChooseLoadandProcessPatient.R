@@ -112,7 +112,7 @@ if(UseReduced == "YES" &   DP_CheckECGreducedfilesprocessed( path , subList  , "
 if(UseReduced == "YES" &   DP_CheckECGreducedfilesprocessed( path , subList  , "ECGIII_reduced")){
   print('Loading ECGIII reduced.')
   ECGIII <- DP_LoadECGReduced(path , subList , numberrep , 3 )
-  print('Loading ECGIII reduced.')
+  print('ECGIII reduced loaded.')
 }
 
 if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){  
@@ -152,8 +152,15 @@ print( 'Rpeaks loaded.' )
 
 InferenceOutput <- AFD_DetectionWrapper( outputdata$RRCombined )
 AFScore <- InferenceOutput$AFScore
-StartEndTimesAF <- InferenceOutput$StartEndTimesAF
-StartEndTimesMM <- InferenceOutput$StartEndTimesMM
+if(length(InferenceOutput$StartEndTimesAF$Start) >0 ){
+  StartEndTimesAF <- AFD_Checkformissingdata(InferenceOutput$StartEndTimesAF , AFScore , ECGI , ECGII , ECGIII)}else{
+  StartEndTimesAF <- InferenceOutput$StartEndTimesAF
+  }
+if(length(InferenceOutput$StartEndTimesMM$Start) >0 ){
+  StartEndTimesMM <- AFD_Checkformissingdata(InferenceOutput$StartEndTimesMM , AFScore , ECGI , ECGII , ECGIII)}else{
+  StartEndTimesMM <- InferenceOutput$StartEndTimesMM
+  }
+
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 
@@ -177,11 +184,13 @@ regionofinterest3  <- ASWF_AlignRegionofInterests(ECGI , ECGIII , regionofintere
 
 
 
-p1 <- ggplot(outputdata$RRCombined , aes(t , RA)) + 
-  geom_point(colour="blue", alpha=0.01) +
+p1 <- ggplot(outputdata$ECGI[seq(1 , length(outputdata$ECGI$t) , 3) , ] , aes(t , RA)) +
+  geom_point( colour = "blue" ,  alpha=0.03 ) +
+  geom_point(data=outputdata$ECGII[seq(1 , length(outputdata$ECGI$t) , 3) , ] , colour = "red"  ,  alpha=0.03 ) +
+  geom_point(data= outputdata$ECGIII[seq(1 , length(outputdata$ECGI$t) , 3) , ] , colour = "green",  alpha=0.03 ) +
   ggtitle('R-amplitudes') +
   xlab("t") +
-  ylab("RA") + coord_cartesian(ylim = c(50, 200)) 
+  ylab("RA") + coord_cartesian(ylim = c(0, 200)) 
 
 
 p2 <- ggplot() + 

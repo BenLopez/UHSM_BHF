@@ -72,8 +72,8 @@ AFD_CreateDefaultSettings <- function(){
   SettingsAFDetection[[5]] <- 0.02
   SettingsAFDetection[[6]] <- 250
   SettingsAFDetection[[7]] <- 1
-  SettingsAFDetection[[8]] <- 5
-  SettingsAFDetection[[9]] <- 10
+  SettingsAFDetection[[8]] <- 10
+  SettingsAFDetection[[9]] <- 5
   SettingsAFDetection[[10]] <- 60
   SettingsAFDetection[[11]] <- 2
   
@@ -129,3 +129,37 @@ AFD_ExtractModeStatistics <- function( f_t , binlimits = SettingsAFDetection$Bin
   return( data.frame(locations = binlimits[peakslogical], densities = f_t[peakslogical])) 
   
 }
+AFD_Checkformissingdata <- function(StartEndTimesAF , AFScore , ECGI , ECGII , ECGIII ) {
+  output <- StartEndTimesAF
+  for(i in 1:length(StartEndTimesAF[ , 1])){
+  timeinAF <- difftime( StartEndTimesAF$End[i] , StartEndTimesAF$Start[i] , units = 'secs' )
+  
+  minbeats <- as.numeric((30/60)*timeinAF)
+  maxbeats <- as.numeric((300/60)*timeinAF)
+  
+  beats <- sum(((AFScore$t > StartEndTimesAF$Start[i])*(AFScore$t < StartEndTimesAF$End[i])) == 1 ) 
+  
+  if(beats < minbeats || beats > maxbeats){
+    output <- output[-i , ]
+    warning('Implausible Heart Rate')
+    next
+  }
+  
+  expectedmeasurments <- as.numeric(timeinAF)/as.numeric(abs(ECGI$Date[1] - ECGI$Date[2]))
+  numberofmeasurements = c(0,0,0)
+  numberofmeasurements[1] <- sum(((ECGI$Date > StartEndTimesAF$Start[i])*(ECGI$Date < StartEndTimesAF$End[i])) == 1 )
+  numberofmeasurements[2] <- sum(((ECGII$Date > StartEndTimesAF$Start[i])*(ECGII$Date < StartEndTimesAF$End[i])) == 1 )
+  numberofmeasurements[3] <- sum(((ECGIII$Date > StartEndTimesAF$Start[i])*(ECGIII$Date < StartEndTimesAF$End[i])) == 1 )
+  
+  if(sum((numberofmeasurements / expectedmeasurments) < 0.85) > 1 ){
+    output <- output[-i , ]
+    warning('Missing Data')
+    next
+  }
+  
+  
+  }
+  
+  return(output)
+}
+
