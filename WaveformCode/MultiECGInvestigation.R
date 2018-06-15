@@ -54,7 +54,7 @@ p <- ggplot( ) +
 x11(15,10)
 grid.arrange(p1,p2,p3 , p , nrow = 4, ncol = 1)
 
-output1 <- PE_MultipleECGRPeaks(outputdata , thresh = 0.001)
+output1 <- PE_MultipleECGRPeaks(outputdata , thresh = 0.02)
 
 p5 <- ggplot( ) + 
   geom_point( data = output1  , aes(x = t , y = RR) , colour="blue" , alpha=0.01 ) +

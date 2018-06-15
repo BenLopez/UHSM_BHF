@@ -318,7 +318,7 @@ Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.2
   output$NumModes[(length(output$NumModes) - nn) : length(output$NumModes)] <- output$NumModes[length(output$NumModes) - nn -1 ]
   return(output)
 }
-PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.01 ){
+PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.02 ){
     # Calulate distance to closest peak 
   mindistancesI <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
   mindistancesII <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
