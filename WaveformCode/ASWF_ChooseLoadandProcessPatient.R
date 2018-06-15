@@ -1,18 +1,18 @@
 source('ASWF_ChoosePatient.R')
-
+PatientRecord <- DP_ExtractPatientRecordforIndex(PatIndex2017  , subList)
 # Plot discrete data
 if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){
 plot(1)
 dev.off()
 myplot <- ggplot( data.frame(x<- DataSet$Data$tt[seq(1,length(DataSet$Data$tt),3)] , y <- DataSet$Data$HeartRate[seq(1,length(DataSet$Data$tt),3)] ) , aes(x,y))  + geom_point(colour="blue", alpha=0.03) + 
-  ggtitle(DataSet$MetaData$PseudoId) +
+  ggtitle(PatientRecord$PseudoId) +
   xlab("Time") + ylab("Heart Rate") +
   geom_hline( yintercept = 130 , linetype="dashed" , color = "red" ) + 
   geom_hline( yintercept = 100 , linetype="dashed" , color = "black" ) +
   geom_hline( yintercept = 60  , linetype="dashed" , color = "blue" )  +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(DataSet$MetaData$FirstNewAF[1]))) , linetype="dashed" , color = "black" ) +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(DataSet$MetaData$ConfirmedFirstNewAF[1]))) , linetype="dashed" , color = "grey" ) +
-  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(DataSet$MetaData$LastITUEntry[1]))) , linetype="dashed" , color = "red" ) 
+  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(PatientRecord$FirstNewAF[1]))) , linetype="dashed" , color = "black" ) +
+  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(PatientRecord$ConfirmedFirstNewAF[1]))) , linetype="dashed" , color = "grey" ) +
+  geom_vline( xintercept = as.numeric(as.POSIXct(DP_StripTime(PatientRecord$LastITUEntry[1]))) , linetype="dashed" , color = "red" ) 
 x11(12 , 7)
 print(myplot)
 }
@@ -40,7 +40,7 @@ if(UseReduced == "NO"){
     as.POSIXct( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours'))))),
     as.POSIXct(select.list(as.vector(as.character(unique(round.POSIXt(
       WaveData$Date[seq(from = 1, to = length(WaveData$Date) , by =1000)] , units = c('hours')))))
-      , preselect = DataSet$MetaData$FirstNewAF[1]
+      , preselect = PatientRecord$FirstNewAF[1]
       , multiple = FALSE
       , title = 'Select Interest Time Point'
       , graphics = TRUE ) ), units ='hours') ))
@@ -56,8 +56,12 @@ if(UseReduced == "NO"){
 # Load ECGII and ECGIII 
 if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "ECGII_reduced")){  
 print('Loading ECGII.')
-ECGII <- DP_LoadECG( path , subList , numberrep , ECGNum = 2 )
-
+  if(DP_checkfilesprocessed(path , subList , 'ECGII') == 1){
+    ECGII <- DP_LoadECG( path , subList , numberrep , ECGNum = 3 )
+  }
+  if(DP_checkfilesprocessed(path , subList , 'ECGII') == 0){
+    ECGII <- ECGI}  
+  
 if(DP_checkfilesprocessed(path , subList , 'ECGII') == 1 ){
   
 { 
@@ -78,8 +82,11 @@ if(DP_checkfilesprocessed(path , subList , 'ECGII') == 0 ){
 }
 if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "ECGIII_reduced")){  
   print('Loading ECGIII.')
+  if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 1){
   ECGIII <- DP_LoadECG( path , subList , numberrep , ECGNum = 3 )
-  
+  }
+  if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 0){
+    ECGIII <- ECGI}  
   if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 1 ){
     { 
       numberhoursbefore = 0
@@ -100,7 +107,7 @@ if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "
 if(UseReduced == "YES" &   DP_CheckECGreducedfilesprocessed( path , subList  , "ECGII_reduced")){
   print('Loading ECGII reduced.')
   ECGII <- DP_LoadECGReduced(path , subList , numberrep , 2 )
-  print('Loading ECGII reduced.')
+  print('ECGII reduced loaded.')
 }
 if(UseReduced == "YES" &   DP_CheckECGreducedfilesprocessed( path , subList  , "ECGIII_reduced")){
   print('Loading ECGIII reduced.')
@@ -118,10 +125,10 @@ if( UseReduced == "NO"  || !DP_checkRpeaksfilesprocessed(path , subList) ){
   outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGI   , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[2]] <- CleanRpeaks(RPeakExtractionWavelet( ECGII  , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGIII , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
-  outputdata[[4]] <- DataSet$MetaData
-  outputdata <- setNames(outputdata , setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' ) ))
-  outputdata[[length(outputdata) + 1]] <- PE_MultipleECGRPeaks(outputdata)
+  outputdata[[4]] <- PatientRecord
+  outputdata[[5]] <- 1
   outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' , 'RRCombined') )
+  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata)
   print('RA and R-R times Extracted.')  
 }
 if( UseReduced == "YES" &  DP_checkRpeaksfilesprocessed(path , subList) ){
@@ -129,20 +136,21 @@ print( 'Loading Rpeaks.' )
   outputdata <- DP_LoadRpeaksfile(path , subList) 
 
 if(DP_ValidateRPeaks(outputdata) == FALSE){
-  print( 'File not properly processed. Reprocessing Rpeaks data.' )  
+  print('Extracting RA and R-R times.')
   outputdata <- list()
   outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGI   , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[2]] <- CleanRpeaks(RPeakExtractionWavelet( ECGII  , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGIII , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
-  outputdata[[4]] <- DataSet$MetaData
-  outputdata <- setNames(outputdata , setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' ) ))
-  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , thresh = 0.01)
+  outputdata[[4]] <- PatientRecord
+  outputdata[[5]] <- 1
   outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' , 'RRCombined') )
+  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata)
+  print('RA and R-R times Extracted.')
 }
 print( 'Rpeaks loaded.' )  
 }
 
-InferenceOutput <- AFD_DetectionWrapper(outputdata$RRCombined )
+InferenceOutput <- AFD_DetectionWrapper( outputdata$RRCombined )
 AFScore <- InferenceOutput$AFScore
 StartEndTimesAF <- InferenceOutput$StartEndTimesAF
 StartEndTimesMM <- InferenceOutput$StartEndTimesMM

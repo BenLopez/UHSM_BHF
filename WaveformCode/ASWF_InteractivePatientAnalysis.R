@@ -17,17 +17,17 @@ while(interactivemode == 1){
   plot(1)
   dev.off()
   x11(15,10)
-  print(grid.arrange(  p3 + ggtitle(paste0('ECGI ' , DataSet$MetaData$PseudoId , '  ' ,  ECGI$Date[regionofinterest[1]])) ,
+  print(grid.arrange(  p3 + ggtitle(paste0('ECGI ' , PatientRecord$PseudoId , '  ' ,  ECGI$Date[regionofinterest[1]])) ,
                        p5 + ggtitle('ECGII') , 
                        p6 ,
                        p1 + geom_vline( xintercept = as.numeric(ECGI[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
                          geom_vline( xintercept = as.numeric(ECGI[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
-                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$FirstNewAF)) ) , linetype="dashed" , color = "purple" ) +
-                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$ConfirmedFirstNewAF)) )  , color = "purple" ),
+                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(PatientRecord$FirstNewAF)) ) , linetype="dashed" , color = "purple" ) +
+                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(PatientRecord$ConfirmedFirstNewAF)) )  , color = "purple" ),
                        p2 + geom_vline( xintercept = as.numeric(ECGI[regionofinterest[1] , 1]) , linetype="dashed" , color = "black" ) + 
                          geom_vline( xintercept = as.numeric(ECGI[regionofinterest[length(regionofinterest)] , 1]) , linetype="dashed" , color = "black" ) +
-                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$FirstNewAF)) ) , linetype="dashed" , color = "purple" ) +
-                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(DataSet$MetaData$ConfirmedFirstNewAF)) )  , color = "purple" ) +
+                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(PatientRecord$FirstNewAF)) ) , linetype="dashed" , color = "purple" ) +
+                         geom_vline( xintercept = as.numeric( as.POSIXct( DP_StripTime(PatientRecord$ConfirmedFirstNewAF)) )  , color = "purple" ) +
                          ggtitle('R-R times ' ) ,
                        
                        nrow = 5 ,
@@ -44,18 +44,18 @@ while(interactivemode == 1){
 if(UserResponse == 'YES')
 {
     
-    jumpschoices <- c('next Segment' , 'next 10' , 'next 100' , 'next 500' , 'next 1000' , 'previous Segment' , 'previous 10' , 'previous 100' , 'previous 500' ,'previous 1000'  )
+    jumpschoices <- ASWF_CreateJumpChoices()
     jump <- select.list(  jumpschoices
                           , preselect = jumpschoices[1]
                           , multiple = FALSE
                           , title = 'Select number of hours before.'
                           , graphics = TRUE )
     
-    
     regionofinterest <- ASWF_SegmentChange(regionofinterest , jump)
-    regionofinterest2 <- ASWF_SegmentChange(regionofinterest2 , jump)
     regionofinterest <- ASWF_Truncatetoregionwithdata(regionofinterest , ECGI)
     regionofinterest2 <- ASWF_Truncatetoregionwithdata(regionofinterest2 , ECGII)
+    regionofinterest3 <- ASWF_Truncatetoregionwithdata(regionofinterest3 , ECGIII)
+    
     
     if( round(difftime(ECGI[regionofinterest[1] , 1] , ECGII[regionofinterest2[1] , 1] , units = 'secs')) != 0  )
     {

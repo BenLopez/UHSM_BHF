@@ -72,8 +72,8 @@ AFD_CreateDefaultSettings <- function(){
   SettingsAFDetection[[5]] <- 0.02
   SettingsAFDetection[[6]] <- 250
   SettingsAFDetection[[7]] <- 1
-  SettingsAFDetection[[8]] <- 9
-  SettingsAFDetection[[9]] <- 9
+  SettingsAFDetection[[8]] <- 5
+  SettingsAFDetection[[9]] <- 10
   SettingsAFDetection[[10]] <- 60
   SettingsAFDetection[[11]] <- 2
   
@@ -113,8 +113,8 @@ AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
   
-  StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']])*(NumberModes$NumModes < SettingsAFDetection[['ModeThresh']] )) == 1 , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
-  StartEndTimesMM <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries = ( (NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1) )) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
+  StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries =  (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']]) , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
+  StartEndTimesMM <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1))*(AFScore$IHAVFScore < 200) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
 
   return(setNames(list(AFScore , StartEndTimesAF , StartEndTimesMM , m , NumberModes  ) , c('AFScore' , 'StartEndTimesAF' , 'StartEndTimesMM' , 'GlobalParameter' , 'NumberModes')))
 }
