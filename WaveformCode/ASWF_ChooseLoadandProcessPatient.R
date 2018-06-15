@@ -34,7 +34,13 @@ if(UseReduced == "YES"){
 if(UseReduced == "NO"){
   # Load wave form data 
   print('Loading ECGI.')
-  WaveData <- DP_LoadECG(path , subList , numberrep , ECGNum = 1 )
+  if(DP_checkfilesprocessed(path , subList , 'ECGI') == 0){
+    if(PatientRecord$TotalITUTimeHRS > 100 )
+    {print(paste0('Total hours over 100'))}else{  
+    print('No ECGI data processed.')}
+    source('ASWF_ChooseLoadandProcessPatient.R')
+  }else{  
+  WaveData <- DP_LoadECG(path , subList , numberrep , ECGNum = 1 )}
   print('ECGI Loaded.')
   interestingtimepoint <- which.min( abs( difftime(
     as.POSIXct( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours'))))),
