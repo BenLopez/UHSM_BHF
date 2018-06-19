@@ -3,17 +3,19 @@ interactivemode <- 1
 while(interactivemode == 1){
   
 {  p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
-    geom_line(colour="blue") + ylab('Hz') +
+    geom_line(colour="blue") + ylab('Hz') + xlab('t') +
     geom_point(data = outputdata$ECGI[ ((outputdata$ECGI$t > ECGI$Date[regionofinterest[1]])*(outputdata$ECGI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
   p5 <- ggplot(ECGII[regionofinterest2 , ] , aes(Date , Value)) +
     geom_point(data = outputdata$ECGII[ ((outputdata$ECGII$t > ECGII$Date[regionofinterest2[1]])*(outputdata$ECGII$t < ECGII$Date[regionofinterest2[length(regionofinterest2)]]) == 1) , ] , aes(t , RA) ) +
-    geom_line(colour="red")+ ylab('Hz') +
+    geom_line(colour="red")+ ylab('Hz') + xlab('t') +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )
   p6 <- ggplot(ECGIII[regionofinterest3 , ] , aes(Date , Value)) +
     geom_point(data = outputdata$ECGIII[ ((outputdata$ECGIII$t > ECGIII$Date[regionofinterest3[1]])*(outputdata$ECGIII$t < ECGIII$Date[regionofinterest3[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
-    geom_line(colour="green")+ ylab('Hz') +
-    xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )  
+    geom_line(colour="green")+ ylab('Hz') + xlab('t') +
+    xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] ) + 
+    ggtitle( 'ECGIII' )
+  
   plot(1)
   dev.off()
   x11(15,10)

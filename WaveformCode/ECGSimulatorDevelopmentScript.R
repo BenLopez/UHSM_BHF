@@ -109,8 +109,11 @@ title('Simulated ECG')
 V_md <- 1*abs( c(0, diff(z) ) )
 V_me <- 2
 
-lines(t_observation , z + 3*sqrt(V_md + V_me) , col ='blue')
-lines(t_observation , z - 3*sqrt(V_md + V_me) , col ='blue')
+#lines(t_observation , z + 3*sqrt(V_md + V_me) , col ='blue')
+#lines(t_observation , z - 3*sqrt(V_md + V_me) , col ='blue')
+
+legend(1, 95, legend=c("Non-implausible Simulated Signal", "Observed Patient ECG Signal"),
+       col=c("red", "black"), lty=c(1 , 1), cex=0.8)
 
 Im <- HM_MeanStdError(z , ECG , V_me , V_md)
 }
@@ -229,6 +232,7 @@ lines( t_observation , z )
 lines( t_observation , z + 3*sqrt( V_md + V_me ) , col ='blue')
 lines( t_observation , z - 3*sqrt( V_md + V_me ) , col ='blue')
 title( paste0('Mean Non-Implausibe Output')  )
+
 abline( v = MeanNonIm[2] , col ='yellow' )
 abline( v =  MeanNonIm[5] , col ='yellow')
 abline( v =  MeanNonIm[8] , col ='yellow')
