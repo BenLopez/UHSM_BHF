@@ -12,7 +12,7 @@ while(interactivemode == 1){
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] )
   p6 <- ggplot(ECGIII[regionofinterest3 , ] , aes(Date , Value)) +
     geom_point(data = outputdata$ECGIII[ ((outputdata$ECGIII$t > ECGIII$Date[regionofinterest3[1]])*(outputdata$ECGIII$t < ECGIII$Date[regionofinterest3[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +
-    geom_line(colour="green")+ ylab('Hz') + xlab('t') +
+    geom_line(colour="black")+ ylab('Hz') + xlab('t') +
     xlim(ECGI[regionofinterest[1] , 1] , ECGI[regionofinterest[length(regionofinterest)] , 1] ) + 
     ggtitle( 'ECGIII' )
   

@@ -193,7 +193,7 @@ regionofinterest3  <- ASWF_AlignRegionofInterests(ECGI , ECGIII , regionofintere
 p1 <- ggplot(outputdata$ECGI[seq(1 , length(outputdata$ECGI$t) , 3) , ] , aes(t , RA)) +
   geom_point( colour = "blue" ,  alpha=0.03 ) +
   geom_point(data=outputdata$ECGII[seq(1 , length(outputdata$ECGI$t) , 3) , ] , colour = "red"  ,  alpha=0.03 ) +
-  geom_point(data= outputdata$ECGIII[seq(1 , length(outputdata$ECGI$t) , 3) , ] , colour = "green",  alpha=0.03 ) +
+  geom_point(data= outputdata$ECGIII[seq(1 , length(outputdata$ECGI$t) , 3) , ] , colour = "black",  alpha=0.03 ) +
   ggtitle('R-amplitudes') +
   xlab("t") +
   ylab("RA") + coord_cartesian(ylim = c(0, 200)) 
@@ -219,7 +219,7 @@ if(length(StartEndTimesMM$Start) > 0)
 {
   for( i in ( 1:length(StartEndTimesMM$Start) ) )
   {
-    p2 <- p2 + annotate("rect" , xmin = StartEndTimesMM$Start[i], xmax = StartEndTimesMM$End[i], ymin = -1000, ymax= 1000 , fill = 'green' , alpha = 0.25)
+    p2 <- p2 + annotate("rect" , xmin = StartEndTimesMM$Start[i], xmax = StartEndTimesMM$End[i], ymin = -1000, ymax= 1000 , fill = 'black' , alpha = 0.25)
   }
 }
 
