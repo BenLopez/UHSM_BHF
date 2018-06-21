@@ -9,24 +9,25 @@ sub_pat = subset( PatIndex2017, PseudoId %in% PatientID )
 
 outputdata <- DP_LoadRpeaksfile( path , PatientID )
 SettingsAFDetection <- AFD_CreateDefaultSettings()
-
+RRStruct <- outputdata$RRCombined
 n <- 251
 SummaryStats <- list()
-SummaryStats[[1]] <- rollmedian( outputdata$RRCombined$RR , n , na.pad = TRUE)
-SummaryStats[[2]] <- rollmean(   outputdata$RRCombined$RR , n, na.pad = TRUE)
-SummaryStats[[3]] <- rollapply(  outputdata$RRCombined$RR , width = n , FUN = var , na.pad = TRUE)
-SummaryStats[[4]] <- rollapply(  outputdata$RRCombined$RR , width = n , FUN = skewness , na.pad = TRUE)
-SummaryStats[[5]] <- rollapply(  outputdata$RRCombined$RR , width = n , FUN = kurtosis , na.pad = TRUE)
-binMatrix <- AFD_CalulateBinMatrixKernelDensityEstimated(outputdata$RRCombined , n =n)
+SummaryStats[[1]] <- rollmedian( RRStruct$RR , n , na.pad = TRUE)
+SummaryStats[[2]] <- rollmean(   RRStruct$RR , n, na.pad = TRUE)
+SummaryStats[[3]] <- rollapply(  RRStruct$RR , width = n , FUN = var , na.pad = TRUE)
+SummaryStats[[4]] <- rollapply(  RRStruct$RR , width = n , FUN = skewness , na.pad = TRUE)
+SummaryStats[[5]] <- rollapply(  RRStruct$RR , width = n , FUN = kurtosis , na.pad = TRUE)
+binMatrix <- AFD_CalulateBinMatrixKernelDensityEstimated(RRStruct , n =n)
 SummaryStats[[6]] <- apply(binMatrix , 1 , function(X){var(X[X>0] , na.rm = TRUE)} )
 SummaryStats[[7]] <- apply(binMatrix , 1 , function(X){max(X , na.rm = TRUE)} )
-SummaryStats[[7]][is.infinite(SummaryStats[[7]])] = 0
+SummaryStats[[7]][is.infinite(SummaryStats[[7]])] <- mean(SummaryStats[[7]][(2*n):10000] , rm.na = TRUE)
 SummaryStats[[8]]  <- apply(binMatrix , 1 , function(X){ length(AFD_ExtractModeStatistics(X)$densities) } )
-SummaryStats[[8]][SummaryStats[[8]]  ==0] <- 1
+SummaryStats[[8]][SummaryStats[[8]] == 0] <- 1
+SummaryStats[[8]][is.na(SummaryStats[[8]]) == 0] <- 1
 SummaryStats[[9]]  <- apply(binMatrix , 1 , function(X){ var(AFD_ExtractModeStatistics(X)$locations) } )
-SummaryStats[[9]][is.na(SummaryStats[[9]])] <- 0
+SummaryStats[[9]][is.na(SummaryStats[[9]])] <- mean(SummaryStats[[9]][1:min(10000,length(SummaryStats[[9]]))] , rm.na = TRUE)
 SummaryStats[[10]] <- apply(binMatrix , 1 , function(X){ var(AFD_ExtractModeStatistics(X)$densities) } )
-SummaryStats[[10]][is.na(SummaryStats[[10]])] <- 0
+SummaryStats[[10]][is.na(SummaryStats[[10]])] <- mean(SummaryStats[[10]][1:min(10000,length(SummaryStats[[10]]))] , rm.na = TRUE)
 
 SummaryStats <- setNames(SummaryStats , c('Median' , 
                                           'Mean' , 

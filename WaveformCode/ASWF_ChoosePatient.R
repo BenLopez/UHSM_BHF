@@ -23,3 +23,6 @@ for(i in 1:(numberrep+1))
 }
 }
 if(DP_checkfilesprocessed(path , subList , 'Discrete') == 0){warning('No discrete data processed.')}
+PatientRecord <- DP_ExtractPatientRecordforIndex(PatIndex2017  , subList)
+if(PatientRecord$TotalITUTimeHRS > 100 ){print(paste0('Total hours over 100'))
+  source('ASWF_ChoosePatient.R')}

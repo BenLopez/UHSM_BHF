@@ -36,5 +36,6 @@ source( 'mitdbSourceFunctions.R' )
 source( 'AFDetectionSourceFunctions.R')
 source( 'ECGSimulatorSourceFunctions.R')
 source( 'HistoryMatchingSourceFunctions.R')
+source( 'PlottingSourceFunctions.R' )
 print('Libraries, data options and source functions loaded.')
 

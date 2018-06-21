@@ -113,8 +113,8 @@ AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
   
-  StartEndTimesAF <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries =  (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']]) , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
-  StartEndTimesMM <- ASWF_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1))*(AFScore$IHAVFScore < 200) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
+  StartEndTimesAF <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']]) , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
+  StartEndTimesMM <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1))*(AFScore$IHAVFScore < 200) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
 
   return(setNames(list(AFScore , StartEndTimesAF , StartEndTimesMM , m , NumberModes  ) , c('AFScore' , 'StartEndTimesAF' , 'StartEndTimesMM' , 'GlobalParameter' , 'NumberModes')))
 }
@@ -162,4 +162,58 @@ AFD_Checkformissingdata <- function(StartEndTimesAF , AFScore , ECGI , ECGII , E
   
   return(output)
 }
+AFD_ExtractDistributionSummaries <- function(RRStruct , n = 251 , SettingsAFDetection){
+  
+  if(exists('SettingsAFDetection') == FALSE){
+    SettingsAFDetection <- AFD_CreateDefaultSettings()
+    }
+  if(isodd(n)){n <- n+1}
+  SummaryStats <- list()
+  SummaryStats[[1]] <- rollmedian( RRStruct$RR , n , na.pad = TRUE)
+  SummaryStats[[2]] <- rollmean(   RRStruct$RR , n, na.pad = TRUE)
+  SummaryStats[[3]] <- rollapply(  RRStruct$RR , width = n , FUN = var , na.pad = TRUE)
+  SummaryStats[[4]] <- rollapply(  RRStruct$RR , width = n , FUN = skewness , na.pad = TRUE)
+  SummaryStats[[5]] <- rollapply(  RRStruct$RR , width = n , FUN = kurtosis , na.pad = TRUE)
+  binMatrix <- AFD_CalulateBinMatrixKernelDensityEstimated(RRStruct , n =n)
+  SummaryStats[[6]] <- apply(binMatrix , 1 , function(X){var(X[X>0] , na.rm = TRUE)} )
+  SummaryStats[[7]] <- apply(binMatrix , 1 , function(X){max(X , na.rm = TRUE)} )
+  SummaryStats[[7]][is.infinite(SummaryStats[[7]])] <- mean(SummaryStats[[7]][(2*n):10000] , rm.na = TRUE)
+  SummaryStats[[8]]  <- apply(binMatrix , 1 , function(X){ length(AFD_ExtractModeStatistics(X)$densities) } )
+  SummaryStats[[8]][SummaryStats[[8]] == 0] <- 1
+  SummaryStats[[8]][is.na(SummaryStats[[8]]) == 0] <- 1
+  SummaryStats[[9]]  <- apply(binMatrix , 1 , function(X){ var(AFD_ExtractModeStatistics(X)$locations) } )
+  SummaryStats[[9]][is.na(SummaryStats[[9]])] <- mean(SummaryStats[[9]][1:min(10000,length(SummaryStats[[9]]))] , rm.na = TRUE)
+  SummaryStats[[10]] <- apply(binMatrix , 1 , function(X){ var(AFD_ExtractModeStatistics(X)$densities) } )
+  SummaryStats[[10]][is.na(SummaryStats[[10]])] <- mean(SummaryStats[[10]][1:min(10000,length(SummaryStats[[10]]))] , rm.na = TRUE)
+  
+  SummaryStats <- setNames(SummaryStats , c('Median' , 
+                                            'Mean' , 
+                                            'Variance' , 
+                                            'Skewness' , 
+                                            'Kurtosis' , 
+                                            'Variance densities' ,
+                                            'Max Densitiy' , 
+                                            'Num Modes',
+                                            'Var Modes',
+                                          'var Mode Density'))
+  return(SummaryStats)
+  }
+AFD_GetStartEndAF <- function( t , logicaltimeseries , minutethreshold = 10){
+  logicaltimeseries[length(logicaltimeseries)] = FALSE
+  logicaltimeseries[1] = FALSE
+  d_logicaltimeseries <- diff(logicaltimeseries)
 
+  if(sum(d_logicaltimeseries) == 1)
+  {
+    d_logicaltimeseries[length(d_logicaltimeseries)] = -1
+  }
+  
+  if(sum(d_logicaltimeseries) == -1)
+  {
+    d_logicaltimeseries[1] = 1
+  }
+  
+  output <- setNames(data.frame( t[c(d_logicaltimeseries , 0) == 1]  , t[c(d_logicaltimeseries , 0) == -1]) , c("Start" , "End"))
+  output <- output[ difftime(output$End , output$Start , units = 'secs') > (minutethreshold*60) , ]
+  return(output)
+}

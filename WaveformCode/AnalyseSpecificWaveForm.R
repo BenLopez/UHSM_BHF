@@ -3,6 +3,6 @@
 
 DP_LoadPatientIndex( )
 DP_ChooseDataReps( )
-
+options(warn=-1)
 source( 'ASWF_ChooseLoadandProcessPatient.R' )
 source( 'ASWF_InteractivePatientAnalysis.R'  )

@@ -1,5 +1,6 @@
 source('ASWF_ChoosePatient.R')
-PatientRecord <- DP_ExtractPatientRecordforIndex(PatIndex2017  , subList)
+if(PatientRecord$TotalITUTimeHRS > 100 ){print(paste0('Total hours over 100'))
+  source('ASWF_ChoosePatient.R')}
 # Plot discrete data
 if( DP_checkfilesprocessed(path , subList , 'Discrete') == 1 ){
 plot(1)

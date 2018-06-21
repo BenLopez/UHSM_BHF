@@ -1,12 +1,11 @@
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
-
+{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
 DP_LoadPatientIndex()
 HowtoFilterops <- read.csv(choose.files(caption = "Select listofopsSH") , stringsAsFactors = FALSE)
 
 DP_ChooseDataReps()
-listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
+listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess = 'ECGI')
 Patientsprocessedlogical <- lapply(listAllPatients , function(X){DP_checkRpeaksfilesprocessed(path , X ) } )
 listAllPatients <- listAllPatients[which(Patientsprocessedlogical == TRUE)]
 
@@ -19,10 +18,9 @@ MMPeriods <- list()
 
 for(ii in 1:length(listAllPatients)){
   
-  load(paste0(path , '\\' , listAllPatients[ii] , '\\Zip_out\\' , listAllPatients[ii] , '_RPeaks' , '.RData'))
+   outputdata <- DP_LoadRpeaksfile(path , listAllPatients[ii])
   
-  
-  if(length(outputdata$ECGI$t) < 10000)
+  if(length(outputdata$RRCombined$t) < 10000)
   {
     SummaryStatistics[ii , 2] <- 0
     SummaryStatistics[ii , 1] <- 0
@@ -30,16 +28,16 @@ for(ii in 1:length(listAllPatients)){
     next 
   }
   
-  InferenceOutput <- AFD_DetectionWrapper(outputdata$ECGI  )
+  InferenceOutput <- AFD_DetectionWrapper( outputdata$RRCombined  )
 
-  RPeaksData[[ii]] <- setNames(list( outputdata$ECGI$t , outputdata$ECGI$RR , outputdata$Meta_Data, InferenceOutput$AFScore) , c('t' , 'RR' , 'MetaData' , 'AFScore'))
+  RPeaksData[[ii]] <- setNames(list( outputdata$RRCombined$t , outputdata$RRCombined$RR , outputdata$Meta_Data, InferenceOutput$AFScore) , c('t' , 'RR' , 'MetaData' , 'AFScore'))
   SummaryStatistics[ii , 1] <- abs(difftime(InferenceOutput$AFScore$t[1] , InferenceOutput$AFScore$t[length(InferenceOutput$AFScore$t)] , units = c("hours")))
   SummaryStatistics[ii , 2] <- length(InferenceOutput$AFScore$IHAVFScore)
     
   AFPeriods[[ii]] <- InferenceOutput$StartEndTimesAF
   MMPeriods[[ii]] <-  InferenceOutput$StartEndTimesMM 
     
-  print(ii/length(listAllPatients))
+  DP_WaitBar(ii/length(listAllPatients))
 }
 
 RPeaksData <- setNames(RPeaksData , as.vector(listAllPatients))
