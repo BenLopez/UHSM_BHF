@@ -401,15 +401,7 @@ DP_LoadReducedECGs <- function(path , subList , numberrep=1 , FilestoProcess){
   }
   output <- setNames(output , FilestoProcess)
 }
-AFD_ExtractSQ<-function(ECG , RPeaks , QSwidth = 8 , index = 1){
-  logicalvector <- ((ECG$Date > (RPeaks$t[index] + (8*0.005))) )*(ECG$Date <= RPeaks$t[index + 1] - (8*0.005)) == 1
-  t <- ECG[logicalvector , 1]
-  Values <- ECG[logicalvector , 2]
-  return(setNames(list( RPeaks$t[index] , t , Values ) , c('t_start' , 'Date' , 'Value')))
-}
-AFD_ExtractAllSQ <- function(ECG , RPeaks , QSwidth = 8){
-  outputdata <- lapply( as.list(1:length(RPeaks$t)) , function(X){AFD_ExtractSQ(ECG , RPeaks , QSwidth  , index = X)})
-}
+
 
 size <- function(X){
   dim(X)}

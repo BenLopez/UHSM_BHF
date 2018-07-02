@@ -7,7 +7,8 @@ if(DP_checkRpeaksfilesprocessed(path , listAllPatients[[ii]])){
   outputdata <- DP_LoadRpeaksfile(path , listAllPatients[ii])}else{
     next
   }
-
+if( length(outputdata$RRCombined$t) < 1000){next}
+  
 if(DP_CheckFieldExists(outputdata , 'RRCombined')){
   print('Calulating Distribution Summaries')
   DistributionSummaries <- AFD_ExtractDistributionSummaries(outputdata$RRCombined)  

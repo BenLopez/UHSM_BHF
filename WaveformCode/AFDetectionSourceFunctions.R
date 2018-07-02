@@ -57,7 +57,6 @@ logicalts <- (abs(difftime( NumberModes$t , NumberModes$t[1] , units = c('hours'
 if(sum(logicalts) < 1000){
 output <- 50
 }
-
 if(sum(logicalts)){  
 output <- mean(AFScore$IHAVFScore[logicalts == 1] )   
 }
@@ -129,13 +128,13 @@ AFD_ExtractModeStatistics <- function( f_t , binlimits = SettingsAFDetection$Bin
   return( data.frame(locations = binlimits[peakslogical], densities = f_t[peakslogical])) 
   
 }
-AFD_Checkformissingdata <- function(StartEndTimesAF , AFScore , ECGI , ECGII , ECGIII ) {
+AFD_Checkformissingdata <- function(StartEndTimesAF , AFScore , ECGI , ECGII , ECGIII , beatlims = c(45 , 300) , readinglim = 0.65) {
   output <- StartEndTimesAF
   for(i in 1:length(StartEndTimesAF[ , 1])){
   timeinAF <- difftime( StartEndTimesAF$End[i] , StartEndTimesAF$Start[i] , units = 'secs' )
   
-  minbeats <- as.numeric((30/60)*timeinAF)
-  maxbeats <- as.numeric((300/60)*timeinAF)
+  minbeats <- as.numeric((beatlims[1]/60)*timeinAF)
+  maxbeats <- as.numeric((beatlims[2]/60)*timeinAF)
   
   beats <- sum(((AFScore$t > StartEndTimesAF$Start[i])*(AFScore$t < StartEndTimesAF$End[i])) == 1 ) 
   
@@ -151,7 +150,7 @@ AFD_Checkformissingdata <- function(StartEndTimesAF , AFScore , ECGI , ECGII , E
   numberofmeasurements[2] <- sum(((ECGII$Date > StartEndTimesAF$Start[i])*(ECGII$Date < StartEndTimesAF$End[i])) == 1 )
   numberofmeasurements[3] <- sum(((ECGIII$Date > StartEndTimesAF$Start[i])*(ECGIII$Date < StartEndTimesAF$End[i])) == 1 )
   
-  if(sum((numberofmeasurements / expectedmeasurments) < 0.85) > 1 ){
+  if(sum((numberofmeasurements / expectedmeasurments) < readinglim) > 1 ){
     output <- output[-i , ]
     warning('Missing Data')
     next
@@ -216,4 +215,38 @@ AFD_GetStartEndAF <- function( t , logicaltimeseries , minutethreshold = 10){
   output <- setNames(data.frame( t[c(d_logicaltimeseries , 0) == 1]  , t[c(d_logicaltimeseries , 0) == -1]) , c("Start" , "End"))
   output <- output[ difftime(output$End , output$Start , units = 'secs') > (minutethreshold*60) , ]
   return(output)
+}
+AFD_ExtractSQ<-function(ECG , RPeaks , QSwidth = 8 , index = 1){
+  logicalvector <- ((ECG$Date > (RPeaks$t[index] + (QSwidth*0.005))) )*(ECG$Date <= RPeaks$t[index + 1] - (QSwidth*0.005)) == 1
+  t <- ECG[logicalvector , 1]
+  Values <- ECG[logicalvector , 2]
+  return(setNames(list( RPeaks$t[index] , t , Values ) , c('t_start' , 'Date' , 'Value')))
+}
+AFD_ExtractAllSQ <- function(ECG , RPeaks , QSwidth = 8){
+
+t_start <-  RPeaks$t[1:( length(RPeaks$t) -1 )] 
+Date <- matrix(NA , length(RPeaks$t) -1 , 600)
+Value <- matrix(NA , length(RPeaks$t) -1 , 600)
+numvalues <- matrix(NA,length(t_start),1)
+ECG <- ECG[((ECG$Date <= RPeaks$t[length(RPeaks$t)])*(ECG$Date >= RPeaks$t[1])) ==1, ]
+
+for( index in 1:(length(RPeaks$t) -1) ){
+logicalvector <- ((ECG$Date >= (RPeaks$t[index] + (QSwidth*0.005))) )*(ECG$Date <= RPeaks$t[index + 1] - (QSwidth*0.005)) == 1
+Sum_LV <- sum(logicalvector)
+if(Sum_LV> 600){next}
+Date[index ,1:Sum_LV ] <- ECG[logicalvector , 1]
+Date[index ,1:Sum_LV ] <- (Date[index ,1:Sum_LV ] - Date[index ,1 ])
+Value[index ,1:Sum_LV ] <- (ECG[logicalvector , 2])
+numvalues[index , 1] <- Sum_LV
+}  
+
+Log_1 <- apply(Date , 1 , function(X){sum(!is.na(X))}) != 0
+Log_2 <- ((apply(Date , 2 , function(X){sum(!is.na(X))})/(length(RPeaks$t) -1) )*100) > 20
+
+Date <- Date[ , Log_2]
+Value <- Value[ , Log_2]
+Date <- Date[Log_1 , ]
+Value <- Value[Log_1 , ]
+numvalues <- numvalues[Log_1 , ]
+return(setNames(list(t_start, Date , Value , numvalues) , c('t_start' , 'Date' , 'Value' , 'numvalues')))
 }

@@ -205,7 +205,7 @@ reductionfunction <- function(X ,  InputNames)
 Non_implausible <- t(as.matrix(c(x , Im)))
 counter <- 1
 Im_thresh <- 2
-while( dim(Non_implausible)[1] < 300 )
+while( dim(Non_implausible)[1] < 500 )
 {
   
 numberofsamples <- 1000000
@@ -218,14 +218,27 @@ Implausability <- apply( F_matrix , 1 , function(X){(HM_MeanStdError(z , X , V_m
 
 if(sum(Implausability < Im_thresh) > 1){
   print('Non-implausible point found.')
-  C <- rbind(Non_implausible , cbind(as.matrix(LHSample[Implausability < Im_thresh,]) , as.matrix(Implausability[Implausability < Im_thresh]))  )}
+  Non_implausible <- rbind(Non_implausible , cbind(as.matrix(LHSample[Implausability < Im_thresh,]) , as.matrix(Implausability[Implausability < Im_thresh]))  )
+  }
 counter <- counter + 1
-print( counter )
+DP_WaitBar( dim(Non_implausible)[1]/500 )
 }
-
 
 MeanNonIm <- apply( Non_implausible[, 1:18] , 2, mean )
 NonIm_F <- apply( Non_implausible[, 1:18] , 1 , function(X){ECGSim_WrapperSingleBeat(X , t_observation)} )
+
+
+x11(25,20)
+colorvector = matrix(0,  1128  , 1)
+colorvector[1:128] = rgb(1,0,0 , alpha = 0.1)
+colorvector[129:length(colorvector)] = rgb(1,0,0 , alpha = 0.0001)
+
+pairs( rbind(Non_implausible[ , 1:5] , LHSample[1:1000 , 1:5]) , pch = 16 ,  col = colorvector )
+title('Posterior Non-Implausible Sets')
+
+pairs( rbind(LHSample[1:1000 , 1:5]) , pch = 16 ,  col = rgb(1,0,0, 0.1) )
+title('Posterior Non-Implausible Sets')
+
 
 plot(  t_observation ,  apply(NonIm_F , 1 , mean) , type = 'l' , col = 'red' , ylim = c(-40,170) , xlab = c('t') , ylab = 'Hz')
 lines( t_observation , z )
