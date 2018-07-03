@@ -47,21 +47,18 @@ if( (length(outputdata$RRCombined$t) > 10000) && (outputdata$Meta_Data$TotalITUT
 
 RPeaksData <- setNames(RPeaksData , as.vector(unlist(PatientNames)))
 AFPeriods <- setNames(AFPeriods , as.vector(unlist(PatientNames)))
+SummaryStatistics <- SummaryStatistics[1:length(RPeaksData) , ]
 #AFPeriods <- AFPeriods[which(unlist(lapply(RPeaksData , function(X){length(X[[1]]) > 10000}) ))]
 #RPeaksData <- RPeaksData[which(unlist(lapply(RPeaksData , function(X){length(X[[1]]) > 10000}) ))]
 
-AFStatistics <- matrix(0 , length(RPeaksData) , 3)
 AFResults <- matrix(0 , length(RPeaksData) , 1)
-AFStatistics <- matrix(0 , length(RPeaksData) , 3)
+AFStatistics <- matrix(0 , length(RPeaksData) , 2)
 PatientNames <-  matrix(0 , length(RPeaksData) , 1)
 for( ii in 1:length(RPeaksData) )
 {
-  if( !is.na(RPeaksData[[ii]]$MetaData$FirstNewAF)  && !is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)){AFStatistics[ii , 1] <- 1}
-  if( !is.na(RPeaksData[[ii]]$MetaData$FirstNewAF)  &&  is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)){AFStatistics[ii , 2] <- 1}
-  if(  is.na(RPeaksData[[ii]]$MetaData$FirstNewAF)  &&  is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)){AFStatistics[ii , 3] <- 1}
-  if(  sum(RPeaksData[[ii]]$MetaData$PseudoId[1] ==  ListConfirmedNoAF) > 0 ){AFStatistics[ii , ] <- c(0,0,1)}
-  if(  length(RPeaksData[[ii]][[1]]) < 1000){AFStatistics[ii , ] <- c(0,0,1)}
-  PatientNames[ii] <- RPeaksData[[ii]]$MetaData$PseudoId
+  if(   RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF !=  'CNAF' && !is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)){AFStatistics[ii , 1] <- 1}
+  if(  is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)  &&  is.na(RPeaksData[[ii]]$MetaData$ConfirmedFirstNewAF)){AFStatistics[ii , 2] <- 1}
+  PatientNames[ii] <- RPeaksData[[ii]]$MetaData$PseudoId[1]
   AFResults[ii , 1] <- length(AFPeriods[[ii]]$Start) 
 }
 
@@ -73,24 +70,18 @@ PatientNames <- PatientNames[((SummaryStatistics[ , 1] < 8)*(SummaryStatistics[ 
 
 
 Total <- length(AFResults)
-N <- apply(AFStatistics , 2 , sum)[3]
-P <- apply(AFStatistics , 2 , sum)[1] + apply(AFStatistics , 2 , sum)[2]
-PC <- apply(AFStatistics , 2 , sum)[1]
+N <- apply(AFStatistics , 2 , sum)[2]
+P <- apply(AFStatistics , 2 , sum)[1]
 
 CorrectConfirmed <- (AFStatistics[ , 1] == 1)*( AFResults > 0 )
 IncorrectConfirmed <- (AFStatistics[ , 1] == 1)*(AFResults == 0)
 
-Correctunconfirmed <-  (AFStatistics[ , 2] == 1)*( AFResults > 0 )
-IncorrectunConfirmed <- (AFStatistics[ , 2] == 1)*( AFResults == 0 )
+CorrectNAF <-  (AFStatistics[ , 2] == 1)*(AFResults == 0)
+IncorrectNAF <-  (AFStatistics[ , 2] == 1)*(AFResults > 0)
 
-CorrectNAF <-  (AFStatistics[ , 3] == 1)*(AFResults == 0)
-IncorrectNAF <-  (AFStatistics[ , 3] == 1)*(AFResults > 0)
+Senistivity <- sum(CorrectConfirmed) / PC
 
-SenistivityConfirmed <- sum(CorrectConfirmed) / PC
-SenistivityUnConfirmed <- sum(Correctunconfirmed) / (apply(AFStatistics , 2 , sum)[2])
-Sensitivity <- (sum(CorrectConfirmed) + sum(Correctunconfirmed)) / P
-
-PPV <- (sum(CorrectConfirmed) + sum(Correctunconfirmed))/ (sum(IncorrectNAF) + sum(CorrectConfirmed) + sum(Correctunconfirmed))
+PPV <- (sum(CorrectConfirmed) )/ (sum(IncorrectNAF) + sum(CorrectConfirmed) + sum(Correctunconfirmed))
 NPV <- sum(CorrectNAF) /(sum(CorrectNAF) + sum(IncorrectunConfirmed) + sum(IncorrectConfirmed) )
 
 Specifictity <- sum( CorrectNAF ) / N

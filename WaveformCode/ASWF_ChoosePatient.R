@@ -1,11 +1,10 @@
 subList = select.list(listAllPatients
-                      ,preselect = NULL
+                      , preselect = NULL
                       , multiple = FALSE
-                      ,title = 'Select Patient to Analyse'
+                      , title = 'Select Patient to Analyse'
                       , graphics = TRUE )
 
-if(DP_checkfilesprocessed(path , subList , 'Discrete') == 1)
-{  
+if(DP_checkfilesprocessed(path , subList , 'Discrete') == 1){  
 # Load discrete data
 for(i in 1:(numberrep+1))
 {
@@ -22,7 +21,10 @@ for(i in 1:(numberrep+1))
   }  
 }
 }
+
 if(DP_checkfilesprocessed(path , subList , 'Discrete') == 0){warning('No discrete data processed.')}
 PatientRecord <- DP_ExtractPatientRecordforIndex(PatIndex2017  , subList)
-if(PatientRecord$TotalITUTimeHRS > 100 ){print(paste0('Total hours over 100'))
-  source('ASWF_ChoosePatient.R')}
+
+if(nrow(PatientRecord) > 0){
+if( PatientRecord$TotalITUTimeHRS > 100  ){print(paste0('Total hours over 100'))
+  source('ASWF_ChoosePatient.R')}}

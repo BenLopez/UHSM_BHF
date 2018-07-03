@@ -25,7 +25,7 @@ AFD_ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from 
   binmatrix <- CalulateBinMatrix(RWaveExtractedData , binlims , n )
   t <- RWaveExtractedData[!is.na(binmatrix[ , 1]) ,1] 
   binmatrix <-  binmatrix[!is.na(binmatrix[ , 1]),]
-  output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , var)) , c('t' , 'IHAVFScore'))
+  output <- setNames(data.frame(t , 1/apply(binmatrix , 1 , function(X){var(X)})) , c('t' , 'IHAVFScore'))
   return( output )
 }
 AFD_ExtractNumberofModes <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.25  , to = 1.5  , 0.025  )), n = 250 , densitythresh = 0.025){
@@ -113,7 +113,7 @@ AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
   
   StartEndTimesAF <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']]) , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
-  StartEndTimesMM <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes > (SettingsAFDetection[['ModeThresh']] -1))*(AFScore$IHAVFScore < 200) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
+  StartEndTimesMM <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes >= (SettingsAFDetection[['ModeThresh']] -1))*(AFScore$IHAVFScore < 200) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
 
   return(setNames(list(AFScore , StartEndTimesAF , StartEndTimesMM , m , NumberModes  ) , c('AFScore' , 'StartEndTimesAF' , 'StartEndTimesMM' , 'GlobalParameter' , 'NumberModes')))
 }

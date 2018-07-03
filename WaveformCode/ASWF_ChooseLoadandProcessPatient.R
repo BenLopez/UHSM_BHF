@@ -154,8 +154,14 @@ if(DP_ValidateRPeaks(outputdata) == FALSE){
 }
 print( 'Rpeaks loaded.' )  
 }
-
-InferenceOutput <- AFD_DetectionWrapper( outputdata$RRCombined )
+#tmp <-  outputdata$RRCombined$RR 
+#outputdata$RRCombined$RR =  c(0 , diff(outputdata$RRCombined$RR))
+#SettingsAFDetection = AFD_CreateDefaultSettings()
+#SettingsAFDetection$BinlimsScore = seq(-1.5 , 1.5 , 0.05)
+#SettingsAFDetection$BinlimsMM = SettingsAFDetection$BinlimsMM - 0.9
+InferenceOutput <- AFD_DetectionWrapper( outputdata$RRCombined , SettingsAFDetection = SettingsAFDetection )
+#outputdata$RRCombined$RR <- tmp 
+#rm(tmp)
 AFScore <- InferenceOutput$AFScore
 if(length(InferenceOutput$StartEndTimesAF$Start) >0 ){
   StartEndTimesAF <- AFD_Checkformissingdata(InferenceOutput$StartEndTimesAF , AFScore , ECGI , ECGII , ECGIII)}else{
@@ -165,7 +171,6 @@ if(length(InferenceOutput$StartEndTimesMM$Start) >0 ){
   StartEndTimesMM <- AFD_Checkformissingdata(InferenceOutput$StartEndTimesMM , AFScore , ECGI , ECGII , ECGIII)}else{
   StartEndTimesMM <- InferenceOutput$StartEndTimesMM
   }
-
 
 timelist <- as.vector(as.character(round.POSIXt(ECGI[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
 

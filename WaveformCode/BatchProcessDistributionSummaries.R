@@ -1,7 +1,7 @@
 {pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
 source("LibrariesAndSettings.R" , print.eval  = TRUE )
 DP_GetDirectories()}
-
+SettingsAFDetection <- AFD_CreateDefaultSettings()
 for(ii in 1:length(listAllPatients)){
 if(DP_checkRpeaksfilesprocessed(path , listAllPatients[[ii]])){
   outputdata <- DP_LoadRpeaksfile(path , listAllPatients[ii])}else{
@@ -14,7 +14,7 @@ if(DP_CheckFieldExists(outputdata , 'RRCombined')){
   DistributionSummaries <- AFD_ExtractDistributionSummaries(outputdata$RRCombined)  
   print('Distribution Summaries calculated')
   
-  print('Saving Distribution Summaries')
+  print('Saving Distribution Summari}es')
   DP_SaveFile(DistributionSummaries , path , listAllPatients[[ii]] , Name = paste0(listAllPatients[[ii]] , '_DistributionSummaries' ) )
   print('Distribution Summaries Saved')
   

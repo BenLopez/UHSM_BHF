@@ -1,8 +1,11 @@
 # Script to batch process wave data.
 
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
+{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
+# Optionsforprocessing
+checkforprocessedfiles <- 0
+OnlyAFPatientes <- 1
 
 DP_LoadPatientIndex()
 HoursBeforeAndAFter <- DP_SelectHoursBeforeandAfter()
@@ -16,40 +19,46 @@ listAllPatients <- select.list(listAllPatients , graphics = TRUE , multiple = TR
 for( ii in 1:length(listAllPatients) ){
 processdata <- 1
 outputdata  <- list()  
+sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])
+
+if(OnlyAFPatientes == 1){
+  if(is.na(sub_pat$ConfirmedFirstNewAF) || sub_pat$ConfirmedFirstNewAF == 'CNAF'){
+    print(paste0('skipping patient ' , listAllPatients[ii]))
+    next
+  }
+}
     
 for( jj in 1:length(FilestoProcess) ){
   
-if(DP_CheckECGreducedfilesprocessed(path , listAllPatients[ii] , paste0(FilestoProcess[jj] , '_reduced') ) == FALSE ){  
+if(DP_CheckECGreducedfilesprocessed(path , listAllPatients[ii] , paste0(FilestoProcess[jj] , '_reduced') ) == FALSE || checkforprocessedfiles == 0){  
   print( paste0('Loading patient ' , listAllPatients[ii] , ' ' , FilestoProcess[jj] , '.'  ) )
   WaveData <- DP_LoadECG(path , listAllPatients[ii] , numberrep , FilestoProcess[jj] )
   print( paste0('Patient ' , listAllPatients[ii] , ' ' , FilestoProcess[jj]  , ' loaded.' ) ) 
   crop = 1
-}  
-if(DP_CheckECGreducedfilesprocessed(path , listAllPatients[ii] , paste0(FilestoProcess[jj] , '_reduced')) ){  
+}
+if(DP_CheckECGreducedfilesprocessed(path , listAllPatients[ii] , paste0(FilestoProcess[jj] , '_reduced')) & checkforprocessedfiles == 1){  
   print('Loading reduced file.')
   WaveData <- DP_LoadECGReduced(path , listAllPatients[ii] , numberrep , FilestoProcess[jj] )
   timestamp <- WaveData$Date[1]
   print('Reduced file loaded.')
   crop = 0
-  }  
-  
-sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])
+}  
+  sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])
 
 if( crop == 1 ){
-print('Cropping ECG.')  
-  if(!is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) & jj == 1){
+print('Cropping ECG.') 
+# Patient in AF  
+  if(!is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) & sub_pat$ConfirmedFirstNewAF[1] != 'CNAF' & jj == 1){
     timeindex <- which.min(abs(difftime(WaveData$Date , DP_StripTime(sub_pat$ConfirmedFirstNewAF[1]) , units = 'mins' )))[1]
     WaveData <- DP_CropWaveData(WaveData ,  timeindex , HoursBeforeAndAFter)
+    timestamp <- WaveData$Date[1]
   }
-  
-  if(is.na(sub_pat$ConfirmedFirstNewAF[1]) & !is.na(DP_StripTime(sub_pat$FirstNewAF[1]))& jj == 1){
+  if(is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) & jj == 1){
     timeindex <- which.min(abs(difftime(WaveData$Date , DP_StripTime(sub_pat$FirstNewAF), units = 'mins' )))[1]
     WaveData <- DP_CropWaveData(WaveData ,  timeindex , HoursBeforeAndAFter)
   }
-  
-  if(is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) & is.na(DP_StripTime(sub_pat$FirstNewAF[1]) ) || jj >1){
-  
-  if(jj == 1){
+  if(is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) || sub_pat$ConfirmedFirstNewAF[1] == 'CNAF' & jj == 1){
+if(jj == 1){
     counter <- 1
     while(counter < 10)
   {
@@ -76,13 +85,11 @@ if(counter > 10){
   processdata <- 0    
   break}  
   }
-  
+  } 
   if(jj > 1){
     timeindex <- which.min(abs(WaveData$Date -  timestamp))
     WaveData <- DP_CropWaveData(WaveData ,  timeindex , data.frame(numberhoursbefore = 0 , numberhoursafter = (HoursBeforeAndAFter$numberhoursbefore + HoursBeforeAndAFter$numberhoursafter)))
   }
-    
-}  
 print('ECG cropped.')   
 Time <- WaveData$Date[1]  
 }

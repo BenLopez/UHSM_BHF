@@ -12,6 +12,7 @@ if(filetype == 'RData')
   load(choose.files( caption = 'Select PatientIndexMaster.RData'))
   PatIndex2017 <<- PatIndex2017
 }
+  return(PatIndex2017)
 }
 DP_ChooseDataReps <- function( ){
   
@@ -370,7 +371,10 @@ DP_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest){
   return(regionofinterest2)
 }
 DP_ValidateRPeaks<-function(RPeaksOutput){
-  return(sum(names(RPeaksOutput) == c("ECGI","ECGII","ECGIII","Meta_Data","RRCombined")) ==5) }
+  if(sum(names(RPeaksOutput) == c("ECGI","ECGII","ECGIII","Meta_Data","RRCombined")) ==5 || sum(names(RPeaksOutput) == c("ECGI","ECGII","ECGIII","MetaData","RRCombined")) ==5){
+  return(TRUE)  
+  }else{return(FALSE)}
+}
 DP_ExtractPatientRecordforIndex <- function(PatIndex2017 , PatientCode){
   return( subset(PatIndex2017, PseudoId %in% PatientCode))
 }
@@ -401,7 +405,20 @@ DP_LoadReducedECGs <- function(path , subList , numberrep=1 , FilestoProcess){
   }
   output <- setNames(output , FilestoProcess)
 }
-
+DP_CreateDummyMetaData <- function(PatIndex2017 , Name = NA , FirstNewAF = NA){
+  output <- setNames(data.frame(NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,
+                                NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,
+                                NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,
+                                NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,
+                                NA , NA , NA , NA , NA , NA) , names(PatIndex2017))
+  output$TotalITUTimeHRS <- 80
+  output$Pre_OperativeHeartRhythm <- "Sinus Rhythm"
+  output$Usable <- 1
+  output$PseudoId <- Name
+  output$ConfirmedFirstNewAF <- FirstNewAF
+  output$FirstNewAF <- FirstNewAF
+  return(output)
+}
 
 size <- function(X){
   dim(X)}

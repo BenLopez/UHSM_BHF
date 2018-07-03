@@ -1,5 +1,5 @@
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
+{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
 
 numberofCSVs <- select.list(as.character(c(1:10)) , graphics = TRUE )
@@ -14,4 +14,4 @@ PatIndex2017 <- rbind(PatIndex2017, read.csv(choose.files(multi = FALSE), string
 }
 }
 
-save(PatIndex2017 , file = "C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_25052018\\PatientIndexMaster.RData")
+save(PatIndex2017 , file = "C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_02072018\\PatientIndexMaster.RData")
