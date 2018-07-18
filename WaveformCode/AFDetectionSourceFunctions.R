@@ -50,12 +50,12 @@ AFD_Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from =
   output$NumModes[output$NumModes < 1] = 1;
   return(output)
 }
-AFD_CalulateMeanNormal <- function(AFScore , NumberModes , initialtime = 1){
+AFD_CalulateMeanNormal <- function(AFScore , NumberModes , initialtime = 1 , priormean = 50){
   
-logicalts <- (abs(difftime( NumberModes$t , NumberModes$t[1] , units = c('hours') )) < initialtime)*(NumberModes$NumModes < 2);   
+logicalts <- (abs(difftime( NumberModes$t , NumberModes$t[1] , units = c('hours') )) < initialtime)*(NumberModes$NumModes < 1);   
 
 if(sum(logicalts) < 1000){
-output <- 50
+output <- priormean
 }
 if(sum(logicalts)){  
 output <- mean(AFScore$IHAVFScore[logicalts == 1] )   
@@ -75,7 +75,8 @@ AFD_CreateDefaultSettings <- function(){
   SettingsAFDetection[[9]] <- 5
   SettingsAFDetection[[10]] <- 60
   SettingsAFDetection[[11]] <- 2
-  
+  SettingsAFDetection[[12]] <- 200
+  SettingsAFDetection[[13]] <- 50
   
   
   SettingsAFDetection <- setNames(SettingsAFDetection ,
@@ -89,7 +90,9 @@ AFD_CreateDefaultSettings <- function(){
                                     'TimeinAFThresh',
                                     'TimeinMMThresh',
                                     'AFScoreThresh',
-                                    'ModeThresh'))  
+                                    'ModeThresh',
+                                    'AFScoreUpperThresh',
+                                    'PriorBaselineScore'))  
   
   return(SettingsAFDetection)
 }
@@ -104,7 +107,7 @@ AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_
                                          densitythresh = SettingsAFDetection[['DensityThresholdMM']],
                                          nn = SettingsAFDetection[['BadnWidthMM']])
   
-  m <- AFD_CalulateMeanNormal(AFScore , NumberModes , initialtime = SettingsAFDetection[['InitialTimetoCalulateGlobalComponent']] )
+  m <- AFD_CalulateMeanNormal(AFScore , NumberModes , initialtime = SettingsAFDetection[['InitialTimetoCalulateGlobalComponent']] , priormean = SettingsAFDetection[['PriorBaselineScore']])
   AFScore$IHAVFScore <-  AFScore$IHAVFScore - m
   
   TimeIndexofGaps <- lapply(TimeGaps , function(X){ which.min( abs(X - AFScore$t)  ) } )
@@ -112,8 +115,9 @@ AFD_DetectionWrapper <- function(RWaveExtractedData , SettingsAFDetection = AFD_
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps)))] <- 0
   AFScore$IHAVFScore[as.numeric(unique(as.matrix(TimeIndexofGaps))) - 1] <- 0
   
-  StartEndTimesAF <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']]) , minutethreshold = SettingsAFDetection[['TimeinAFThresh']] )
-  StartEndTimesMM <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes >= (SettingsAFDetection[['ModeThresh']] -1))*(AFScore$IHAVFScore < 200) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
+  StartEndTimesMM <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  ((NumberModes$NumModes >= (SettingsAFDetection[['ModeThresh']]))*(AFScore$IHAVFScore < SettingsAFDetection[['AFScoreUpperThresh']]) ) == 1 , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
+  AFScore <- AFD_zeroMultiModal(AFScore , StartEndTimesMM)
+  StartEndTimesAF <- AFD_GetStartEndAF(t = AFScore$t , logicaltimeseries =  (AFScore$IHAVFScore > SettingsAFDetection[['AFScoreThresh']]) , minutethreshold = SettingsAFDetection[['TimeinMMThresh']] )
 
   return(setNames(list(AFScore , StartEndTimesAF , StartEndTimesMM , m , NumberModes  ) , c('AFScore' , 'StartEndTimesAF' , 'StartEndTimesMM' , 'GlobalParameter' , 'NumberModes')))
 }
@@ -249,4 +253,13 @@ Date <- Date[Log_1 , ]
 Value <- Value[Log_1 , ]
 numvalues <- numvalues[Log_1 , ]
 return(setNames(list(t_start, Date , Value , numvalues) , c('t_start' , 'Date' , 'Value' , 'numvalues')))
+}
+AFD_zeroMultiModal <- function(AFScore , StartEndTimesMM){
+  output <- AFScore
+  if(nrow(StartEndTimesMM) > 0){
+  for( i in 1:nrow(StartEndTimesMM) ){
+    output$IHAVFScore[(output$t > StartEndTimesMM$Start[i])*(output$t < StartEndTimesMM$End[i]) == 1] <- 0
+  }
+  }
+  return(output)
 }

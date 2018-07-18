@@ -154,14 +154,18 @@ if(DP_ValidateRPeaks(outputdata) == FALSE){
 }
 print( 'Rpeaks loaded.' )  
 }
-#tmp <-  outputdata$RRCombined$RR 
-#outputdata$RRCombined$RR =  c(0 , diff(outputdata$RRCombined$RR))
-#SettingsAFDetection = AFD_CreateDefaultSettings()
-#SettingsAFDetection$BinlimsScore = seq(-1.5 , 1.5 , 0.05)
-#SettingsAFDetection$BinlimsMM = SettingsAFDetection$BinlimsMM - 0.9
-InferenceOutput <- AFD_DetectionWrapper( outputdata$RRCombined , SettingsAFDetection = SettingsAFDetection )
-#outputdata$RRCombined$RR <- tmp 
-#rm(tmp)
+tmp <-  outputdata$RRCombined$RR 
+outputdata$RRCombined$RR =  c(0 , diff(outputdata$RRCombined$RR))
+SettingsAFDetection = AFD_CreateDefaultSettings()
+SettingsAFDetection$BinlimsScore = seq(-1.5 , 1.5 , 0.05)
+SettingsAFDetection$BinlimsMM = SettingsAFDetection$BinlimsMM - 0.9
+SettingsAFDetection$AFScoreThresh = 200
+SettingsAFDetection$AFScoreUpperThresh = 400
+SettingsAFDetection$PriorBaselineScore = 110
+
+InferenceOutput <- AFD_DetectionWrapper(RWaveExtractedData = outputdata$RRCombined , SettingsAFDetection = SettingsAFDetection )
+outputdata$RRCombined$RR <- tmp 
+rm(tmp)
 AFScore <- InferenceOutput$AFScore
 if(length(InferenceOutput$StartEndTimesAF$Start) >0 ){
   StartEndTimesAF <- AFD_Checkformissingdata(InferenceOutput$StartEndTimesAF , AFScore , ECGI , ECGII , ECGIII)}else{

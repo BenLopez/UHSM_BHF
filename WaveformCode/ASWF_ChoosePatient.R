@@ -26,5 +26,5 @@ if(DP_checkfilesprocessed(path , subList , 'Discrete') == 0){warning('No discret
 PatientRecord <- DP_ExtractPatientRecordforIndex(PatIndex2017  , subList)
 
 if(nrow(PatientRecord) > 0){
-if( PatientRecord$TotalITUTimeHRS > 100  ){print(paste0('Total hours over 100'))
+if( PatientRecord$TotalITUTimeHRS > 100 & DP_checkRpeaksfilesprocessed(path ,  subList ) == FALSE ){print(paste0('Total hours over 100'))
   source('ASWF_ChoosePatient.R')}}

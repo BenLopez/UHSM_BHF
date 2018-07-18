@@ -419,6 +419,24 @@ DP_CreateDummyMetaData <- function(PatIndex2017 , Name = NA , FirstNewAF = NA){
   output$FirstNewAF <- FirstNewAF
   return(output)
 }
+DP_LoadFile <- function(path , PatientsID , Name){
+  return(DP_loadRData(paste0(path , '\\' , PatientsID , '\\Zip_out', Name , ',RData')))
+}
+DP_CheckFileExists <- function(path , PatientsID , Name){
+  file.exists(paste0(path , '\\' , PatientsID , '\\Zip_out', Name , ',RData'))
+}
+DP_LoadDistributionSummaries <- function(path , PatientsID){
+  Name <- paste0(PatientsID , '_DistributionSummaries' )
+  return(DP_LoadFile(path , PatientsID , Name = Name ))
+}
+DP_CheckDistributionSummariesExists <- function(path , PatientsID){
+  DP_CheckFileExists(path , PatientsID , Name = paste0(PatientsID , '_DistributionSummaries' ))
+}
+DP_loadRData <- function(fileName){
+  #loads an RData file, and returns it
+  load(fileName)
+  get(ls()[ls() != "fileName"])
+}
 
 size <- function(X){
   dim(X)}
