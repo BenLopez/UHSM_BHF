@@ -3,37 +3,62 @@ pathZIPs = paste0(path,"\\",PatientCode,"\\Zip_out\\")
 
 # Check if data has already been processed.
 numberofprocessedfiles <- 0
-for(i in 1:length(chooseWave2Read))
-{
+for(i in 1:length(chooseWave2Read)){
   numberofprocessedfiles <- numberofprocessedfiles + as.numeric(file.exists(paste0( pathZIPs , chooseWave2Read[i] , '_' ,  PatientCode , '.RData') ) )
 }
 
-if(numberofprocessedfiles == length(chooseWave2Read)   )
-{
+if(numberofprocessedfiles == length(chooseWave2Read)){
 print(paste0('All ECG files processed for' , PatientCode , ' moving to next patient'))
 next}
 
 zip_files = list.files(path = paste0(path,"\\",PatientCode),pattern="*\\.zip*$")
-filesInZip = unlist(lapply(zip_files,function(filename){unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Name}))
 
+filesInZip = unlist(lapply(zip_files,function(filename){paste0(filename,"/",unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Name)}))
+sizesInZip = unlist(lapply(zip_files,function(filename){unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Length}))
 dir.create(path = paste0(path,"\\",PatientCode,"\\temp_zip"), showWarnings = FALSE)
 
 # Clear folder
 do.call(file.remove, list(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE)))
-
+sapply(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE), function(x){unlink(x,recursive = TRUE)})
 # Create and execture shell script to unzip all zips in folder
 for (zipF in zip_files){
   unzipfile(paste0(zipF,"unzip.vbs",sep=""),zipF,paste0(path,"\\",PatientCode,"\\"))
 }
 ####### Wait for files to unzip before proceeding! ##########
-while (length(setdiff(filesInZip, list.files(paste0(path,"\\",PatientCode,"\\temp_zip\\"))))>0) {
+while (length(setdiff(filesInZip,
+                      list.files(paste0(path,"\\",PatientCode,"\\temp_zip\\"),recursive=TRUE)))>0 || 
+       sum(file.info(list.files(paste0(path,"\\",PatientCode,"\\temp_zip\\"),
+                                full.names = TRUE,
+                                recursive = TRUE, include.dirs = FALSE))$size)<sum(sizesInZip)) {
   Sys.sleep(1)
 }
-
+cnt = 0
+for (zipF in zip_files){
+  cnt = cnt + 1
+  print(zipF)
+  print(cnt)
+  tpath = paste0(path,"\\",PatientCode,"\\temp_zip\\",zipF)
+  filez = list.files(tpath)
+  sapply(filez,FUN=function(eachPath){
+    file.rename(from=paste0(tpath,"\\",eachPath),to=sub(pattern=".csv",replacement=paste0(cnt,".csv",sep=""),paste0(tpath,"\\",eachPath)))
+  })
+  filez = list.files(tpath, include.dirs = FALSE)
+  sapply(filez,FUN=function(eachPath){
+    file.move(paste0(tpath,"\\",eachPath),paste0(path,"\\",PatientCode,"\\temp_zip\\"))
+  })
+  Sys.sleep(1)
+  filez = list.files(tpath, include.dirs = FALSE)
+  sapply(filez,FUN=function(eachPath){
+    file.move(paste0(tpath,"\\",eachPath),paste0(path,"\\",PatientCode,"\\temp_zip\\"))
+  })
+  Sys.sleep(1)
+  unlink(tpath, recursive = TRUE)
+}
+print("moved")
 ####
-check_text = list.files(path = paste0(path,"\\",PatientCode,"\\"),pattern=".txt*$")
+check_text = list.files(path = paste0(path,"\\",PatientCode,"\\"),pattern=".txt*$", recursive = TRUE)
 
-csv_files = list.files(path=paste0(path,"\\",PatientCode,"\\temp_zip"),pattern=".csv")
+csv_files = list.files(path=paste0(path,"\\",PatientCode,"\\temp_zip"),pattern=".csv", recursive = TRUE)
 #Discrete
 Disc_files = csv_files[grepl("discrete",csv_files)]
 #ECG I
@@ -67,6 +92,8 @@ dir.create(pathOutFilesExtra, showWarnings = FALSE)
 if(length(Disc_files)>0 & ("Discrete" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'Discrete_' ,  PatientCode, '.RData') ) == FALSE){
   print("Reading Discrete Data")
   source(paste0(pathFiles,"/sourceDiscrete.R"), echo = TRUE)
+} else if (length(Disc_files)==0) {
+  print("No discrete data")
 }
 
 # ECG Data ----------------------------------------------------------------
@@ -79,8 +106,12 @@ pathIn = paste0(path,"\\",PatientCode,"\\")
 options(warn = -1)
 
 #### Lead I
-if ( length(ECGI_files)>0 & ("ECGI" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'ECGI_' ,  PatientCode, '.RData') ) == FALSE ){
-readWriteWave(ECGI_files,
+if (length(ECGI_files)>0 & ("ECGI" %in% chooseWave2Read) & file.exists(paste0( pathZIPs , 'ECGI_' ,  PatientCode, '.RData') ) == FALSE ){
+  # Wave_files = ECGI_files
+  # wavename = "ECGI"
+  # path = pathIn
+
+  readWriteWave(ECGI_files,
               cleanWave,
               sub_pat,
               choose_outputs,

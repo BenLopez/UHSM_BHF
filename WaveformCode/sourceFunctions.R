@@ -2,7 +2,7 @@ unzipfile = function(outfile,filename,path){
   close( file( outfile, open="w" ) )
   print(readLines(outfile))
   ZipFile = paste0(path, filename, sep = "", collapse = "")
-  ExtractTo = paste0(path, "temp_zip", sep = "", collapse = "")
+  ExtractTo = paste0(path, "temp_zip\\",filename, sep = "", collapse = "")
   
   ZipFile = gsub("/","\\", ZipFile, fixed = TRUE)
   ExtractTo = gsub("/","\\", ExtractTo, fixed = TRUE)

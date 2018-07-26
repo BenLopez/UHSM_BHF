@@ -1,4 +1,5 @@
 # Select directory containing source
+library("filesstrings")
 pathFiles = choose.dir(caption="Select folder with source code")
 pathFiles = paste0(pathFiles, "\\")
 
@@ -7,8 +8,7 @@ pathFiles = paste0(pathFiles, "\\")
 filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
             title = 'Choose File Type For Patient Index', graphics = TRUE )
 
-if(filetype == 'csv')
-{
+if(filetype == 'csv'){
 path_PatIndex = choose.files(caption="Select 2017 PatientIndex.csv file")
 
 if(length(path_PatIndex)>0){
@@ -20,8 +20,7 @@ if(length(path_PatIndex)>0){
   sub_pat = list()
 }
 }
-if(filetype = 'RData')
-{
+if(filetype == 'RData'){
   path_PatIndex =  choose.files()
   load(path_PatIndex)
 }
@@ -31,7 +30,7 @@ choose_outputs = c(0,0,1) #csv, mat, rdata --- DO NOT USE MAT, needs testing, ve
 # library(R.matlab)
 
 # Option to choose maximium number of hours to process to prevent memory bottlenecks
-maxhourstoprocess <- 125
+maxhourstoprocess <- 24*30
 
 Use7z = 1
 UseZip = 0
@@ -58,8 +57,7 @@ subList = select.list(listAllPatients, preselect = NULL, multiple = TRUE,
 # findZ = regexpr("z[^z]*$", path)[1]
 # PatientCode = substr(path, findZ, nchar(path)-1)
 for (PatientCode in subList){
-  if(length(path_PatIndex)>0)
-  {
+  if(length(path_PatIndex)>0){
     sub_pat = subset(PatIndex2017, PseudoId %in% PatientCode)
     # warning("Patient not in PatientIndex") # not sure this warning is in the right place
     if(nrow(sub_pat) == 0){
@@ -72,7 +70,7 @@ for (PatientCode in subList){
     error("No Patient Info provided")
     # sub_pat = list()
   }
-  if(sub_pat[["TotalITUTimeHRS" ]] > maxhourstoprocess)
+  if(sub_pat[["TotalITUTimeHRS"]] > maxhourstoprocess)
   {
     print(paste0(PatientCode , " skipped as over max hours"))
     next}
@@ -110,5 +108,5 @@ for (PatientCode in subList){
       unlink(paste0(pathIn,"\\",PatientCode,"\\temp_zip"), recursive = TRUE)
     }
   }
-  
 }
+
