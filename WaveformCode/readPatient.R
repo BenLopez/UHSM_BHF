@@ -20,9 +20,18 @@ dir.create(path = paste0(path,"\\",PatientCode,"\\temp_zip"), showWarnings = FAL
 # Clear folder
 do.call(file.remove, list(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE)))
 sapply(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE), function(x){unlink(x,recursive = TRUE)})
-# Create and execture shell script to unzip all zips in folder
+
+objStr = c("discrete","ECG I.W","ECG II.W", "ECG III.W", "CVP.W", "ART.W", "SPO2.W", "Flow.W","Paw.W")
+objTypes = c("Discrete","ECGI","ECGII","ECGIII","CVP","ART","SPO2","Flow","Paw")
+names(objStr) = objTypes
+
+
+# Create and execute shell script to unzip all zips in folder
 for (zipF in zip_files){
-  unzipfile(paste0(zipF,"unzip.vbs",sep=""),zipF,paste0(path,"\\",PatientCode,"\\"))
+  for (wave in chooseWave2Read){
+    print(paste0("reading ", wave),sep="")
+    unzipfileMatch(paste0(zipF,"unzip.vbs",sep=""),zipF,paste0(path,"\\",PatientCode,"\\"), objStr[wave])
+  }    
 }
 ####### Wait for files to unzip before proceeding! ##########
 while (length(setdiff(filesInZip,
