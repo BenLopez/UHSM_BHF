@@ -13,17 +13,20 @@ next}
 
 zip_files = list.files(path = paste0(path,"\\",PatientCode),pattern="*\\.zip*$")
 
+
+objStr = c("discrete","ECG I.W","ECG II.W", "ECG III.W", "CVP.W", "ART.W", "SPO2.W", "Flow.W","Paw.W")
+objTypes = c("Discrete","ECGI","ECGII","ECGIII","CVP","ART","SPO2","Flow","Paw")
+names(objStr) = objTypes
+
 filesInZip = unlist(lapply(zip_files,function(filename){paste0(filename,"/",unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Name)}))
+filesInZipW = filesInZip[rowSums(sapply(objStr[chooseWave2Read],function(x) {grepl(x, filesInZip)}))==1]
 sizesInZip = unlist(lapply(zip_files,function(filename){unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Length}))
+sizesInZipW = sizesInZip[rowSums(sapply(objStr[chooseWave2Read],function(x) {grepl(x, filesInZip)}))==1]
 dir.create(path = paste0(path,"\\",PatientCode,"\\temp_zip"), showWarnings = FALSE)
 
 # Clear folder
 do.call(file.remove, list(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE)))
 sapply(list.files(paste0(path,"\\",PatientCode,"\\temp_zip"), full.names = TRUE), function(x){unlink(x,recursive = TRUE)})
-
-objStr = c("discrete","ECG I.W","ECG II.W", "ECG III.W", "CVP.W", "ART.W", "SPO2.W", "Flow.W","Paw.W")
-objTypes = c("Discrete","ECGI","ECGII","ECGIII","CVP","ART","SPO2","Flow","Paw")
-names(objStr) = objTypes
 
 
 # Create and execute shell script to unzip all zips in folder
@@ -33,12 +36,13 @@ for (zipF in zip_files){
     unzipfileMatch(paste0(zipF,"unzip.vbs",sep=""),zipF,paste0(path,"\\",PatientCode,"\\"), objStr[wave])
   }    
 }
+
 ####### Wait for files to unzip before proceeding! ##########
-while (length(setdiff(filesInZip,
+while (length(setdiff(filesInZipW,
                       list.files(paste0(path,"\\",PatientCode,"\\temp_zip\\"),recursive=TRUE)))>0 || 
        sum(file.info(list.files(paste0(path,"\\",PatientCode,"\\temp_zip\\"),
                                 full.names = TRUE,
-                                recursive = TRUE, include.dirs = FALSE))$size)<sum(sizesInZip)) {
+                                recursive = TRUE, include.dirs = FALSE))$size)<sum(sizesInZipW)) {
   Sys.sleep(1)
 }
 cnt = 0
