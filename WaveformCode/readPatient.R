@@ -19,9 +19,9 @@ objTypes = c("Discrete","ECGI","ECGII","ECGIII","CVP","ART","SPO2","Flow","Paw")
 names(objStr) = objTypes
 
 filesInZip = unlist(lapply(zip_files,function(filename){paste0(filename,"/",unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Name)}))
-filesInZipW = filesInZip[rowSums(sapply(objStr[chooseWave2Read],function(x) {grepl(x, filesInZip)}))==1]
+filesInZipW = filesInZip[rowSums(sapply(objStr[chooseWave2Read],function(x) {grepl(x, sub('.*/', '', filesInZip))}))==1]
 sizesInZip = unlist(lapply(zip_files,function(filename){unzip(paste0(path,"\\",PatientCode,"\\",filename), list = TRUE)$Length}))
-sizesInZipW = sizesInZip[rowSums(sapply(objStr[chooseWave2Read],function(x) {grepl(x, filesInZip)}))==1]
+sizesInZipW = sizesInZip[rowSums(sapply(objStr[chooseWave2Read],function(x) {grepl(x, sub('.*/', '', filesInZip))}))==1]
 dir.create(path = paste0(path,"\\",PatientCode,"\\temp_zip"), showWarnings = FALSE)
 
 # Clear folder
