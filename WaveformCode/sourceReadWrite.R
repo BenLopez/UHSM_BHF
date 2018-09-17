@@ -1,6 +1,5 @@
 readWriteWave = function(Wave_files, cleanWave, sub_pat, choose_outputs, wavename,path,pathOutFilesExtra,use7z,useZip){
-
-  
+  print(paste0("Started reading csv files - ",wavename))
   WaveData = lapply(Wave_files, cleanWave)
   print(paste0("Finished reading csv files - ",wavename))
   
@@ -19,8 +18,13 @@ readWriteWave = function(Wave_files, cleanWave, sub_pat, choose_outputs, wavenam
     }
     print(dim(WaveData))
     if(length(sub_pat)>0){
-      FirstITUEntry = as.POSIXct(sub_pat$FirstITUEntry)
-      LastITUEntry = as.POSIXct(sub_pat$LastITUEntry)
+      if (grepl("/",sub_pat$FirstITUEntry, perl = TRUE)){
+        FirstITUEntry = as.POSIXct(sub_pat$FirstITUEntry, format = "%d/%m/%Y %H:%M")
+        LastITUEntry = as.POSIXct(sub_pat$LastITUEntry, format = "%d/%m/%Y %H:%M")
+      } else {
+        FirstITUEntry = as.POSIXct(sub_pat$FirstITUEntry)
+        LastITUEntry = as.POSIXct(sub_pat$LastITUEntry)
+      }
     } else {
       warning("No Patient Info provided")
       FirstITUEntry = min(WaveData$Date)
@@ -73,13 +77,16 @@ readWriteWave = function(Wave_files, cleanWave, sub_pat, choose_outputs, wavenam
     
     start_time = min(WaveData$Date, na.rm = TRUE)
     stop_time = max(WaveData$Date, na.rm = TRUE)
-    
-    seq_times = unique(c(seq(start_time,stop_time,3*60*60),stop_time))
+    print(start_time)
+    print(stop_time)
+    if (stop_time>start_time){
+    seq_times = unique(c(seq(start_time,stop_time,3*60*60),stop_time))} else 
+      {seq_times = c(start_time,stop_time)}
     
     pathOutFiles = paste0(path,wavename,"_clean/")
     dir.create(pathOutFiles, showWarnings = FALSE)
-    pathOutFilesMAT = paste0(path,wavename,"_cleanMAT/")
-    dir.create(pathOutFilesMAT, showWarnings = FALSE)
+    # pathOutFilesMAT = paste0(path,wavename,"_cleanMAT/")
+    # dir.create(pathOutFilesMAT, showWarnings = FALSE)
     
     char_name = paste0(PatientCode,"_",wavename,"_file_")
     if (choose_outputs[1] == 1 | choose_outputs[2] == 1){

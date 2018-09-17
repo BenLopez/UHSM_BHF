@@ -2,7 +2,7 @@ unzipfile = function(outfile,filename,path){
   close( file( outfile, open="w" ) )
   print(readLines(outfile))
   ZipFile = paste0(path, filename, sep = "", collapse = "")
-  ExtractTo = paste0(path, "temp_zip", sep = "", collapse = "")
+  ExtractTo = paste0(path, "temp_zip\\",filename, sep = "", collapse = "")
   
   ZipFile = gsub("/","\\", ZipFile, fixed = TRUE)
   ExtractTo = gsub("/","\\", ExtractTo, fixed = TRUE)
@@ -18,6 +18,36 @@ unzipfile = function(outfile,filename,path){
   write('set objShell = CreateObject("Shell.Application")', outfile, append = TRUE)
   write('set FilesInZip=objShell.NameSpace(ZipFile).items', outfile, append = TRUE)
   write('objShell.NameSpace(ExtractTo).CopyHere(FilesInZip)', outfile, append = TRUE)
+  write('Set fso = Nothing', outfile, append = TRUE)
+  write('Set objShell = Nothing', outfile, append = TRUE)
+  shell.exec(outfile)
+}
+
+unzipfileMatch = function(outfile,filename,path,strType){
+  close( file( outfile, open="w" ) )
+  print(readLines(outfile))
+  ZipFile = paste0(path, filename, sep = "", collapse = "")
+  ExtractTo = paste0(path, "temp_zip\\",filename, sep = "", collapse = "")
+  
+  ZipFile = gsub("/","\\", ZipFile, fixed = TRUE)
+  ExtractTo = gsub("/","\\", ExtractTo, fixed = TRUE)
+  
+  write(paste0('ZipFile = "', ZipFile, '"',  sep = "", collapse =""), outfile, append = TRUE)
+  write(paste0('ExtractTo = "', ExtractTo, '"',  sep = "", collapse =""), outfile, append = TRUE)
+  
+  write('Set fso = CreateObject("Scripting.FileSystemObject")', outfile, append = TRUE)
+  write('If NOT fso.FolderExists(ExtractTo) Then', outfile, append = TRUE)
+  write('fso.CreateFolder(ExtractTo)', outfile, append = TRUE)
+  write('End If', outfile, append = TRUE)
+  
+  write('set objShell = CreateObject("Shell.Application")', outfile, append = TRUE)
+  write('set FilesInZip=objShell.NameSpace(ZipFile).items', outfile, append = TRUE)
+  write('For Each objItem in FilesInZip', outfile, append = TRUE)
+  tline = paste0('If Cdbl(InStr(objItem.Name,"',strType,'"))>0 Then', sep="", collapse = "")
+  write(tline, outfile, append = TRUE)
+  write('objShell.NameSpace(ExtractTo).CopyHere(objItem)', outfile, append = TRUE)
+  write('End If', outfile, append = TRUE)
+  write('Next', outfile, append = TRUE)
   write('Set fso = Nothing', outfile, append = TRUE)
   write('Set objShell = Nothing', outfile, append = TRUE)
   shell.exec(outfile)
