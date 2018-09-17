@@ -1,30 +1,16 @@
-
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
+{if(file.exists('CheckforDefaultsScript.R')){
+  source('CheckforDefaultsScript.R')
+}else{
+  pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+  source("LibrariesAndSettings.R" , print.eval  = TRUE )
+  DP_LoadPatientIndex()
+  DP_ChooseDataReps()
+}
+}
 
 Files <- choose.files()
-
 patientlist <- as.matrix(lapply(Files , function(X){ substr(X , 30 , nchar(X) - 27)  }))
-
-listofannotations <- c('N'  ,
-                       'L'  , 
-                       'R'  , 
-                       'B'  , 
-                       'A'  , 
-                       'a'  , 
-                       'J'  , 
-                       'S'  , 
-                       'V'  , 
-                       'r'  , 
-                       'F'  , 
-                       'e'  , 
-                       'j'  , 
-                       'r'  , 
-                       'E'  , 
-                       '/' , 
-                       'f'  , 
-                       'Q'  , 
-                       '?' )
+listofannotations <- mitdb_createlistofannotations()
 
 
 datatable <- matrix(0, 6 , length(listofannotations) + 1)
@@ -38,8 +24,7 @@ PPV <- matrix(0 , length(Files) , 1)
 NPV <- matrix(0 , length(Files) , 1)
 
 
-for (i in 1:length(Files))
-{
+for (i in 1:length(Files)){
 load(Files[[i]])
   Sensitivity[i] <- Results$Sensitivity
   Specificity[i] <- Results$Specificity

@@ -1,8 +1,5 @@
-mitdb_ComputePeakresults <- function( WaveData , Annotation , ...)
-{
-  
-  RWaveExtractedDataI <- RPeakExtractionWavelet( waveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , ...)
-  
+mitdb_ComputePeakresults <- function(waveData, RWaveExtractedDataI , Annotation ){
+
   # Grab subset of annotation indicies
   AnnIn <- Annotation$Index[  ((Annotation$Code == 'N') 
                              | (Annotation$Code == 'A') 
@@ -51,16 +48,18 @@ mitdb_ComputePeakresults <- function( WaveData , Annotation , ...)
   P <- length( AnnIn )
   N <- length(waveData$Date) - P  
   
-  distmatrix <- abs(as.matrix(pdist(as.matrix(RWaveExtractedDataI$t) , as.matrix(waveData$Date[AnnIn]))))
+  distmatrix <- abs( as.matrix( pdist( as.matrix(as.numeric(RWaveExtractedDataI$t)) , as.matrix(as.numeric(waveData$Date[AnnIn])) ) ) )
 
-  minvalue <- apply(distmatrix , 2 ,  min)
+  minvalue <- unlist(lapply(waveData$Date[AnnIn]  , function(X){min(abs(X - RWaveExtractedDataI$t ))}))
+  
+  #minvalue <- apply(distmatrix , 2 ,  min)
   #minindex <- apply(distmatrix , 2 ,  which.min)
-  MissedPeaks <- AnnIn[minvalue> (0.1)] 
-  MissedPeakCodes <- AnnCode[minvalue> (0.1)]
+  MissedPeaks <- AnnIn[minvalue > (0.1)] 
+  MissedPeakCodes <- AnnCode[minvalue > (0.1)]
   
-  minvalue <- apply(distmatrix , 1 ,  min)
-  minindex <- apply(distmatrix , 1 ,  which.min)
-  
+  minvalue <- unlist(lapply(RWaveExtractedDataI$t , function(X){min(abs(X - waveData$Date[AnnIn]  ))}))
+  minindex <- unlist(lapply(RWaveExtractedDataI$t  , function(X){which.min(abs(X - waveData$Date[AnnIn]  ))}))
+
   ExtraPeaks <- which(minvalue > 0.1)
   
   FN <- length(MissedPeaks)
@@ -87,3 +86,24 @@ mitdb_ComputePeakresults <- function( WaveData , Annotation , ...)
   
   return(output)
 }
+mitdb_createlistofannotations <- function(){
+  return(c('N'  ,
+                                'L'  , 
+                                'R'  , 
+                                'B'  , 
+                                'A'  , 
+                                'a'  , 
+                                'J'  , 
+                                'S'  , 
+                                'V'  , 
+                                'r'  , 
+                                'F'  , 
+                                'e'  , 
+                                'j'  , 
+                                'r'  , 
+                                'E'  , 
+                                '/' , 
+                                'f'  , 
+                                'Q'  , 
+                                '?' ))
+}  

@@ -21,8 +21,8 @@ for(i in 1:(numberrep+1))
   }  
 }
 }
-
 if(DP_checkfilesprocessed(path , subList , 'Discrete') == 0){warning('No discrete data processed.')}
+
 PatientRecord <- DP_ExtractPatientRecordforIndex(PatIndex2017  , subList)
 
 if(nrow(PatientRecord) > 0){

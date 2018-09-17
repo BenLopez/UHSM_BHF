@@ -38,60 +38,11 @@ RPeakExtraction <- function( Times , ECGWaveFormData ){
   
   return(output)
 }
-RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5 ){
-  # Function to detect R-peaks and RR wave times using a wavelet decomposition. 
-  
-  # Inputs : WaveData[date , wavefirm], Filter structure for wavelet package  
-  # Ouputs: dataframe[peak times , peak amplitudes , peak R-R times]  
-  
-  # Extract data from dataframe  
-  f_t <- WaveData$Value
-  t <- WaveData$Date
-  
-  imodoutput <- waveletremovecompenentsandreconstruct(f_t , Filter , nlevels , ComponetsToKeep )
-  
-  # Find local maxima 
-  stdresid = imodoutput/sqrt(var(imodoutput))
- 
-  # Only look for positive peaks
-  stdresid[ stdresid < 0] = 0 
-  Peakslogical = stdresid > stdthresh
-  
- #Peakslogical[f_t < 0] = FALSE
-  Peakslogical <- FindLocalTurningPoints(Peakslogical , f_t , maxormin = 1)
-  
-  RPeakLocations <- t[Peakslogical == TRUE]
-  RAmplitudes <- f_t[Peakslogical == TRUE ]
-  
-  t  <- RPeakLocations
-  RA <- RAmplitudes
-  RR <- c(diff(RPeakLocations) , mean(diff(RPeakLocations)))
-  
-  output <- data.frame(t , RA , RR)
-  return(output)
+RPeakExtractionWavelet <- function(WaveData , Filter , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5){
+  return(PE_RPeakExtractionWavelet(WaveData , Filter , nlevels , ComponetsToKeep  , stdthresh ))
 }
 FindLocalTurningPoints <- function(Peakslogical , f_t , maxormin = 1){
-  # Function to find max in sets of logicals in a times series
-  # Inputs: Peakslogical, a series of logicals definning the local regions with turning points.
-  # f_t, the series to to find turing point.  maxormin a logical to dictate whether max or min is found.
-  for (i in 1:(length(Peakslogical) -1))
-  {
-    if(Peakslogical[i] == FALSE){ next }
-    
-    if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
-    {# Count number of conected logicals
-      j <- 1
-      while(Peakslogical[min(i + j , length(Peakslogical))] ==  TRUE & ((i + j) <  length(Peakslogical)) ){ j <- (j+1) }
-    }
-    if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == FALSE){j <- 0}
-    # Find location of max of f_t in set of connected logicals
-    
-    if(maxormin == 1){maxindex <- which.max(f_t[i:(i+j)])}
-    if(maxormin == 0){maxindex <- which.min(f_t[i:(i+j)])}
-    Peakslogical[i:(i+j)] <- FALSE
-    Peakslogical[i + (maxindex -1)] <- TRUE
-  }
-return(Peakslogical)
+  return(PE_FindLocalTurningPoints(Peakslogical , f_t , maxormin))
 }
 FindQRSComplex <- function( WaveData , Filter , nlevels = 12 , ComponetsToRemove = c(3,4) , Filter2 = rep(1 , 41) ){
 # Function to find QRS complex from an ECG.   
@@ -251,37 +202,11 @@ output <- setNames( output , outputnames)
   
 return(output)
 }
-ReturnWaveformwithPositiveOrientation <- function(WaveData){  
-qus <- abs(quantile(WaveData$Value, probs = c(0.01 , 0.99) , na.rm = TRUE ))
-if( as.numeric(qus[1]) > as.numeric(qus[2]) )
-{
-  Date   <-   WaveData$Date 
-  Value  <-  -WaveData$Value
-  WaveData <- data.frame(Date , Value)
-}
-output<-WaveData
-return(output)
+ReturnWaveformwithPositiveOrientation <- function(WaveData){
+  return(PE_ReturnWaveformwithPositiveOrientation(WaveData))
 }
 CleanRpeaks <- function( RWaveExtractedData , threshold = 2 ){
-  
-  # Function to clean R peaks by removing outliers caused by data gaps and missed beats.
-  RWaveExtractedData$RR[RWaveExtractedData$RR > threshold] <- median(RWaveExtractedData$RR)
-  RWaveExtractedData$RR[RWaveExtractedData$RR < 0] <- median(RWaveExtractedData$RR)
-  
-  m <- smth(RWaveExtractedData$RR , method = 'sma' , n = 100)
-  m[is.na(m)] <- mean( m  , rm.na = TRUE)
-  mm <- abs(RWaveExtractedData$RR - m)
-  
-  m <- smth(mm , method = 'sma' , n = 100)
-  m[is.na(m)] <- mean( m  , rm.na = TRUE)
-  
-  v <- smth(mm , method = 'sma' , n = 100) - m^2
-  v[is.na(m)] <- mean( v , rm.na = TRUE)
-  stdresid <- abs((mm - m)/sqrt(v)) 
-    
-  RWaveExtractedData$RR[stdresid > 2] <- median(RWaveExtractedData$RR)
-  
-  return(RWaveExtractedData)
+  return(PE_CleanRpeaks(RWaveExtractedData , threshold))
 }
 ExtractIHVAFScore <- function( RWaveExtractedData , binlims = c(0, seq(from = 0.25  , to = 1.8  , 0.05  ) , 3) , n = 250 ){
   binmatrix <- CalulateBinMatrix(RWaveExtractedData , binlims , n )
@@ -318,27 +243,213 @@ Calculatemodalmode <- function(RWaveExtractedData , binlims= c(0, seq(from = 0.2
   output$NumModes[(length(output$NumModes) - nn) : length(output$NumModes)] <- output$NumModes[length(output$NumModes) - nn -1 ]
   return(output)
 }
-PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.02 ){
-    # Calulate distance to closest peak 
+PE_FindLocalTurningPoints <- function(Peakslogical , f_t , maxormin = 1){
+  # Function to find max in sets of logicals in a times series
+  # Inputs: Peakslogical, a series of logicals definning the local regions with turning points.
+  # f_t, the series to to find turing point.  maxormin a logical to dictate whether max or min is found.
+  for (i in 1:(length(Peakslogical) -1))
+  {
+    if(Peakslogical[i] == FALSE){ next }
+    
+    if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == TRUE )
+    {# Count number of conected logicals
+      j <- 1
+      while(Peakslogical[min(i + j , length(Peakslogical))] ==  TRUE & ((i + j) <  length(Peakslogical)) ){ j <- (j+1) }
+    }
+    if(Peakslogical[i] == TRUE && Peakslogical[i + 1] == FALSE){j <- 0}
+    # Find location of max of f_t in set of connected logicals
+    
+    if(maxormin == 1){maxindex <- which.max(f_t[i:(i+j)])}
+    if(maxormin == 0){maxindex <- which.min(f_t[i:(i+j)])}
+    if(maxormin == 3){maxindex <- which.max(abs(f_t[i:(i+j)]))}
+    Peakslogical[i:(i+j)] <- FALSE
+    Peakslogical[i + (maxindex -1)] <- TRUE
+  }
+  return(Peakslogical)
+}
+PE_ReformulateUniqueTimeDataFrame <- function(TableofUniqueTimes){
+  UniqueDays    <- unique( round.POSIXt(TableofUniqueTimes$Var1 , units = 'days') )
+  UniqueHours   <- unique( format(TableofUniqueTimes$Var1 , format = '%H') )
+  UniqueMinutes <- unique( format(TableofUniqueTimes$Var1 , format = '%M') )
+  UniqueSeconds <- unique( format(TableofUniqueTimes$Var1 , format = '%S') )
+  
+  SecsStruct <- list()
+  for(i in 1:length(UniqueSeconds)){
+    SecsStruct[[i]]  <- 1
+  }
+  names(SecsStruct) <- UniqueSeconds
+  MinsStruct <- list()
+  for(i in 1:length(UniqueMinutes)){
+  MinsStruct[[i]]  <- SecsStruct
+  }
+  names(MinsStruct) <- UniqueMinutes
+  HoursStruct <- list()
+  for(i in 1:length(UniqueHours)){
+  HoursStruct[[i]] <- MinsStruct
+  }
+  names(HoursStruct) <- UniqueHours
+  daysstruct <- list()
+  for(i in 1:length(UniqueDays)){
+  NewStruct[[i]] <- HoursStruct
+  }
+  names(NewStruct) <- UniqueDays
+
+for (i in 1:length( UniqueDays ) ){
+    days <- TableofUniqueTimes[ round.POSIXt(TableofUniqueTimes$Var1 , units = 'days') == UniqueDays[i], ]
+    #NewStruct[[i]][[j]]
+    for(j in 1:length( UniqueHours )){
+      hours <- days[ format(days$Var1 , format = '%H') == UniqueHours[j] ,]
+      #NewStruct[[i]][[j]]
+      for( k in 1:length(UniqueMinutes) ){
+        #NewStruct[[i]][[j]][[k]]
+        minutes <- hours[ format(hours$Var1 , format = '%M') == UniqueMinutes[k], ]
+        for(l in 1:length(UniqueSeconds)){
+        if(nrow(minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]) > 0){
+          NewStruct[[i]][[j]][[k]][[l]] <- minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]}
+        if(nrow(minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]) == 0){
+          NewStruct[[i]][[j]][[k]][[l]] <- data.frame(Var1=NA , Freq= NA)  
+          }
+        }
+      }
+    }
+  }
+
+return(NewStruct)
+}
+PE_ReformulateUniqueTimeDataFrame2 <- function(TableofUniqueTimes){
+UnClassed <- unclass(TableofUniqueTimes$Var1)
+uniquemonths <- unique(UnClassed$mon)
+uniquedays <- unique(UnClassed$mday)
+uniquehours <- unique(UnClassed$hour)
+uniqueminutes <- unique(UnClassed$min)
+uniqueseconds <- unique(UnClassed$sec)
+
+NewStruct <- list()
+for(ii in 1:length(uniquemonths)){
+  NewStruct[[ii]] <- list()
+  for(jj in 1:length(uniquedays)){
+    NewStruct[[ii]][[jj]]<-list()
+    for(kk in 1:length(uniquehours)){
+      NewStruct[[ii]][[jj]][[kk]]<-list()
+      for(ll in 1:length(uniqueminutes) ){
+        NewStruct[[ii]][[jj]][[kk]][[ll]] <- TableofUniqueTimes[
+          (UnClassed$mon ==    uniquemonths[ii])*
+          (UnClassed$mday ==   uniquedays[jj])*
+          (UnClassed$hour ==   uniquehours[kk])*
+          (UnClassed$min ==    uniqueminutes[ll]) == 1 ,]
+        }
+      names(NewStruct[[ii]][[jj]][[kk]]) <- uniqueminutes
+    }
+    names(NewStruct[[ii]][[jj]]) <- uniquehours
+  }
+  names(NewStruct[[ii]]) <- uniquedays
+}
+
+names(NewStruct) <- uniquemonths
+
+
+return(NewStruct)
+
+}
+PE_ExractECGActiveLogical <- function(RpeaksFile , ECG1 , ECG2){
+  output <- matrix(0 , length(RpeaksFile$t) , 2)
+  output[( RpeaksFile$t %in% ECG1 ) , 1] <- 1 
+  output[( RpeaksFile$t %in% ECG2 ) , 2] <- 1
+  return(output)  
+}
+PE_ReturnWaveformwithPositiveOrientation <- function(WaveData){  
+  mm <- rollmedian(WaveData$Value ,  k = 21 , na.pad = TRUE)
+  mm[is.na(mm)] <- 0
+  qus <- abs(quantile(WaveData$Value - mm, probs = c(0.01 , 0.99) , na.rm = TRUE ))
+if( as.numeric(qus[1]) > as.numeric(qus[2]) )
+  {
+    Date   <-   WaveData$Date 
+    Value  <-  -WaveData$Value
+    WaveData <- data.frame(Date , Value)
+  }
+  output <- WaveData
+  return(output)
+}
+PE_ExtractOrientationLogical <- function(WaveData , theshold = 10 , k1 = 21 , k2 = 41){
+  tmp <- PE_ReturnWaveformwithPositiveOrientation(WaveData)$Value
+  mm <-rollmedian(tmp ,  k = k1 , na.pad = TRUE)
+  mm[is.na(mm)] <- 0
+  tmp <- tmp - mm
+  ECGMax <- rollmax(tmp , align = 'center' , na.pad = TRUE, k = k2)
+  ECGMax[is.na(ECGMax)] <- 0
+  ECGmin <- -rollmax(-(tmp) ,  align = 'center' , na.pad = TRUE ,  k = k2)
+  ECGmin[is.na(ECGmin)] <- 0
+  Oreintationlogical <- ((abs(ECGMax) + theshold) > (abs(ECGmin)))
+  Oreintationlogical2 <- ((abs(ECGmin) + theshold ) > (abs(ECGMax)))
+  
+  return(data.frame(Oreintationlogical1 = Oreintationlogical , Oreintationlogical2 = Oreintationlogical2 ))  
+}
+PE_RPeakExtractionWavelet <- function(WaveData , Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5 ){
+  # Function to detect R-peaks and RR wave times using a wavelet decomposition. 
+  
+  # Inputs : WaveData[date , wavefirm], Filter structure for wavelet package  
+  # Ouputs: dataframe[peak times , peak amplitudes , peak R-R times]  
+  #WaveData <- PE_ReturnWaveformwithPositiveOrientation(WaveData)
+  # Extract data from dataframe  
+  f_t <- WaveData$Value
+  t <- WaveData$Date
+  
+  imodoutput <- waveletremovecompenentsandreconstruct(f_t , Filter , nlevels , ComponetsToKeep )
+  
+  # Find local maxima 
+  vv <- VO_rollvar(imodoutput)
+  vv[(is.na(vv))] <- mean(vv[!is.na(vv)])
+  vv[vv == 0] <- mean(vv[!is.na(vv)])
+  
+  stdresid = imodoutput/sqrt(vv)
+
+  
+  Orientationlogical <- PE_ExtractOrientationLogical(WaveData = WaveData )
+  
+  # Only look for positive peaks
+  stdresid[Orientationlogical$Oreintationlogical1 == 0] <- -stdresid[Orientationlogical$Oreintationlogical1 == 0]
+  stdresid[stdresid < 0 ] = 0
+  Peakslogical = abs(stdresid) > stdthresh
+  
+  #Peakslogical[f_t < 0] = FALSE
+  Peakslogical <- PE_FindLocalTurningPoints(Peakslogical , f_t , maxormin = 3)
+  
+  RPeakLocations <- t[Peakslogical == TRUE]
+  RAmplitudes <- f_t[Peakslogical == TRUE ]
+  
+  t  <- RPeakLocations
+  RA <- RAmplitudes
+  RR <- c(diff(RPeakLocations) , mean(diff(RPeakLocations)))
+  
+  output <- data.frame(t , RA , RR)
+  return(output)
+}
+PE_MultipleECGRPeaks <- function( outputdata , ECGs ,  thresh = 0.02  ){
+  # Calulate distance to closest peak
   mindistancesI <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
   mindistancesII <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
   
   # Find good peaks
+  ActiveMatrix <- apply(PE_ExractECGActiveLogical(outputdata$ECGIII , ECGs$ECGI$Date, ECGs$ECGII$Date) , 1 , sum)
   Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
-  
+  Goodlogical[ActiveMatrix < 2] <- 1
+    
   # Extract good peaks
   tt_good <- outputdata$ECGIII$t[Goodlogical > 0]
   tt_notgood <- outputdata$ECGIII$t[Goodlogical == 0]
   
   # Set of beats in ECGII which are classified as good.
   goodlogical_2 <- apply( as.matrix(as.numeric(outputdata$ECGII$t)) , 1 , function(X){min(abs(X - as.numeric(tt_good))) <= thresh} )
-  
+
+  # Remove good points
   ttmp <- outputdata$ECGII$t[ goodlogical_2 == 0 ]
   
   mindistancesI <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
   mindistancesII <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)))} )
   
+  ActiveMatrix <- apply(PE_ExractECGActiveLogical(outputdata$ECGII , ECGs$ECGI$Date, ECGs$ECGIII$Date) , 1 , sum)
   Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
+  Goodlogical[ActiveMatrix < 2] <- 1
   
   tt_good <- c( tt_good , outputdata$ECGII$t[Goodlogical > 0]  )
   tt_notgood <- c( tt_notgood , outputdata$ECGII$t[Goodlogical == 0] )
@@ -349,7 +460,9 @@ PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.02 ){
   mindistancesI <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
   mindistancesII <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)))} )
   
+  ActiveMatrix <- apply(PE_ExractECGActiveLogical(outputdata$ECGI , ECGs$ECGII$Date, ECGs$ECGIII$Date) , 1 , sum)
   Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
+  Goodlogical[ActiveMatrix < 2] <- 1
   
   tt_good <- sort(c(tt_good , outputdata$ECGI$t[Goodlogical > 0] ))
   tt_notgood <- c(tt_notgood , outputdata$ECGI$t[Goodlogical == 0] )
@@ -360,7 +473,26 @@ PE_MultipleECGRPeaks <- function( outputdata , thresh = 0.02 ){
   
   ECG <- data.frame(t = tt_good , RA = 150 + 0*RR , RR = RR)
   return(ECG)
-}
   
-
+}
+PE_CleanRpeaks <- function( RWaveExtractedData , threshold = 2 ){
+  
+  # Function to clean R peaks by removing outliers caused by data gaps and missed beats.
+  RWaveExtractedData$RR[RWaveExtractedData$RR > threshold] <- median(RWaveExtractedData$RR)
+  RWaveExtractedData$RR[RWaveExtractedData$RR < 0.25] <- median(RWaveExtractedData$RR)
+  
+  m <- smth(RWaveExtractedData$RR , method = 'sma' , n = 100)
+  m[is.na(m)] <- mean( m  , rm.na = TRUE)
+  mm <- abs(RWaveExtractedData$RR - m)
+  
+  m <- smth(mm , method = 'sma' , n = 100)
+  m[is.na(m)] <- mean( m  , rm.na = TRUE)
+  
+  v <- smth(mm , method = 'sma' , n = 100) - m^2
+  v[is.na(m)] <- mean( v , rm.na = TRUE)
+  stdresid <- abs((mm - m)/sqrt(v)) 
+  
+  RWaveExtractedData$RR[stdresid > 2] <- median(RWaveExtractedData$RR)
+  return(RWaveExtractedData)
+}
 

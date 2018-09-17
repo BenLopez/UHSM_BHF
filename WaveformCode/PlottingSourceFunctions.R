@@ -1,5 +1,3 @@
-
-
 PlD_DistributionSummaryStats <- function(outputdata , SummaryStats){
   Beta <- lapply( SummaryStats , function(X){mean(X[1:10000] , na.rm = T)} )
   
@@ -28,4 +26,14 @@ PlD_DistributionSummaryStats <- function(outputdata , SummaryStats){
   x11(20,20)
   plot(  outputdata$RRCombined$t , outputdata$RRCombined$RR , xlab = 't', ann=FALSE , col = rgb(0,0,1,alpha = 0.1) )
 }
-  
+PlotFun_DoublePairs <- function(X , Y , alpha = 0.1){
+if(nrow(Y)> nrow(X)){
+tmp <- rbind(X , Y[sample(1:nrow(Y) , nrow(X)) , ] )  
+colorvector <- rbind( matrix(rgb(1,0,0 , alpha = alpha ) , nrow(X) , 1) , matrix(rgb(0,0,1 , alpha = alpha ) , nrow(X) , 1) )
+}
+if(nrow(Y)< nrow(X)){
+    tmp <- rbind(Y , X[sample(1:nrow(X) , nrow(Y)) , ] )  
+    colorvector <- rbind( matrix(rgb(1,0,0 , alpha = alpha ) , nrow(Y) , 1) , matrix(rgb(0,0,1 , alpha = alpha ) , nrow(Y) , 1) )
+}
+print(pairs(tmp , col = colorvector , pch = 16))    
+}  

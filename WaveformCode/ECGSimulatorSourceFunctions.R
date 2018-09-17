@@ -1,18 +1,16 @@
-
 ECGSim_LaplaceDisFunction <- function(x , mu , b){
   (1/(2*b))*exp(-abs(x-mu)/b)
 }
-
 ECGSim_Rpeak <- function(x , mu , b){
   (2*b)*ECGSim_LaplaceDisFunction(x , mu , b)
 }
-
 ECGSim_Gaussian <- function(x , mu , sigma){
   exp( -0.5*((x - mu)^2)/(sigma^2)   )
 }  
-
-ECGSim_SkewGaussian <- function(x , mu , sigma , slant)
-{
+ECGSim_DiffGaussian <- function(x , mu , sigma){
+  -((x - mu)/(sigma))*exp( -0.5*((x - mu)^2)/(sigma^2)   )
+}
+ECGSim_SkewGaussian <- function(x , mu , sigma , slant){
   tmp <- dsn(x ,xi = mu, omega = sigma , alpha = slant)
   index <- which.max(tmp) 
   if(tmp[index]  == 0){return(tmp)}  
@@ -27,7 +25,6 @@ ECGSim_SkewGaussian <- function(x , mu , sigma , slant)
   return( output )
    }
 }
-
 ECGSim_WrapperSingleBeat <- function(x , t_observation){
   
   Baseline <- x[1]
@@ -55,8 +52,6 @@ ECGSim_WrapperSingleBeat <- function(x , t_observation){
            PA*ECGSim_SkewGaussian(x=t_observation , mu=Pcen , sigma=Pwidth , slant =Pslant ) +
            TA*ECGSim_SkewGaussian(t_observation , Tcen , Twidth , Tslant) )
 }
-
-
 ECGSim_WrapperSingleBeat_m2 <- function(x , t_observation){
   
   Baseline <- x[1]
@@ -92,3 +87,34 @@ ECGSim_WrapperSingleBeat_m2 <- function(x , t_observation){
            TAR*ECGSim_Gaussian(t_observation , TcenR , TwidthR ) +
            TAL*ECGSim_Gaussian(t_observation , TcenL , TwidthL ) )
 }           
+ECGSim_QSSimulator <-function( X , t ){
+  Baseline <- X[1]
+  P_Cen    <- X[2]
+  P_Amp    <- X[3] - x[1]  
+  P_Width  <- X[4]
+  T_Cen    <- X[5]
+  T_Amp    <- X[6] - x[1]
+  T_Width  <- X[7]
+  
+return(Baseline + 
+       P_Amp*ECGSim_Gaussian( t , P_Cen , (2*P_Width)^2  ) +
+       T_Amp*ECGSim_Gaussian( t , T_Cen , (2*T_Width)^2  )  )  
+}
+ECGSim_DiffQSSimulator <-function( X , t ){
+  Baseline <- X[1]
+  P_Cen    <- X[2]
+  P_Amp    <- X[3] - x[1]  
+  P_Width  <- X[4]
+  T_Cen    <- X[5]
+  T_Amp    <- X[6] - x[1]
+  T_Width  <- X[7]
+  
+  return(P_Amp*ECGSim_DiffGaussian( t , P_Cen , (2*P_Width)^2  ) +
+         T_Amp*ECGSim_DiffGaussian( t , T_Cen , (2*T_Width)^2  )  )  
+}
+
+ECGSim_QSModelDiscrepancy <- function(X , t ,  a =0 , b=1 , d =0 ,e = 0){
+X[1]<-0
+  tmp <- ECGSim_QSSimulator(X , t)
+  return( a + b*(abs(tmp)^(-1)) + d*abs(ECGSim_DiffQSSimulator(X , t)) + e*((ECGSim_Gaussian(t, mean(t , na.rm = TRUE) , 0.4*sqrt(var(t, na.rm = TRUE))))^(-1)))
+}

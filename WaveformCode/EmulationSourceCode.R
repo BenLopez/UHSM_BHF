@@ -1,5 +1,4 @@
-CF_ExponentialFamily <- function(x , xstar , l , p)
-{
+CF_ExponentialFamily <- function(x , xstar , l , p){
   # Expenential family correlation length family
   
   # Turn into matrices
@@ -23,7 +22,7 @@ if(sizex[2] > 1){
 
 } else
 {
-  distmatrix <- (( as.matrix(pdist( as.matrix((x[,i])) , as.matrix( (xstar[,i]) )  )) )^p[1])/l[1]
+  distmatrix <- (( as.matrix(pdist( as.matrix((x[,1])) , as.matrix( (xstar[,1]) )  )) )^p[1])/l[1]
 }
 
 
@@ -35,10 +34,7 @@ distmatrix < - apply(distmatrix , 3 , sum)
 KXXstar <- exp( -0.5 * distmatrix )
 return(KXXstar)
 }
-
-
-BayesLinearEmulatorGLSEstimates <- function(y , x , xstar , w , l , p , h )
-{
+BE_BayesLinearEmulatorGLSEstimates <- function(y , x , xstar , w , l , p , h ){
 
   KXX <- CF_ExponentialFamily(x , x , l , p)
   KXstarX <-  CF_ExponentialFamily( xstar , x , l , p)
@@ -46,8 +42,9 @@ BayesLinearEmulatorGLSEstimates <- function(y , x , xstar , w , l , p , h )
   H <- h(x)
   sizeh = dim(H)
   Hstar <- h(xstar)
+  sizex <- dim(x)[1]
   
-  D <- KXX + w*diag(sizex[1])
+  D <- KXX + w%*%diag(sizex[1])
   L = t(chol(D))
   
   alpha <- solve(L , H)
@@ -66,7 +63,7 @@ BayesLinearEmulatorGLSEstimates <- function(y , x , xstar , w , l , p , h )
   E_z_y <- Hstar%*%Betastar + KXstarX %*% solve(t(L) , zeta) 
   V_z_y <- Sigmastar[1]*(  KXstarXstar  - t(omega)%*%omega + t(kappa)%*%kappa )
   
-  return(list(E_z_y , V_z_y))
+  return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))
 
   }
 

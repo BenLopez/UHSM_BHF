@@ -32,3 +32,39 @@ ASWF_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest
 ASWF_GetStartEndAF <- function( t , logicaltimeseries , minutethreshold = 10){
   return( AFD_GetStartEndAF( t, logicaltimeseries , minutethreshold ) )
 }
+ASWF_Choosetimeandreturnindex <- function(WaveData , PatientRecord){
+  tmp <- WaveData$Date[seq(1,length(WaveData$Date),1000)]
+  interestingtimepoint <- which.min( abs( difftime(
+    as.POSIXct( as.vector(as.character(round.POSIXt(tmp , units = c('hours')))) ),
+    as.POSIXct(select.list(as.vector(as.character(unique(round.POSIXt(
+      tmp , units = c('hours')))))
+      , preselect = PatientRecord$FirstNewAF[1]
+      , multiple = FALSE
+      , title = 'Select Interest Time Point'
+      , graphics = TRUE ) ), units ='hours') ))
+  timeindex <- which.min( abs(difftime( WaveData$Date ,  tmp[interestingtimepoint[1]] , units = 'secs')) )
+return(timeindex)
+}
+ASWF_LoadandCropECG <- function(path , subList, numberrep ,  timeindex,  Filetoprocess , ECGI){
+  if(DP_checkfilesprocessed(path , subList , Filetoprocess) == 1){
+    WaveData <- DP_LoadECG( path , subList , numberrep , ECGNum = 3 )
+  }
+  if(DP_checkfilesprocessed(path , subList , Filetoprocess) == 0){
+    WaveData <- ECGI}  
+  if(DP_checkfilesprocessed(path , subList , Filetoprocess) == 1 ){
+    { 
+      numberhoursbefore = 0
+      numberhoursafter = abs( difftime( ECGI$Date[length(ECGI$Date)] , ECGI$Date[1]  , units ='hours' ))
+      HoursBeforeAndAFter = data.frame(numberhoursbefore , numberhoursafter)
+    }
+    
+    WaveData <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(WaveData , c(ECGI$Date[1] ,ECGI$Date[length(ECGI$Date)] ) , HoursBeforeAndAFter))
+    print('ECGIII loaded.')
+  }
+  
+  if(DP_checkfilesprocessed(path , subList , Filetoprocess) == 0 ){
+    WaveData = ECGI
+    warning('No ECGIII processed.')
+  }
+  return(WaveData)
+}

@@ -1,7 +1,8 @@
 
 interactivemode <- 1
 while(interactivemode == 1){
-  if(nrow(PatientRecord) ==0){PatientRecord <- outputdata$MetaData}
+  if(nrow(PatientRecord) ==0){PatientRecord <- outputdata$Meta_Data}
+  if(nrow(PatientRecord) ==0){PatientRecord <- DP_CreateDummyMetaData(PatIndex2017 , Name = subList , FirstNewAF = NA)}
 {  p3 <- ggplot(ECGI[regionofinterest , ] , aes(Date , Value)) +
     geom_line(colour="blue") + ylab('Hz') + xlab('t') +
     geom_point(data = outputdata$ECGI[ ((outputdata$ECGI$t > ECGI$Date[regionofinterest[1]])*(outputdata$ECGI$t < ECGI$Date[regionofinterest[length(regionofinterest)]]) == 1) , ] , aes(t , RA) ) +

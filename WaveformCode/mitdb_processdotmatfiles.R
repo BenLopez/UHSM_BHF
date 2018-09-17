@@ -1,29 +1,44 @@
-## Script to process.mat files into wavedata
-pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+## Script to process.mat files into WaveData
 
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
-
+##### Preamble #####
+{if(file.exists('CheckforDefaultsScript.R')){
+  source('CheckforDefaultsScript.R')
+}else{
+  pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+  source("LibrariesAndSettings.R" , print.eval  = TRUE )
+  DP_LoadPatientIndex()
+  DP_ChooseDataReps()
+}
+}
+##### Preamble ##### 
 
 files <- choose.files()
-
-for(i in 1:length( files ) )
-{
-  
+for(i in 1:length( files ) ){
   tmp <- readMat(files[[i]])
   
-  waveData <- setNames(  data.frame(tmp$Data[[2]][seq(1 , length(tmp$Data[[1]][ , 1]) , 2)] ,
+  WaveData <- setNames(  data.frame(tmp$Data[[2]][seq(1 , length(tmp$Data[[1]][ , 1]) , 2)] ,
                                     tmp$Data[[1]][seq(1 , length(tmp$Data[[1]][ , 1]) , 2) , 1] ) , c('Date' , 'Value'))
-  waveData[ , 2] <- waveData[ , 2] - mean(waveData[ , 2])
-  waveData <-ReturnWaveformwithPositiveOrientation( waveData )
+  WaveData$Date <- as.POSIXct(WaveData$Date , origin = Sys.time())
+  WaveData[ , 2] <- WaveData[ , 2] - mean(WaveData[ , 2])
+  WaveData <-ReturnWaveformwithPositiveOrientation( WaveData )
   Annotation <- setNames(data.frame( round(tmp$Data[[3]]/2) ,  tmp$Data[[4]])  , c('Index' , 'Code'))
   
-  # save(waveData , file = paste0( 'D:\\mtbd_Waveform' , file = substr( files[[i]] ,  nchar(files[[i]]) - 13 , nchar(files[[i]]) - 4 ) , '_ECGI.RData' ))
-  # save(Annotation , file = paste0( 'D:\\mtbd_Waveform' ,file =  substr( files[[i]] ,  nchar(files[[i]]) - 13 , nchar(files[[i]]) - 4 ) , '_Annotation.RData' ))
-  # RData <- RPeakExtractionWavelet( waveData , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.8)
+  folderpath <- paste0('D:\\mtbd_Waveform' ,substr( files[[i]] ,  nchar(files[[i]]) - 13 , nchar(files[[i]]) - 4 ) , '\\Zip_out')
+  dir.create(path = folderpath   , recursive = TRUE)
   
-  Results <- mitdb_ComputePeakresults( WaveData , Annotation , stdthresh = 2.5)
+  save(WaveData , file = paste0( folderpath , '\\' , 'ECGI_' ,  file = substr( files[[i]] ,  nchar(files[[i]]) - 12 , nchar(files[[i]]) - 4 ) , '.RData' ))
+  save(Annotation , file = paste0( folderpath ,file =  substr( files[[i]] ,  nchar(files[[i]]) - 13 , nchar(files[[i]]) - 4 ) , '_Annotation.RData' ))
+  save(WaveData , file = paste0( folderpath , '\\' , 'ECGIII_' ,  file = substr( files[[i]] ,  nchar(files[[i]]) - 12 , nchar(files[[i]]) - 4 ) , '.RData' ))
   
-  save(Results , file = paste0( 'D:\\mtdb_peakdetectionresults' ,file =  substr( files[[i]] ,  nchar(files[[i]]) - 13 , nchar(files[[i]]) - 4 ) , '_PeakDetectionResults.RData' ))
+  
+  WaveData <- setNames(  data.frame( WaveData$Date ,
+                                    tmp$Data[[1]][seq(1 , length(tmp$Data[[1]][ , 1]) , 2) , 2] ) , c('Date' , 'Value'))
+  WaveData[ , 2] <- WaveData[ , 2] - mean(WaveData[ , 2])
+  WaveData <-ReturnWaveformwithPositiveOrientation( WaveData )
+  Annotation <- setNames(data.frame( round(tmp$Data[[3]]/2) ,  tmp$Data[[4]])  , c('Index' , 'Code'))
+
+  save(WaveData , file = paste0( folderpath , '\\' , 'ECGII_' ,  file = substr( files[[i]] ,  nchar(files[[i]]) - 12 , nchar(files[[i]]) - 4 ) , '.RData' ))
+  save(Annotation , file = paste0( folderpath , '\\' , 'Annotation_' ,  file = substr( files[[i]] ,  nchar(files[[i]]) - 12 , nchar(files[[i]]) - 4 ) , '.RData' ))
   print(i/length( files ))
 }
 

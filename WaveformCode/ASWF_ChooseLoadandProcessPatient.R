@@ -39,76 +39,27 @@ if(UseReduced == "NO"){
     print('No ECGI data processed.')}
     source('ASWF_ChooseLoadandProcessPatient.R')
   }else{  
-  WaveData <- DP_LoadECG(path , subList , numberrep , ECGNum = 1 )}
+  WaveData <- DP_LoadECG(path , subList , numberrep , ECGNum = 1 )
+  }
   print('ECGI Loaded.')
-  interestingtimepoint <- which.min( abs( difftime(
-    as.POSIXct( as.vector(as.character(round.POSIXt(DataSet$Data$tt , units = c('hours'))))),
-    as.POSIXct(select.list(as.vector(as.character(unique(round.POSIXt(
-      WaveData$Date[seq(from = 1, to = length(WaveData$Date) , by =1000)] , units = c('hours')))))
-      , preselect = PatientRecord$FirstNewAF[1]
-      , multiple = FALSE
-      , title = 'Select Interest Time Point'
-      , graphics = TRUE ) ), units ='hours') ))
-  
-  timeindex <- which.min( abs(difftime( WaveData$Date ,  DataSet$Data$tt[interestingtimepoint[1]] , units = 'secs')) )
+  timeindex <- ASWF_Choosetimeandreturnindex(WaveData , PatientRecord)
   HoursBeforeAndAFter <- DP_SelectHoursBeforeandAfter()
-  
   ECGI <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(WaveData , timeindex , HoursBeforeAndAFter))
-  
 }  
-
 
 # Load ECGII and ECGIII 
 if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "ECGII_reduced")){  
 print('Loading ECGII.')
-  if(DP_checkfilesprocessed(path , subList , 'ECGII') == 1){
-    ECGII <- DP_LoadECG( path , subList , numberrep , ECGNum = 3 )
-  }
-  if(DP_checkfilesprocessed(path , subList , 'ECGII') == 0){
-    ECGII <- ECGI}  
-  
-if(DP_checkfilesprocessed(path , subList , 'ECGII') == 1 ){
-  
-{ 
-    numberhoursbefore = 0
-    numberhoursafter = abs( difftime( ECGI$Date[length(ECGI$Date)] , ECGI$Date[1]  , units ='hours' ))
-    HoursBeforeAndAFter = data.frame(numberhoursbefore , numberhoursafter)
-}
-  
-timeindex <- which.min( abs(difftime( ECGII$Date , ECGI$Date[1] , units = 'secs')) )
-ECGII <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(ECGII , timeindex , HoursBeforeAndAFter))
+  timeindex <- c(ECGI$Date[1] , ECGI$Date[length(ECGI$Date)])
+  ECGII <- ASWF_LoadandCropECG(path , subList, numberrep ,  timeindex,  'ECGII' , ECGI)
 print('ECGII loaded.')
-}
-
-if(DP_checkfilesprocessed(path , subList , 'ECGII') == 0 ){
-  ECGII = ECGI
-  warning('No ECGII processed.')
-  }
 }
 if(UseReduced == "NO"  || !DP_CheckECGreducedfilesprocessed( path , subList  , "ECGIII_reduced")){  
   print('Loading ECGIII.')
-  if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 1){
-  ECGIII <- DP_LoadECG( path , subList , numberrep , ECGNum = 3 )
-  }
-  if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 0){
-    ECGIII <- ECGI}  
-  if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 1 ){
-    { 
-      numberhoursbefore = 0
-      numberhoursafter = abs( difftime( ECGI$Date[length(ECGI$Date)] , ECGI$Date[1]  , units ='hours' ))
-      HoursBeforeAndAFter = data.frame(numberhoursbefore , numberhoursafter)
-    }
-    
-    timeindex <- which.min( abs(difftime( ECGIII$Date , ECGI$Date[1] , units = 'secs')) )
-    ECGIII <- ReturnWaveformwithPositiveOrientation(DP_CropWaveData(ECGIII , timeindex , HoursBeforeAndAFter))
-    print('ECGIII loaded.')
-  }
-  
-  if(DP_checkfilesprocessed(path , subList , 'ECGIII') == 0 ){
-    ECGIII = ECGI
-    warning('No ECGIII processed.')
-  }
+  ECGIII <- ASWF_LoadandCropECG(path , subList, numberrep ,  timeindex,  'ECGIII' , ECGI)
+  print('ECGIII loaded.')
 }
+
 if(UseReduced == "YES" &   DP_CheckECGreducedfilesprocessed( path , subList  , "ECGII_reduced")){
   print('Loading ECGII reduced.')
   ECGII <- DP_LoadECGReduced(path , subList , numberrep , 2 )
@@ -126,14 +77,19 @@ DataSet$Data <-  DataSet$Data[ ((DataSet$Data$tt > ECGI$Date[1])*(DataSet$Data$t
 
 if( UseReduced == "NO"  || !DP_checkRpeaksfilesprocessed(path , subList) ){
   print('Extracting RA and R-R times.')
+  ECGs <- data.frame(ECGI = ECGI , ECGII = ECGII , ECGIII = ECGIII)
   outputdata <- list()
   outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGI   , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[2]] <- CleanRpeaks(RPeakExtractionWavelet( ECGII  , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGIII , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
-  outputdata[[4]] <- PatientRecord
+  if(nrow(PatientRecord) >0 ){
+    outputdata[[4]] <- PatientRecord
+  }else{
+    outputdata[[4]] <- DP_CreateDummyMetaData(PatIndex2017  , Name = subList)  
+  }
   outputdata[[5]] <- 1
   outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' , 'RRCombined') )
-  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata)
+  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , ECGs)
   print('RA and R-R times Extracted.')  
 }
 if( UseReduced == "YES" &  DP_checkRpeaksfilesprocessed(path , subList) ){
@@ -142,14 +98,19 @@ print( 'Loading Rpeaks.' )
 
 if(DP_ValidateRPeaks(outputdata) == FALSE){
   print('Extracting RA and R-R times.')
+  ECGs <- data.frame(ECGI = ECGI , ECGII = ECGII , ECGIII = ECGIII)
   outputdata <- list()
   outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGI   , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[2]] <- CleanRpeaks(RPeakExtractionWavelet( ECGII  , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
   outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGIII , wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5) , 2)
+  if(nrow(PatientRecord) >0 ){
   outputdata[[4]] <- PatientRecord
+  }else{
+  outputdata[[4]] <- DP_CreateDummyMetaData(PatIndex2017  , Name = subList)  
+  }
   outputdata[[5]] <- 1
   outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'Meta_Data' , 'RRCombined') )
-  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata)
+  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , ECGs)
   print('RA and R-R times Extracted.')
 }
 print( 'Rpeaks loaded.' )  
@@ -189,10 +150,9 @@ timeinterval <- as.numeric(select.list(unique(as.character(c(1:100)))
                                        , multiple = FALSE
                                        , title = 'Select number of seconds of full ECG to be viewed'
                                        , graphics = TRUE ))
-
-endindex <- startindex + (round(timeinterval / as.numeric(abs(ECGI$Date[1]- ECGI$Date[2]))))
+indent <- median(diff(ECGI$Date))
+endindex <- startindex + (round(timeinterval / as.numeric(abs(indent))))
 regionofinterest <- startindex:endindex
-
 regionofinterest2  <- ASWF_AlignRegionofInterests(ECGI , ECGII , regionofinterest)
 regionofinterest3  <- ASWF_AlignRegionofInterests(ECGI , ECGIII , regionofinterest)
 
@@ -204,12 +164,12 @@ p1 <- ggplot(outputdata$ECGI[seq(1 , length(outputdata$ECGI$t) , 3) , ] , aes(t 
   geom_point(data= outputdata$ECGIII[seq(1 , length(outputdata$ECGI$t) , 3) , ] , colour = "black",  alpha=0.03 ) +
   ggtitle('R-amplitudes') +
   xlab("t") +
-  ylab("RA") + coord_cartesian(ylim = c(0, 200)) 
+  ylab("RA") + coord_cartesian(ylim = c(-200, 200)) 
 
 
 p2 <- ggplot() + 
       geom_line( data = AFScore , aes(x = t , y = IHAVFScore/150) , colour ='red' , alpha = 0.25 )  + 
-      geom_point(data = outputdata$RRCombined  , aes(x = t , y = RR) , colour="blue", alpha=0.01 ) +
+      geom_point( data = outputdata$RRCombined  , aes(x = t , y = RR) , colour="blue", alpha=0.01 ) +
       scale_y_continuous(sec.axis = sec_axis(~.*150, name = "AF Score")) +
       xlab("t") +
       ylab("RR") + coord_cartesian(ylim = c(0, 1.5))

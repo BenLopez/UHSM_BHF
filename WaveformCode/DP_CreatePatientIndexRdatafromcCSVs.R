@@ -2,7 +2,7 @@
 source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
 
-numberofCSVs <- select.list(as.character(c(1:10)) , graphics = TRUE )
+numberofCSVs <- select.list(as.character(c(1:10)) , graphics = TRUE  , preselect = '2' )
 PatIndex2017 <- read.csv(choose.files(multi = FALSE), stringsAsFactors = FALSE)
 
 
@@ -14,4 +14,4 @@ PatIndex2017 <- rbind(PatIndex2017, read.csv(choose.files(multi = FALSE), string
 }
 }
 
-save(PatIndex2017 , file = "C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_02072018\\PatientIndexMaster.RData")
+save(PatIndex2017 , file = "C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_06082018\\PatientIndexMaster.RData")

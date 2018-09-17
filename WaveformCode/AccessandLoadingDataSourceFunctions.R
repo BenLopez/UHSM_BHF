@@ -159,13 +159,19 @@ DP_ChooseHoursBeforeandAfter <- function(){
   return(DP_SelectHoursBeforeandAfter())
 }
 DP_CropWaveData <- function(WaveData , timeindex , HoursBeforeAndAFter){
+if(length(timeindex) == 2){
+  return( WaveData[ ((WaveData$Date >=  timeindex[1])*(WaveData$Date <=  timeindex[2]) == 1 ) , ] )
+}
+  
+if(length(timeindex) == 1){  
   numberhoursbefore <- HoursBeforeAndAFter[['numberhoursbefore']]
   numberhoursafter <- HoursBeforeAndAFter[['numberhoursafter']]
   indent <- as.numeric(abs(WaveData[1 , 1] - WaveData[2 , 1]))
-  if(indent > 0.012){warning('Time indent greater than 0.012. Data measured at unusual redolution.')}
+  if(indent > 0.012){warning('Time indent greater than 0.012. Data measured at unusual resolution.')}
   WaveData <- WaveData[ max( 1 , timeindex - (numberhoursbefore*((60^2)/indent)) ) : min(length(WaveData[ , 1]) , timeindex + (numberhoursafter*((60^2)/indent)) ) , ]
   WaveData <- ReturnWaveformwithPositiveOrientation(WaveData)
   return(WaveData)
+}
 }
 DP_FindNumberUniques <- function(X){
   # Function to find number of unique values in a column vector.
@@ -383,7 +389,7 @@ DP_GetDirectories <- function( ){
   DP_ChooseDataReps()
 }  
 DP_SaveFile <- function( object , path , PatientID , Name){
-  save( object , file = paste0(path , '\\' , PatientID , '\\Zip_out', Name , ',RData') )
+  save( object , file = paste0(path , '\\' , PatientID , '\\Zip_out\\', Name , '.RData') )
 }
 DP_WaitBar <- function(A){
   print(paste0(A*100 , '% complete'))
@@ -420,10 +426,10 @@ DP_CreateDummyMetaData <- function(PatIndex2017 , Name = NA , FirstNewAF = NA){
   return(output)
 }
 DP_LoadFile <- function(path , PatientsID , Name){
-  return(DP_loadRData(paste0(path , '\\' , PatientsID , '\\Zip_out', Name , ',RData')))
+  return(DP_loadRData(paste0(path , '\\' , PatientsID , '\\Zip_out\\', Name , '.RData')))
 }
 DP_CheckFileExists <- function(path , PatientsID , Name){
-  file.exists(paste0(path , '\\' , PatientsID , '\\Zip_out', Name , ',RData'))
+  file.exists(paste0(path , '\\' , PatientsID , '\\Zip_out\\', Name , '.RData'))
 }
 DP_LoadDistributionSummaries <- function(path , PatientsID){
   Name <- paste0(PatientsID , '_DistributionSummaries' )
@@ -437,17 +443,105 @@ DP_loadRData <- function(fileName){
   load(fileName)
   get(ls()[ls() != "fileName"])
 }
+DP_ExtractNumberofRecordsSingle <- function(Time , index  , interval = 1 ){
+return(length(Time[ (Time < (Time[index] + interval ))*(Time > (Time[index] - interval) ) == 1  ]  ))  
+}
+DP_ExtractNumberofRecord <- function( Time , interval = 1 ){
+dt <- diff(Time)
+timeincriment <- round(median(dt) , digits = 6)  
+output <- (2*interval/0.005)*smth( c(1,round(dt/0.005 , digits = 4) < 1.2  ) , method = 'sma' , n = (2*interval/0.005) )
+output[is.na(output)] <- (2*interval/0.005)
+return(output)
+}
+DP_AddHour <- function(X , hours){
+  return(seq.POSIXt( from=X , by=paste0(as.character(hours) , " hour"), length.out=2 )[2])
+}
+DP_CheckIfAFPatient <- function(MetaData){
+  if(!is.na(MetaData$ConfirmedFirstNewAF[1]) & (MetaData$ConfirmedFirstNewAF[1] != 'CNAF')){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+} 
+DP_LoadPatientsandProcessRPeaks <- function(path , subList , numberrep =1 , LoadReduced = 1,PatientRecord = DP_CreateDummyMetaData(PatIndex2017  , Name = subList)){
+  # Load waveforms
+  FilestoProcess <- c('ECGI' ,'ECGII', 'ECGIII' )
+  if(LoadReduced == 0){
+  ECGs <- DP_LoadECGs(path = path , subList = subList , numberrep =numberrep , FilestoProcess = FilestoProcess)
+  }else{
+  ECGs <- DP_LoadReducedECGs(path = path , subList = subList , numberrep =numberrep , FilestoProcess = FilestoProcess)
+  }
+  outputdata <- DP_ProcessRpeaksMultipleECGs(ECGs = ECGs , PatientRecord = PatientRecord)
+  # Process Rpeaks 
+  return(outputdata)
+}  
+DP_ProcessRpeaksMultipleECGs <- function(ECGs , PatientRecord = DP_CreateDummyMetaData(PatIndex2017  , Name = subList)  , Filter =  wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5 , timethresh = 0.02){
+  outputdata <- list()
+  outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGs$ECGI   , Filter  , nlevels  , ComponetsToKeep  , stdthresh ) , 2)
+  outputdata[[2]] <- CleanRpeaks(RPeakExtractionWavelet( ECGs$ECGII  , Filter  , nlevels  , ComponetsToKeep  , stdthresh ) , 2)
+  outputdata[[3]] <- CleanRpeaks(RPeakExtractionWavelet( ECGs$ECGIII , Filter  , nlevels  , ComponetsToKeep  , stdthresh ) , 2)
+  outputdata[[4]] <- PatientRecord
+  outputdata[[5]] <- 1
+  outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'MetaData' , 'RRCombined') )
+  outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , ECGs , thresh = timethresh)
+  return(outputdata)
+}
+DP_CheckfileinPrecomputedfolder <- function(precomputedfolderpath , file){
+return(file.exists(paste0(precomputedfolderpath ,'\\' ,  file)))  
+}
+DP_SelectPrecomputedFolder <- function(){
+  precomputedfolderpath <- choose.dir(caption = 'Select directory where you would like the precomputed folder to be placed.')
+  if(substr(precomputedfolderpath , start = nchar(precomputedfolderpath) - 38 , stop = nchar(precomputedfolderpath)) != 'PrecomputedOutputsForPopulationAnalysis'){
+    precomputedfolderpath <- paste0(precomputedfolderpath , '\\PrecomputedOutputsForPopulationAnalysis')  
+  }
+  if(dir.exists(precomputedfolderpath) == FALSE){
+    dir.create(precomputedfolderpath)
+  }
+  return(precomputedfolderpath)
+}
+DP_RemoveNaRows <- function(X){
+  return(X[DP_FindNARows(X) , ])
 
-size <- function(X){
+}
+DP_FindNARows <- function(X){
+  return(apply(is.na(X) , 1 , function(Y){sum(Y) == 0} ))
+}
+DP_FindNumzeroRows <- function(X){
+  return(apply(X , 1 , function(Y){sum(Y == 0)} ))
+}
+DP_FindZeroVarianceRows <- function(X){
+  return(apply(X , 2 , function(Y){var(Y[!is.na(Y)])} ) == 0 )
+}
+DP_SelectTimetoview <- function(t){
+  timelist <- as.vector(as.character(round.POSIXt(t[seq(from = 1 , to = length(t) , by = 1000)] , units = 'mins')))
+  startindex = which.min( abs( as.POSIXct(t) - as.POSIXct(select.list(unique(timelist)
+                                                                      , preselect = NULL
+                                                                      , multiple = FALSE
+                                                                      , title = 'Select time to view'
+                                                                      , graphics = TRUE ) ) ) )[1]
+  return(t[startindex])
+}
+DP_fixculmulativeprobs <- function(X){
+  for(i in 1:(length(X) -1) ){
+    if(is.na(X[i])){next}
+    if(X[i] > X[i+1]){
+      X[i+1] <- X[i]
+    }
+  }
+  X[length(X)] <-1
+  return(X)
+}
+
+size <- function( X ){
   dim(X)}
-is.POSIXct <- function(X){ 
+is.POSIXct <- function( X ){ 
   inherits(X, "POSIXct")}
-is.POSIXlt <- function(X){ 
+is.POSIXlt <- function( X ){ 
   inherits(X, "POSIXlt")}
-is.POSIXt <- function(X){ 
+is.POSIXt <- function( X ){ 
   inherits(X, "POSIXt")}
-is.Date <- function(X){ 
+is.Date <- function( X ){ 
   inherits(X, "Date")}
-isodd <- function(A){
+isodd <- function( A ){
   return( (A %% 2) == 0)
 }

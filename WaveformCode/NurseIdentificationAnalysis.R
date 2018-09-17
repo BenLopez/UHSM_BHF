@@ -1,11 +1,22 @@
-{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-source("LibrariesAndSettings.R" , print.eval  = TRUE )
-PatIndex2017 <- DP_LoadPatientIndex()}
+{
+  if(file.exists('CheckforDefaultsScript.R')){
+    source('CheckforDefaultsScript.R')
+  }else{
+    pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+    source("LibrariesAndSettings.R" , print.eval  = TRUE )
+    DP_LoadPatientIndex()
+    DP_ChooseDataReps()
+    FilestoProcess <- DP_ChooseECGstoProcess() 
+    HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter()
+  }
+  listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
+  set.seed(1)
+}
 
 
 TotalUsable <- (PatIndex2017$Usable == 1)*(PatIndex2017$TotalITUTimeHRS <= 100)
 TotalUsable[is.na(TotalUsable)] <- FALSE
-TotalUsable <- 758
+TotalUsable <- 750
 
 TotalAF <- (PatIndex2017$Usable == 1)*(PatIndex2017$TotalITUTimeHRS <= 100)*(!is.na(PatIndex2017$ConfirmedFirstNewAF))*(PatIndex2017$ConfirmedFirstNewAF != 'CNAF')
 TotalAF[is.na(TotalAF)] <- 0
@@ -26,9 +37,17 @@ NurseLateIdentifiction <- sum(TimeDiff < -(60*60))
 MeanLateDetection <- abs(mean(TimeDiff[TimeDiff < (60*60)]))/(60*60)
 RangeLateDetection <- range(TimeDiff[TimeDiff < (60*60)]/(60^2))
 
-plot(TimeDiff, xlab = 'Patient Index' , ylab = 'Time Difference Detection of First New AF')
-abline( (60*60) , 0 , col = 'red' )
-abline( -(60*60) , 0 , col = 'red')
+plot1 <- ggplot(data = data.frame(y = 1:length(as.numeric(TimeDiff[-which(abs(TimeDiff)<(60^2))[1:6]]/(60*60))) , x = as.numeric(TimeDiff[-which(abs(TimeDiff)<(60^2))[1:6]]/(60*60))) , aes(y,x))+
+  geom_point( color = 'blue')+
+  ylab('Difference between Diganosis of FNAF (hours)') +
+  xlab('AF Patient Index') +
+  ggtitle('Comparisons of Diagnosis Times for FNAF') +
+  geom_hline(yintercept = 1 , color = 'red')+
+  geom_hline(yintercept = -1 , color = 'red')
+
+plot(TimeDiff[-which(abs(TimeDiff)<(60^2))[1:6]]/(60*60), xlab = 'Patient Index' , ylab = 'Time Difference Detection of First New AF')
+abline( (1) , 0 , col = 'red' )
+abline( -(1) , 0 , col = 'red')
 title('Nurse Detection Analysis')
 
 NurseSpecificity <- (TotalNOAF - TotalCNAF - NurseEarlyIdentifiction) / (TotalNOAF)
