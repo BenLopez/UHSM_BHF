@@ -2,7 +2,7 @@
 pathFiles = choose.dir(caption="Select folder with source code")
 pathFiles = paste0(pathFiles, "\\")
 setwd(pathFiles)
-source('LibrariesAndSettings.R')
+library( filesstrings)
 ##### Select file PatientIndex.csv if it exists
 
 filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,

@@ -23,7 +23,6 @@ library( moments )
 library( mvtnorm )
 library( mclust )
 library( MASS )
-library( filesstrings)
 
 # Load Data
 options(digits = 15)
