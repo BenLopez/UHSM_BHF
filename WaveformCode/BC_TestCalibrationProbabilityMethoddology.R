@@ -110,14 +110,3 @@ abline(0,1  , col ='blue')
 # GMM
 
 
-x11(20,14)
-par(mfrow = c(2 , 5))
-
-SampleFromModel <- BC_SampleGMM(LocalDistributionStruct[[2]] , 10000)
-
-for(variabletoview in c(1:10)){
-  tmp <- hist(DataBase[[2]][ , variabletoview], col=rgb(0,0,1,alpha = 0.5) ,
-              main= paste0(AFD_CreateDistributionSummaryNames()[variabletoview] , ' Histogram') , xlab = AFD_CreateDistributionSummaryNames()[variabletoview] , freq = FALSE)
-  hist(SampleFromModel[ , variabletoview], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(min(SampleFromModel[!is.na(SampleFromModel[ , variabletoview]) , variabletoview] ) , tmp$breaks, max(SampleFromModel[!is.na(SampleFromModel[ , variabletoview]) , variabletoview]) ))
-}
-title(' Local Histograms' , outer=TRUE)

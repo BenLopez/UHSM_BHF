@@ -22,7 +22,9 @@ library( lattice )
 library( moments )
 library( mvtnorm )
 library( mclust )
-library(MASS)
+library( MASS )
+library( filesstrings)
+
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
@@ -44,6 +46,6 @@ source( 'VectorisedOperationsSourceFunctions.R' )
 source( 'DenistyFunctionsSourceFunctions.R' )
 source( 'DenistyFunctionsSourceFunctions.R' )
 source( 'BayesClassifierSourceFunctions.R' )
-
+source( 'KernelDensityEstimationSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

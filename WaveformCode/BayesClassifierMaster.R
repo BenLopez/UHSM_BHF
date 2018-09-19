@@ -61,6 +61,27 @@ precomputedfolderpath <- DP_SelectPrecomputedFolder()
 # Rows are observations and columns are elements if an observation vector.
 # Training
 source( 'BC_TrainingScript.R' )
+{
+x11(20,14)
+par(mfrow = c(2 , 5))
+SampleFromModel <- BC_SampleGMM(LocalDistributionStruct[[1]] , 100000)
+SampleFromModel2 <- BC_SampleGMM(LocalDistributionStruct[[2]] , 100000)
+for(variabletoview in c(1:10)){
+  tmp <- hist(DataBase[[1]][sample(1:size(DataBase[[1]])[1] , 100000) , variabletoview], col=rgb(0,0,1,alpha = 0.5) ,
+              main = paste0(AFD_CreateDistributionSummaryNames()[variabletoview] , ' Histogram') ,
+              xlab = AFD_CreateDistributionSummaryNames()[variabletoview] , freq = FALSE )
+  tmp2 <-hist(DataBase[[2]][sample(1:size(DataBase[[2]])[1] , 100000) , variabletoview], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(min(DataBase[[2]][!is.na(DataBase[[2]][ , variabletoview]) , variabletoview] ) , tmp$breaks, max(DataBase[[2]][!is.na(DataBase[[2]][ , variabletoview]) , variabletoview]) ))
+  tmp3 <-hist(SampleFromModel[ , variabletoview], col=rgb(0,1,0,alpha =0.5), add=T , freq = FALSE ,
+       breaks = c(min(SampleFromModel[!is.na(SampleFromModel[ , variabletoview]) , variabletoview] ) , tmp$breaks, max(SampleFromModel[!is.na(SampleFromModel2[ , variabletoview]) , variabletoview]) ))
+  tmp4 <-hist(SampleFromModel2[ , variabletoview], col=rgb(0.5,0.5,0.5,alpha =0.5), add=T , freq = FALSE ,
+       breaks = c(min(SampleFromModel2[!is.na(SampleFromModel2[ , variabletoview]) , variabletoview] ) , tmp$breaks, max(SampleFromModel2[!is.na(SampleFromModel2[ , variabletoview]) , variabletoview]) ))
+  
+}
+BC_plotValidateDensityEstimationMarginalHistograms(DataBase[[1]] , DataBase[[2]] , SampleFromModel , SampleFromModel2 )   
+}
+
+
 source( 'BC_GlobalProbabilisticCalibration.R' )
+source( 'BC_LocalProbabilisticCalibration.R' )
 
 

@@ -83,7 +83,7 @@ if(BCOptions[[4]] == 'GMM'){
   }else
     LocalDistributionStruct <-  BC_EstimateLocalDensitiesGMM( DataBase , numberofcomponents = BCParameters$NumberComponentsforGMM )
     LocalSecondOrderStruct <- BC_EstimateLocalDensitiesMVN( DataBase )
-  save( LocalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,BCOptions[[3]]  , BCOptions[[4]],  'DistributionSummaries'  ,'.RData')) )
+  save( LocalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN'  , BCOptions[[4]],  'DistributionSummaries'  ,'.RData')) )
 }
 
 ImSecondOrderStruct <- BC_CalulateImplausabiltySecondOrderStatistics(DataBase = DataBase , SecondOrderStruct = LocalSecondOrderStruct )

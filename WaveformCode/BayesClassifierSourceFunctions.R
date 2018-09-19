@@ -533,6 +533,17 @@ BC_CreateCalibrationStructure <- function(GlobalProbCalibrationStruct ,   BinWid
   }
   return(data.frame(x = ProbabililtyBins[1:dim(ProbabililtyBinStruct)[1]] + BinWidth/2, y =ProbabililtyBinStruct , sd = sqrt(EstimatorError) ) )
 }
+BC_CreateDefaultmclustStruct <- function(){
+  MclustDistributionStruct <- list( parameters = list() )  
+  MclustDistributionStruct$parameters[[1]] <- 1
+  MclustDistributionStruct$parameters[[2]] <- 1
+  MclustDistributionStruct$parameters[[3]] <- list()
+  MclustDistributionStruct$parameters <- setNames(MclustDistributionStruct$parameters , c('pro' , 'mean' , 'variance'))  
+  MclustDistributionStruct$parameters$variance <- setNames(list(1) , c('sigma'))
+  return(MclustDistributionStruct)
+}
+
+
 ###### Plotting Functions ######
 BC_PlotCreateggImplausabilities <- function(TimeVector , RegIm){
 if(dim(RegIm)[2] == 2){
@@ -716,7 +727,37 @@ BC_PlotCreateProbabilityCalibrationPlot <- function(Data){
     return(GlobalProbabilityCalibrationPlot)
 }
 
+BC_plotValidateDensityEstimationMarginalHistograms <- function(A , B , C , D ){
+  x11(20,14)
+  par(mfrow = c(2 , 5))
+  for(variabletoview in c(1:10)){
+    
+    # Create marginal histograms  
+    tmp  <- hist(A[ , variabletoview], col=rgb(0,0,1,alpha = 0.5) ,
+                 main = paste0(AFD_CreateDistributionSummaryNames()[variabletoview] , ' Histogram') , freq = FALSE  , plot = FALSE)
+    tmp2 <- hist(B[ , variabletoview], col=rgb(1,0,0,alpha =0.5) , freq = FALSE , 
+                 breaks = c(min(B[!is.na(B[ , variabletoview]) , variabletoview] ) , tmp$breaks, max(B[!is.na(B[ , variabletoview]) , variabletoview]) ), plot = FALSE)
+    
+    tmp3 <- hist(C[ , variabletoview], col=rgb(1,0,0,alpha =0.5) , freq = FALSE , 
+                 breaks = c(min(C[!is.na(C[ , variabletoview]) , variabletoview] ) , tmp$breaks, max(C[!is.na(C[ , variabletoview]) , variabletoview]) ), plot = FALSE)
+    tmp4 <- hist(D[ , variabletoview], col=rgb(1,0,0,alpha =0.5) , freq = FALSE , 
+                 breaks = c(min(D[!is.na(D[ , variabletoview]) , variabletoview] ) , tmp$breaks, max(D[!is.na(D[ , variabletoview]) , variabletoview]) ), plot = FALSE)
+    
+    plot(tmp2$density , tmp2$density - tmp4$density , xlab = 'index' , ylab = 'Residual Between Expected and Predicted Density' , col = 'red')
+    points(tmp$density[2:(length(tmp$density) - 1)],tmp$density[2:(length(tmp$density) - 1)] - tmp3$density[3:(length(tmp2$density) - 2)] , col = rgb(0,0,1))
+    title(paste0(round(sum( abs(tmp$density[2:(length(tmp$density) - 1)] - tmp3$density[3:(length(tmp2$density) - 2)]) ) , 3) , ' ',
+                 round(sum( abs(tmp2$density - tmp4$density)) , 3)) )
+  }
+}
 
+BC_PlotPairsFromTwoVariables <- function( X , Y , alpha = 0.01 ){
+  x11(20 , 14)
+  pairs( rbind(X , Y) ,  col = rbind(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1]) , rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1])) , pch = 16) 
+}
+BC_PlotPairs<- function(X , alpha = 0.01 ){
+  x11(20 , 14)
+  pairs( X , col = rgb(1 , 0 , 0 , alpha = 0.01) , pch =16) 
+}
 
 ##### Sampling functions #####
 
@@ -727,6 +768,7 @@ BC_SampleGMM <- function(MclustDistributionStruct , numberofsamples){
   output <- matrix(0 , dim(Sample1)[1]  , dim(MclustDistributionStruct$parameters$mean)[1])
   
   for( i in 1:N ){
+    if(sum(Sample1[,i] == 1) ==0){next}
     output[Sample1[,i] == 1 , ] <- mvrnorm(n = sum(Sample1[,i]) ,
                                            mu = MclustDistributionStruct$parameters$mean[ , i], 
                                            Sigma = MclustDistributionStruct$parameters$variance$sigma[ , , i])

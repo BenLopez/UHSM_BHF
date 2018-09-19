@@ -57,9 +57,9 @@ GlobalProbabilityCalibrationPlot <- ggplot(data.frame(x =  ProbabililtyBins[1:di
                                     ylab('Estimated Probability')
 print(GlobalProbabilityCalibrationPlot)
 
-bound = 0.000001
+#bound = 0.000001
 
-sensitivity <- sum( GlobalUpdateDiagnostics[c(1:52), ] > bound )/52
-specificity <- sum(GlobalUpdateDiagnostics[-c(1:52), ] < bound)/250 
-PPV <- ( 0.2*sensitivity )/( (0.2*sensitivity) + ( (1-specificity)*0.8 ))
-NPV <- ( 0.8*specificity )/( (0.2*(1-sensitivity)) + ( (specificity)*0.8 ))
+#sensitivity <- sum( GlobalUpdateDiagnostics[c(1:52), ] > bound )/52
+#specificity <- sum(GlobalUpdateDiagnostics[-c(1:52), ] < bound)/250 
+#PPV <- ( 0.2*sensitivity )/( (0.2*sensitivity) + ( (1-specificity)*0.8 ))
+#NPV <- ( 0.8*specificity )/( (0.2*(1-sensitivity)) + ( (specificity)*0.8 ))
