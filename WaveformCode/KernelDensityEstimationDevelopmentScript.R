@@ -5,7 +5,7 @@ SecondOrderImSpecifictaion <- KDE_CreateSecondOrderSpecificationImp(Trainingset 
 
 
 
-SampleFromNonImpH <- runif(1000 , min = 0.00000001 , max = 0.01)
+SampleFromNonImpH <- runif(1000 , min = 0.0001 , max = 0.001)
 
 Imatrix <- matrix(0 , length(SampleFromNonImpH) , 1)
 for(i in 1:length(SampleFromNonImpH)){
@@ -16,6 +16,8 @@ for(i in 1:length(SampleFromNonImpH)){
   Imatrix[i,] <- KDE_MaxIm( Im , SecondOrderImSpecifictaion )
   DP_WaitBar(i/length(SampleFromNonImpH))
 }
+
+plot(SampleFromNonImpH , Imatrix)
 
 #X2 <- BC_SampleGMM(MclustDistributionStruct , 1000)
 #BC_PlotPairsFromTwoVariables( X2 , X[1:1000 , ] )

@@ -33,8 +33,8 @@ choose_outputs = c(0,0,1) #csv, mat, rdata --- DO NOT USE MAT, needs testing, ve
 maxhourstoprocess <- as.numeric(select.list(choices = as.character(seq(50 , 4000 , 50)) , multiple = FALSE, graphics = TRUE , title = 'Select the maximum number of hours to process.'))
 
 Use7z = 1 # You need to install 7-zip
-#UseZip = 0
-#KeepCSVs = 0
+UseZip = 0
+KeepCSVs = 0
 
 
 DataTypes = c("Discrete", "ECGI", "ECGII", "ECGIII", "CVP", "ART", "SPO2", "Flow", "Paw")
