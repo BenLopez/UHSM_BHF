@@ -1,7 +1,6 @@
 # Select directory containing source
 pathFiles = choose.dir(caption="Select folder with source code")
 pathFiles = paste0(pathFiles, "\\")
-setwd(pathFiles)
 library( filesstrings)
 ##### Select file PatientIndex.csv if it exists
 
@@ -38,11 +37,11 @@ KeepCSVs = 0
 
 
 DataTypes = c("Discrete", "ECGI", "ECGII", "ECGIII", "CVP", "ART", "SPO2", "Flow", "Paw")
-chooseWave2Read = select.list(DataTypes, preselect = DataTypes,
-                              multiple = TRUE, graphics = TRUE, title = "Choose Waves to Read")
+chooseWave2Read = select.list(DataTypes, preselect = "Discrete",
+                              multiple = FALSE, graphics = TRUE, title = "Choose Wave to Read")
 
 # Run functions source file
-source(paste0(pathFiles,"/sourceFunctions.R"))
+source(paste0(pathFiles,"/WaveSplitSourceFunctions.R"))
 
 # Select directory containing all patients
 path = choose.dir(caption="Select folder containing data repository")
