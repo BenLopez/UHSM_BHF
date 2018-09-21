@@ -531,6 +531,10 @@ DP_fixculmulativeprobs <- function(X){
   X[length(X)] <-1
   return(X)
 }
+DP_SampleRowsFromMatrix <- function(X , numberofsamples = 1000){
+  X <- as.matrix(X)
+  return(X[sample( 1:dim(X)[1] , numberofsamples ) , ])
+}
 
 size <- function( X ){
   dim(X)}
