@@ -90,11 +90,10 @@ KDE_CalulateImplausabilityVectorforKDE <- function( Trainingset , MclustDistribu
   return(apply(Immatrix , 2 , mean ))  
 }
 KDE_CreateMclustClassFromSample <- function(X , H ){
-  
   MclustDistributionStruct <- BC_CreateDefaultmclustStruct() 
   MclustDistributionStruct$parameters$pro <- rep(1 , size(X)[1])/size(X)[1]
   MclustDistributionStruct$parameters$mean <- t(X)
-  MclustDistributionStruct$parameters$variance$sigma <- array(H , c(11 , 11 , size(X)[1]) )
+  MclustDistributionStruct$parameters$variance$sigma <- array(H , c( size(X)[2] ,  size(X)[2] , size(X)[1]) )
   return( MclustDistributionStruct )  
 }
 KDE_MaxIm <- function(Im , SecondOrderImSpecifictaion){

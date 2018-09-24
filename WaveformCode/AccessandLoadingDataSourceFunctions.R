@@ -535,6 +535,24 @@ DP_SampleRowsFromMatrix <- function(X , numberofsamples = 1000){
   X <- as.matrix(X)
   return(X[sample( 1:dim(X)[1] , numberofsamples ) , ])
 }
+DP_RescaleZeroOneToab <- function(X, a , b){
+  return(X*(b-a) + a)
+}
+DP_pdist <- function(X , Xstar){
+  return(as.matrix(pdist(X , Xstar)))
+}
+DP_FindMindistances <- function(X){
+  dismatrix <- DP_pdist(X , X)
+  diag(dismatrix) <- Inf
+  return( apply(dismatrix , 1, min))  
+}
+DP_FindMeanMindistances <- function(X ){
+  return(mean(DP_FindMindistances(X)))
+  
+}
+DP_CalculateLimits <- function(X){
+  return(c(min(X) , max(X)))
+}
 
 size <- function( X ){
   dim(X)}

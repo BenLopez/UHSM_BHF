@@ -758,14 +758,33 @@ BC_PlotPairs<- function(X , alpha = 0.01 ){
   x11(20 , 14)
   pairs( X , col = rgb(1 , 0 , 0 , alpha = 0.01) , pch =16) 
 }
-
+BC_PlotCompareTwoHists <- function( X , Y ){
+  x11(20 , 14)
+  par( mfrow = c(2 , ceiling(dim(X)[2]/2)) )    
+  
+  for(variabletoview in 1:dim(X)[2]){
+    
+    tmphist <- hist(rbind(X[ , variabletoview] , Y[ , variabletoview]) , breaks = 30 , plot = FALSE) 
+    hist(X[ , variabletoview]
+         , col=rgb(1,0,0,alpha =0.5) 
+         , freq = FALSE 
+         , breaks = tmphist$breaks
+         , main = paste0('Variable ' , variabletoview)
+         , xlabel = paste0('Variable = ' , variabletoview))
+    hist(Y[ , variabletoview]
+         , col = rgb(0,0,1,alpha =0.5) 
+         , freq = FALSE 
+         , breaks = tmphist$breaks
+         , add = T)   
+  }
+}  
 ##### Sampling functions #####
 
 BC_SampleGMM <- function(MclustDistributionStruct , numberofsamples){
   N = length( MclustDistributionStruct$parameters$pro)
   Sample1 <- t(rmultinom(numberofsamples, size = 1 , MclustDistributionStruct$parameters$pro)) 
   
-  output <- matrix(0 , dim(Sample1)[1]  , dim(MclustDistributionStruct$parameters$mean)[1])
+  output <- matrix(0 , numberofsamples  , dim(MclustDistributionStruct$parameters$mean)[1])
   
   for( i in 1:N ){
     if(sum(Sample1[,i] == 1) ==0){next}
