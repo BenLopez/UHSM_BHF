@@ -796,3 +796,11 @@ BC_SampleGMM <- function(MclustDistributionStruct , numberofsamples){
   
   return(output)  
 }
+BC_PredictGMMDensity <- function(MclustDistributionStruct , x){
+  N = length( MclustDistributionStruct$parameters$pro)
+  f_i <- matrix(0 , N , 1)
+  for(ii in 1:N){
+    f_i[ii,] <- MclustDistributionStruct$parameters$pro[ii]*exp(DF_mvnpdf(x , mu = MclustDistributionStruct$parameters$mean[ , ii] , Sigma =  MclustDistributionStruct$parameters$variance$sigma[ , , ii]))   
+  }
+  return(sum(f_i))
+}

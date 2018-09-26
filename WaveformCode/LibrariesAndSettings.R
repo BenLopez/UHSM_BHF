@@ -29,7 +29,7 @@ options(digits = 15)
 options(digits.secs=3)
 
 source( "FourierSourceFunctions.R" )
-source( "SourceFunctions.R" )
+source( "WaveSplitSourceFunctions.R" )
 source( "PeakExtractionSourceFunctions.R" )
 source( 'EmulationSourceCode.R' )
 source( 'BayesLinearDynamicUpdateSourceCode.R' )

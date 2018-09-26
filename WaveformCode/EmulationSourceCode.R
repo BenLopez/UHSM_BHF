@@ -35,14 +35,14 @@ KXXstar <- exp( -0.5 * distmatrix )
 return(KXXstar)
 }
 
-##### Inference functions #####
+##### Emulation functions #####
 
 BE_CreateDefaultEmulationClass <- function(){
   EmulatorParameters <- setNames(list(1 , 1 , 1, 1 , 1 , 1 ) , c('MeanFunction' , 'CorrFunction' , 'CorrelationLength' , 'w' , 'X' , 'Y'))
   EmulatorParameters$MeanFunction <- function(X){
     X <- as.matrix(X)
-    H = cbind(as.matrix(1 + 0*X) , X , X^2)
-    return(X)
+    H = cbind(as.matrix(1 + 0*X) , X )
+    return(H)
   }
   EmulatorParameters$CorrFunction <- function(x , xstar , l){
     return(CF_ExponentialFamily(x , xstar , l , 2))
@@ -108,7 +108,38 @@ BE_BayesLinearEmulatorGLSEstimates <- function( xstar , EmulatorSettings = BE_Cr
   
   return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))
 
-  }
+}
+BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass()){
+  
+  x <- as.matrix(EmulatorSettings$X)
+  y <- as.matrix(EmulatorSettings$Y)
+  n <- dim(X)[1]
+  l <- EmulatorSettings$CorrelationLength( x , 1 )
+  w <- EmulatorSettings$w(X)
+  
+  KXX <- EmulatorSettings$CorrFunction(x , x , l )
+  KXstarX <-  EmulatorSettings$CorrFunction( xstar , x , l )
+  KXstarXstar <-  EmulatorSettings$CorrFunction(xstar , xstar , l )
+  H <- EmulatorSettings$MeanFunction(x)
+  sizeh = dim(H)
+  Hstar <- EmulatorSettings$MeanFunction(xstar)
+  sizex <- dim(x)[1]
+  
+  BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
+  epsilon <- y - H%*%BetaHat
+  SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
+  SigmaHat <- as.numeric(SigmaHat - EmulatorSettings$w(X))
+  
+  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(X)*diag(sizeh[1]))
+  Cov_XstarD <- SigmaHat*KXstarX
+
+  E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
+  V_z_y <- SigmaHat*KXstarXstar - Cov_XstarD%*%Var_D%*%t(Cov_XstarD)
+  
+  return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
+}
+
+#### History Matching Functions #####
 BE_CalculateImEmulatorTrainingSet <- function(X , Simulator , ImMeasure){
   X <- as.matrix(X)
   fX <- matrix(0 , dim(X)[1] , 1)
@@ -129,7 +160,7 @@ BE_CreateDefaultHistoryMatchClass <- function( ){
   HistoryMatchSettings$KDE <- 0
   return( HistoryMatchSettings )
 }
-BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings , PriorRange , chi_star){
+BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings , PriorRange , chi_star , WaveCounter){
   
   n_emulatortrainingpoints = HistoryMatchSettings$n_emulatortrainingpoints
   n_emulatorsamplepoints = HistoryMatchSettings$n_emulatorsamplepoints
@@ -145,6 +176,9 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
   
   print('Evaluating simulator.')
   Im <- BE_CalculateImEmulatorTrainingSet(X , Simulator , ImMeasure)
+  if(WaveCounter  == 1){
+    X = rbind(0,X)
+    Im = rbind(0,Im)}
   print('Simulator evaluated.')
   
   EmulatorSettings <- BE_EmulationClassAddData( y = Im , x = X , EmulatorSettings = EmulatorSettings , HistoryMatchSettings = HistoryMatchSettings)
@@ -157,7 +191,7 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
   Xstar <- sort(Xstar[Xstar > 0])
   }
   print( 'Evaluating emulator.' )
-  Em_output <- BE_BayesLinearEmulatorGLSEstimates(xstar  = Xstar , EmulatorSettings = EmulatorSettings)
+  Em_output <- BE_BayesLinearEmulatorLSEstimates(xstar  = Xstar , EmulatorSettings = EmulatorSettings)
   print( 'Emulator evaluated.' )
   
   BE_PlotOneDOutput(Em_output = Em_output ,  EmulatorSettings = EmulatorSettings , Xstar = Xstar )
@@ -165,11 +199,6 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
   if( sum((Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX))) < HistoryMatchSettings$Im_Thresh )  > 0  || sum( (Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX))) < HistoryMatchSettings$Im_Thresh )  > 0 ){
     if( sum((Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX))) < HistoryMatchSettings$Im_Thresh )  > 0){
       chi_star <- Xstar[ (Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)))  < HistoryMatchSettings$Im_Thresh  ]    }
-    if(sum( (Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX))) < HistoryMatchSettings$Im_Thresh )  > 0){
-      chi_star <- Xstar[ (Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX))) < HistoryMatchSettings$Im_Thresh  ]   }  
-    if(sum( (Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX)))<HistoryMatchSettings$Im_Thresh )  > 0 & sum(( Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)))<HistoryMatchSettings$Im_Thresh )  > 0){
-      chi_star <- rbind(as.matrix(Xstar[ (Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)))  < HistoryMatchSettings$Im_Thresh  ])  ,as.matrix( Xstar[ (Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX))) < HistoryMatchSettings$Im_Thresh  ] ))
-    }
     if(sum( (Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX)))<HistoryMatchSettings$Im_Thresh )  == 0 & sum(( Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)))<HistoryMatchSettings$Im_Thresh )  == 0){  
       chi_star <- NA}
   

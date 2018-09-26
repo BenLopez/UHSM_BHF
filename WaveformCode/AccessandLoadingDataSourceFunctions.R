@@ -1,5 +1,8 @@
 # Script with WaveForm data processing and access functions.
 
+###### Loading functions ######
+
+
 DP_LoadPatientIndex <- function(){
   filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
                          title = 'Choose File Type For Patient Index', graphics = TRUE )
@@ -14,56 +17,24 @@ if(filetype == 'RData')
 }
   return(PatIndex2017)
 }
-DP_ChooseDataReps <- function( ){
-  
-setofrepositorynumbers = c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
-numberrep <<-  as.numeric(select.list(setofrepositorynumbers, preselect = setofrepositorynumbers[1], multiple = FALSE,
-                                    title = 'Select number of reporsitory locations', graphics = TRUE ))
-
-# Select reporsitories
-path <<- list()
-for(i in 1:numberrep)
-{
-  path[[i]]  <<- choose.dir( caption  = paste0( "Select folder " ,i,  " containing data repository" ))
-  if(i == 1){  listAllPatients <<- as.matrix(list.dirs(path = path[[i]], full.names = FALSE, recursive = FALSE))  }
-  if(i > 1){   listAllPatients <<- rbind( listAllPatients , as.matrix(list.dirs(path = path[[i]], full.names = FALSE, recursive = FALSE)) ) }
-}
-
-
-}
-DP_choosepatient <- function(listAllPatients){
-  subList <<- select.list(listAllPatients
-                        , preselect = NULL
-                        , multiple = FALSE
-                        , title = 'Select Patient to Analyse'
-                        , graphics = TRUE )
-  return(subList)
-}
-DP_choosepatients <- function(listAllPatients){
-  subList <<- select.list(listAllPatients
-                          , preselect = NULL
-                          , multiple = TRUE
-                          , title = 'Select Patient to Analyse'
-                          , graphics = TRUE )
-}
 DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 ){
   # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
   if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
   {
-  # Load wave form data 
-  for(i in 1:(numberrep+1))
-  {
-    if(i > (numberrep))
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
     {
-      stop('Error: No ECGI data processed.') 
-      break
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGI data processed.') 
+        break
+      }
+      if(file.exists(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGI_' , subList , '.RData' )))
+      {
+        load(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGI_' , subList , '.RData' ))
+        break 
+      }  
     }
-    if(file.exists(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGI_' , subList , '.RData' )))
-    {
-      load(paste0( path[[i]] , '\\' , subList , '\\Zip_out\\' , 'ECGI_' , subList , '.RData' ))
-      break 
-    }  
-  }
   }
   
   if(ECGNum  == 2 || ECGNum  == 'II'|| ECGNum  == 'ECGII')
@@ -103,6 +74,146 @@ DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 ){
   }
   
   return(WaveData)
+}
+DP_LoadECGReduced <- function(path , subList , numberrep=1 , ECGNum = 1 ){
+  # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
+  if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
+  {
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
+    {
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGI data processed.') 
+        break
+      }
+      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGI_reduced" , '.RData') ))
+      {
+        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGI_reduced" , '.RData'))
+        break 
+      }  
+    }
+  }
+  
+  if(ECGNum  == 2 || ECGNum  == 'II'|| ECGNum  == 'ECGII')
+  {
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
+    {
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGII data processed.') 
+        break
+      }
+      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGII_reduced" , '.RData') ))
+      {
+        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGII_reduced" , '.RData'))
+        break 
+      }  
+    }
+  }
+  
+  if(ECGNum  == 3 || ECGNum  == 'III'|| ECGNum  == 'ECGIII')
+  {
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
+    {
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGIII data processed.') 
+        break
+      }
+      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGIII_reduced" , '.RData')))
+      {
+        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGIII_reduced" , '.RData'))
+        break 
+      }  
+    }
+  }
+  
+  return(WaveData)  
+}
+DP_LoadRpeaksfileECGI <- function(path , PatientsId ){
+  load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
+  return(outputdata$ECGI)
+}  
+DP_LoadRpeaksfile <- function(path , PatientsId ){
+  load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
+  return(outputdata)
+}  
+DP_LoadECGs<- function(path , subList , numberrep=1 , FilestoProcess){
+  output = list()
+  for(i in 1:length(FilestoProcess)){
+    output[[i]] <- DP_LoadECG( path , subList , numberrep , FilestoProcess[i] )
+  }
+  output <- setNames(output , FilestoProcess)
+}
+DP_LoadReducedECGs <- function(path , subList , numberrep=1 , FilestoProcess){
+  output = list()
+  for(i in 1:length(FilestoProcess)){
+    output[[i]] <- DP_LoadECGReduced( path , subList , numberrep , FilestoProcess[i] )
+  }
+  output <- setNames(output , FilestoProcess)
+}
+DP_LoadDistributionSummaries <- function(path , PatientsID){
+  Name <- paste0(PatientsID , '_DistributionSummaries' )
+  return(DP_LoadFile(path , PatientsID , Name = Name ))
+}
+DP_LoadFile <- function(path , PatientsID , Name){
+  return(DP_loadRData(paste0(path , '\\' , PatientsID , '\\Zip_out\\', Name , '.RData')))
+}
+DP_loadRData <- function(fileName){
+  #loads an RData file, and returns it
+  load(fileName)
+  get(ls()[ls() != "fileName"])
+}
+DP_LoadPatientsandProcessRPeaks <- function(path , subList , numberrep =1 , LoadReduced = 1,PatientRecord = DP_CreateDummyMetaData(PatIndex2017  , Name = subList)){
+  # Load waveforms
+  FilestoProcess <- c('ECGI' ,'ECGII', 'ECGIII' )
+  if(LoadReduced == 0){
+    ECGs <- DP_LoadECGs(path = path , subList = subList , numberrep =numberrep , FilestoProcess = FilestoProcess)
+  }else{
+    ECGs <- DP_LoadReducedECGs(path = path , subList = subList , numberrep =numberrep , FilestoProcess = FilestoProcess)
+  }
+  outputdata <- DP_ProcessRpeaksMultipleECGs(ECGs = ECGs , PatientRecord = PatientRecord)
+  # Process Rpeaks 
+  return(outputdata)
+}  
+
+
+##### Choosing Functions #####
+
+DP_ChooseDataReps <- function(){
+  
+setofrepositorynumbers = c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
+numberrep <<-  as.numeric(select.list(setofrepositorynumbers, preselect = setofrepositorynumbers[1], multiple = FALSE,
+                                    title = 'Select number of reporsitory locations', graphics = TRUE ))
+
+# Select reporsitories
+path <<- list()
+for(i in 1:numberrep)
+{
+  path[[i]]  <<- choose.dir( caption  = paste0( "Select folder " ,i,  " containing data repository" ))
+  if(i == 1){  listAllPatients <<- as.matrix(list.dirs(path = path[[i]], full.names = FALSE, recursive = FALSE))  }
+  if(i > 1){   listAllPatients <<- rbind( listAllPatients , as.matrix(list.dirs(path = path[[i]], full.names = FALSE, recursive = FALSE)) ) }
+}
+
+
+}
+DP_choosepatient <- function(listAllPatients){
+  subList <<- select.list(listAllPatients
+                        , preselect = NULL
+                        , multiple = FALSE
+                        , title = 'Select Patient to Analyse'
+                        , graphics = TRUE )
+  return(subList)
+}
+DP_choosepatients <- function(listAllPatients){
+  subList <<- select.list(listAllPatients
+                          , preselect = NULL
+                          , multiple = TRUE
+                          , title = 'Select Patient to Analyse'
+                          , graphics = TRUE )
 }
 DP_SelectInterestingTimePoint <- function(Wavedata , sub_pat){
   subdata <-  unique(as.vector(as.character(round.POSIXt(Wavedata$Date , units = c('hours')))))   
@@ -173,31 +284,7 @@ if(length(timeindex) == 1){
   return(WaveData)
 }
 }
-DP_FindNumberUniques <- function(X){
-  # Function to find number of unique values in a column vector.
-  values <- unique(X)
-  n <- matrix(0 , length(values) , 1)
-  nn <- matrix(0 , length(values) , 1)
-  for(i in 1:length(values))
-  {
-    n[i] <- sum( X == values[[i]])  
-    
-    if(is.factor(values[[i]])){ nn[i] <- as.character(values[[i]])} else {nn[i] <- values[[i]]}
-  }
-  output <- data.frame( nn , n)
-  output <- setNames(output , c('values' , 'n'))
-  return(output) 
-}
-DP_StripTime <- function(X){
-  if(is.POSIXct(X)){output <- X}
-  if(!is.POSIXct(X))
-  {
-  output <- strptime(X ,  format = "%d/%m/%Y %H:%M")
-  if(is.na(output)){output <- strptime(X ,  format = "%d/%m/%Y %H:%M:%S")}
-  }
-return(output)    
-} 
-DP_ChooseECGstoProcess <- function( ){
+DP_ChooseECGstoProcess <- function(){
   DataTypes = c("ECGI", "ECGII", "ECGIII")
   chooseWave2Read = select.list(DataTypes, preselect = DataTypes,
                                 multiple = TRUE, graphics = TRUE, title = "Choose Waves to Read")
@@ -209,30 +296,96 @@ DP_ChooseWaveformstoProcess <- function( ){
                                 multiple = TRUE, graphics = TRUE, title = "Choose Waves to Read")
   return(chooseWave2Read)
 }
+DP_SelectPrecomputedFolder <- function(){
+  precomputedfolderpath <- choose.dir(caption = 'Select directory where you would like the precomputed folder to be placed.')
+  if(substr(precomputedfolderpath , start = nchar(precomputedfolderpath) - 38 , stop = nchar(precomputedfolderpath)) != 'PrecomputedOutputsForPopulationAnalysis'){
+    precomputedfolderpath <- paste0(precomputedfolderpath , '\\PrecomputedOutputsForPopulationAnalysis')  
+  }
+  if(dir.exists(precomputedfolderpath) == FALSE){
+    dir.create(precomputedfolderpath)
+  }
+  return(precomputedfolderpath)
+}
+DP_GetDirectories <- function( ){
+  DP_LoadPatientIndex()
+  DP_ChooseDataReps()
+}  
+DP_ChooseRegionofInterest <- function(ECG ){
+  timelist <- as.vector(as.character(round.POSIXt(ECG[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
+  
+  startindex <- which.min( abs( as.POSIXct( ECGI$Date ) - as.POSIXct(select.list(unique(timelist)
+                                                                                 , preselect = NULL
+                                                                                 , multiple = FALSE
+                                                                                 , title = 'Select time to view ECGI'
+                                                                                 , graphics = TRUE ) ) ) )[1]
+  
+  timeinterval <- as.numeric(select.list(unique(as.character(c(1:100)))
+                                         , preselect = '10'
+                                         , multiple = FALSE
+                                         , title = 'Select number of seconds of full ECG to be viewed'
+                                         , graphics = TRUE ))
+  
+  endindex <- startindex + (round(timeinterval / as.numeric(abs(ECG$Date[1]- ECG$Date[2]))))
+  regionofinterest <- startindex:endindex
+  return(regionofinterest)
+}
+DP_SelectTimetoview <- function(t){
+  timelist <- as.vector(as.character(round.POSIXt(t[seq(from = 1 , to = length(t) , by = 1000)] , units = 'mins')))
+  startindex = which.min( abs( as.POSIXct(t) - as.POSIXct(select.list(unique(timelist)
+                                                                      , preselect = NULL
+                                                                      , multiple = FALSE
+                                                                      , title = 'Select time to view'
+                                                                      , graphics = TRUE ) ) ) )[1]
+  return(t[startindex])
+}
+
+##### Checking functions ######
 DP_checkfilesprocessed <- function(path , PatientsId , FilestoProcess){
   output <- rep(0 , length(FilestoProcess) , 1)
   for( i in 1:length(FilestoProcess) )
   {
     output[i] <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , FilestoProcess[i] , '_' , PatientsId , '.RData')  )
   }
-return(output)
+  return(output)
 }
 DP_existsinpatientindex <- function(PatIndex2017 , PatientsId){
-return(nrow(subset( PatIndex2017, PseudoId %in% PatientsId )) > 0)  
+  return(nrow(subset( PatIndex2017, PseudoId %in% PatientsId )) > 0)  
 }
 DP_isusable <- function(PatIndex2017 , PatientsId){
-sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
-return(sub_pat$Usable[1] == 1)    
-}
-DP_numberhoursgreaterthan <- function(PatIndex2017 , PatientsId , numberofhours = 6){
   sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
-  output <- sub_pat$TotalITUTimeHRS[1] >= numberofhours
-  if(is.na(output)){output = FALSE}
-  return(output)    
+  return(sub_pat$Usable[1] == 1)    
 }
-DP_ReturnPatientNumber <- function(PatientsId){
-  return(as.numeric(substr(PatientsId , start = 2 , stop = min(nchar(PatientsId)  , 6) )))
+DP_CheckFileExists <- function(path , PatientsID , Name){
+  file.exists(paste0(path , '\\' , PatientsID , '\\Zip_out\\', Name , '.RData'))
 }
+DP_CheckDistributionSummariesExists <- function(path , PatientsID){
+  DP_CheckFileExists(path , PatientsID , Name = paste0(PatientsID , '_DistributionSummaries' ))
+}
+DP_CheckFieldExists <- function(DF , Field){
+  return(any(names(DF) == Field))
+}
+DP_CheckIfAFPatient <- function(MetaData){
+  if(!is.na(MetaData$ConfirmedFirstNewAF[1]) & (MetaData$ConfirmedFirstNewAF[1] != 'CNAF')){
+    return(TRUE)
+  }else{
+    return(FALSE)
+  }
+} 
+DP_checkRpeaksfilesprocessed<- function(path , PatientsId ){
+  
+  output <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData')  )
+  return(output)
+}
+DP_CheckECGreducedfilesprocessed <- function( path , PatientsId  , Filestoprocess){
+  output <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_', Filestoprocess , '.RData')  )
+  return(output)
+}
+DP_CheckfileinPrecomputedfolder <- function(precomputedfolderpath , file){
+  return(file.exists(paste0(precomputedfolderpath ,'\\' ,  file)))  
+}
+
+
+##### Filtering functions #####
 DP_FilterbySinusRhythum <- function(PatIndex2017 , PatientsId){
   sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
   return(sub_pat$Pre_OperativeHeartRhythm[1] == 'Sinus Rhythm')
@@ -273,102 +426,52 @@ DP_FilterPatients<-function(listAllPatients , PatIndex2017 , HowtoFilterops , pa
   ProcessedFiles    <-    lapply(listAllPatients , function(X){DP_checkfilesprocessed(  path = path , PatientsId = X ,  FilestoProcess = FilestoProcess )})
   Processedlogical  <-    lapply(ProcessedFiles ,  function(X){ sum(X)==length(FilestoProcess) })
   listAllPatients <- listAllPatients[which(as.matrix(Processedlogical) == TRUE)]
-
+  
   return(listAllPatients)
 }
-DP_checkRpeaksfilesprocessed<- function(path , PatientsId ){
-  
-  output <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData')  )
-  return(output)
-}
-DP_CheckECGreducedfilesprocessed <- function( path , PatientsId  , Filestoprocess){
-  output <- file.exists(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_', Filestoprocess , '.RData')  )
-  return(output)
-}
-DP_LoadECGReduced <- function(path , subList , numberrep=1 , ECGNum = 1 ){
-    # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
-  if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
-  {
-    # Load wave form data 
-    for(i in 1:(numberrep+1))
-    {
-      if(i > (numberrep))
-      {
-        stop('Error: No ECGI data processed.') 
-        break
-      }
-      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGI_reduced" , '.RData') ))
-      {
-        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGI_reduced" , '.RData'))
-        break 
-      }  
-    }
-  }
 
-if(ECGNum  == 2 || ECGNum  == 'II'|| ECGNum  == 'ECGII')
-{
-  # Load wave form data 
-  for(i in 1:(numberrep+1))
-  {
-    if(i > (numberrep))
-    {
-      stop('Error: No ECGII data processed.') 
-      break
-    }
-    if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGII_reduced" , '.RData') ))
-    {
-      load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGII_reduced" , '.RData'))
-      break 
-    }  
-  }
+
+###### Other Functions ######
+
+DP_CalculateTimelimits <- function( sub_pat ,  HoursBeforeandAfter){
+  timeindex<- c(0,0)
+  timeindex[1] <- DP_AddHour(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1] ) , -HoursBeforeandAfter$numberhoursbefore)
+  timeindex[2] <- DP_AddHour(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1] ) , HoursBeforeandAfter$numberhoursafter)
+  return(timeindex)
 }
 
-if(ECGNum  == 3 || ECGNum  == 'III'|| ECGNum  == 'ECGIII')
-{
-  # Load wave form data 
-  for(i in 1:(numberrep+1))
+DP_FindNumberUniques <- function(X){
+  # Function to find number of unique values in a column vector.
+  values <- unique(X)
+  n <- matrix(0 , length(values) , 1)
+  nn <- matrix(0 , length(values) , 1)
+  for(i in 1:length(values))
   {
-    if(i > (numberrep))
-    {
-      stop('Error: No ECGIII data processed.') 
-      break
-    }
-    if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGIII_reduced" , '.RData')))
-    {
-      load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGIII_reduced" , '.RData'))
-      break 
-    }  
+    n[i] <- sum( X == values[[i]])  
+    
+    if(is.factor(values[[i]])){ nn[i] <- as.character(values[[i]])} else {nn[i] <- values[[i]]}
   }
+  output <- data.frame( nn , n)
+  output <- setNames(output , c('values' , 'n'))
+  return(output) 
 }
-
-return(WaveData)  
+DP_StripTime <- function(X){
+  if(is.POSIXct(X)){output <- X}
+  if(!is.POSIXct(X))
+  {
+  output <- strptime(X ,  format = "%d/%m/%Y %H:%M")
+  if(is.na(output)){output <- strptime(X ,  format = "%d/%m/%Y %H:%M:%S")}
+  }
+return(output)    
+} 
+DP_numberhoursgreaterthan <- function(PatIndex2017 , PatientsId , numberofhours = 6){
+  sub_pat <- subset( PatIndex2017, PseudoId %in% PatientsId )
+  output <- sub_pat$TotalITUTimeHRS[1] >= numberofhours
+  if(is.na(output)){output = FALSE}
+  return(output)    
 }
-DP_LoadRpeaksfileECGI <- function(path , PatientsId ){
-  load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
-  return(outputdata$ECGI)
-}  
-DP_LoadRpeaksfile <- function(path , PatientsId ){
-  load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
-  return(outputdata)
-}  
-DP_ChooseRegionofInterest <- function(ECG ){
-  timelist <- as.vector(as.character(round.POSIXt(ECG[seq(from = 1 , to = length(ECGI[ , 1]) , by = 1000), 1] , units = 'mins')))
-  
-  startindex <- which.min( abs( as.POSIXct( ECGI$Date ) - as.POSIXct(select.list(unique(timelist)
-                                                                                , preselect = NULL
-                                                                                , multiple = FALSE
-                                                                                , title = 'Select time to view ECGI'
-                                                                                , graphics = TRUE ) ) ) )[1]
-  
-  timeinterval <- as.numeric(select.list(unique(as.character(c(1:100)))
-                                         , preselect = '10'
-                                         , multiple = FALSE
-                                         , title = 'Select number of seconds of full ECG to be viewed'
-                                         , graphics = TRUE ))
-  
-  endindex <- startindex + (round(timeinterval / as.numeric(abs(ECG$Date[1]- ECG$Date[2]))))
-  regionofinterest <- startindex:endindex
-  return(regionofinterest)
+DP_ReturnPatientNumber <- function(PatientsId){
+  return(as.numeric(substr(PatientsId , start = 2 , stop = min(nchar(PatientsId)  , 6) )))
 }
 DP_AlignRegionofInterests <- function(Waveform1 , Waveform2 , regionofinterest){
   startindex <- which.min( abs(Waveform2[ , 1] - Waveform1[ regionofinterest[1] , 1]) )
@@ -384,33 +487,12 @@ DP_ValidateRPeaks<-function(RPeaksOutput){
 DP_ExtractPatientRecordforIndex <- function(PatIndex2017 , PatientCode){
   return( subset(PatIndex2017, PseudoId %in% PatientCode))
 }
-DP_GetDirectories <- function( ){
-  DP_LoadPatientIndex()
-  DP_ChooseDataReps()
-}  
 DP_SaveFile <- function( object , path , PatientID , Name){
   save( object , file = paste0(path , '\\' , PatientID , '\\Zip_out\\', Name , '.RData') )
 }
 DP_WaitBar <- function(A){
   print(paste0(A*100 , '% complete'))
 }  
-DP_CheckFieldExists <- function(DF , Field){
-  return(any(names(DF) == Field))
-}
-DP_LoadECGs<- function(path , subList , numberrep=1 , FilestoProcess){
-  output = list()
-for(i in 1:length(FilestoProcess)){
-  output[[i]] <- DP_LoadECG( path , subList , numberrep , FilestoProcess[i] )
-}
-  output <- setNames(output , FilestoProcess)
-}
-DP_LoadReducedECGs <- function(path , subList , numberrep=1 , FilestoProcess){
-  output = list()
-  for(i in 1:length(FilestoProcess)){
-    output[[i]] <- DP_LoadECGReduced( path , subList , numberrep , FilestoProcess[i] )
-  }
-  output <- setNames(output , FilestoProcess)
-}
 DP_CreateDummyMetaData <- function(PatIndex2017 , Name = NA , FirstNewAF = NA){
   output <- setNames(data.frame(NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,
                                 NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,
@@ -425,24 +507,6 @@ DP_CreateDummyMetaData <- function(PatIndex2017 , Name = NA , FirstNewAF = NA){
   output$FirstNewAF <- FirstNewAF
   return(output)
 }
-DP_LoadFile <- function(path , PatientsID , Name){
-  return(DP_loadRData(paste0(path , '\\' , PatientsID , '\\Zip_out\\', Name , '.RData')))
-}
-DP_CheckFileExists <- function(path , PatientsID , Name){
-  file.exists(paste0(path , '\\' , PatientsID , '\\Zip_out\\', Name , '.RData'))
-}
-DP_LoadDistributionSummaries <- function(path , PatientsID){
-  Name <- paste0(PatientsID , '_DistributionSummaries' )
-  return(DP_LoadFile(path , PatientsID , Name = Name ))
-}
-DP_CheckDistributionSummariesExists <- function(path , PatientsID){
-  DP_CheckFileExists(path , PatientsID , Name = paste0(PatientsID , '_DistributionSummaries' ))
-}
-DP_loadRData <- function(fileName){
-  #loads an RData file, and returns it
-  load(fileName)
-  get(ls()[ls() != "fileName"])
-}
 DP_ExtractNumberofRecordsSingle <- function(Time , index  , interval = 1 ){
 return(length(Time[ (Time < (Time[index] + interval ))*(Time > (Time[index] - interval) ) == 1  ]  ))  
 }
@@ -456,25 +520,6 @@ return(output)
 DP_AddHour <- function(X , hours){
   return(seq.POSIXt( from=X , by=paste0(as.character(hours) , " hour"), length.out=2 )[2])
 }
-DP_CheckIfAFPatient <- function(MetaData){
-  if(!is.na(MetaData$ConfirmedFirstNewAF[1]) & (MetaData$ConfirmedFirstNewAF[1] != 'CNAF')){
-    return(TRUE)
-  }else{
-    return(FALSE)
-  }
-} 
-DP_LoadPatientsandProcessRPeaks <- function(path , subList , numberrep =1 , LoadReduced = 1,PatientRecord = DP_CreateDummyMetaData(PatIndex2017  , Name = subList)){
-  # Load waveforms
-  FilestoProcess <- c('ECGI' ,'ECGII', 'ECGIII' )
-  if(LoadReduced == 0){
-  ECGs <- DP_LoadECGs(path = path , subList = subList , numberrep =numberrep , FilestoProcess = FilestoProcess)
-  }else{
-  ECGs <- DP_LoadReducedECGs(path = path , subList = subList , numberrep =numberrep , FilestoProcess = FilestoProcess)
-  }
-  outputdata <- DP_ProcessRpeaksMultipleECGs(ECGs = ECGs , PatientRecord = PatientRecord)
-  # Process Rpeaks 
-  return(outputdata)
-}  
 DP_ProcessRpeaksMultipleECGs <- function(ECGs , PatientRecord = DP_CreateDummyMetaData(PatIndex2017  , Name = subList)  , Filter =  wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5 , timethresh = 0.02){
   outputdata <- list()
   outputdata[[1]] <- CleanRpeaks(RPeakExtractionWavelet( ECGs$ECGI   , Filter  , nlevels  , ComponetsToKeep  , stdthresh ) , 2)
@@ -485,19 +530,6 @@ DP_ProcessRpeaksMultipleECGs <- function(ECGs , PatientRecord = DP_CreateDummyMe
   outputdata <- setNames( outputdata , c('ECGI' ,'ECGII' ,'ECGIII' , 'MetaData' , 'RRCombined') )
   outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , ECGs , thresh = timethresh)
   return(outputdata)
-}
-DP_CheckfileinPrecomputedfolder <- function(precomputedfolderpath , file){
-return(file.exists(paste0(precomputedfolderpath ,'\\' ,  file)))  
-}
-DP_SelectPrecomputedFolder <- function(){
-  precomputedfolderpath <- choose.dir(caption = 'Select directory where you would like the precomputed folder to be placed.')
-  if(substr(precomputedfolderpath , start = nchar(precomputedfolderpath) - 38 , stop = nchar(precomputedfolderpath)) != 'PrecomputedOutputsForPopulationAnalysis'){
-    precomputedfolderpath <- paste0(precomputedfolderpath , '\\PrecomputedOutputsForPopulationAnalysis')  
-  }
-  if(dir.exists(precomputedfolderpath) == FALSE){
-    dir.create(precomputedfolderpath)
-  }
-  return(precomputedfolderpath)
 }
 DP_RemoveNaRows <- function(X){
   return(X[DP_FindNARows(X) , ])
@@ -511,15 +543,6 @@ DP_FindNumzeroRows <- function(X){
 }
 DP_FindZeroVarianceRows <- function(X){
   return(apply(X , 2 , function(Y){var(Y[!is.na(Y)])} ) == 0 )
-}
-DP_SelectTimetoview <- function(t){
-  timelist <- as.vector(as.character(round.POSIXt(t[seq(from = 1 , to = length(t) , by = 1000)] , units = 'mins')))
-  startindex = which.min( abs( as.POSIXct(t) - as.POSIXct(select.list(unique(timelist)
-                                                                      , preselect = NULL
-                                                                      , multiple = FALSE
-                                                                      , title = 'Select time to view'
-                                                                      , graphics = TRUE ) ) ) )[1]
-  return(t[startindex])
 }
 DP_fixculmulativeprobs <- function(X){
   for(i in 1:(length(X) -1) ){
@@ -554,6 +577,7 @@ DP_CalculateLimits <- function(X){
   return(c(min(X) , max(X)))
 }
 
+##### Quality of life functions ######
 size <- function( X ){
   dim(X)}
 is.POSIXct <- function( X ){ 

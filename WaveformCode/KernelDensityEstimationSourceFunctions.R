@@ -13,14 +13,13 @@ KDE_GaussianKernel <- function(X , Xstar , H){
   # Turn into matrices
   d <- dim(X)[2]
   det_H = det(H)
-  inv_H = solve(H)
+  #inv_H = solve(H)
   
-  distmatrix = as.matrix(apply(X , 1 , function(Y){(Y - Xstar)%*%inv_H%*%t(Y - Xstar)}))
-  distmatrix = log((2*pi)^(-d/2)) + log(det_H) + (-0.5*distmatrix)
+  distmatrix = mahalanobis(x = X , center = Xstar , cov = H)
+  distmatrix = -0.5*( d*log(2*pi) + log(det_H) + distmatrix  )
   return(exp(distmatrix))
 } 
 KDE_DensityEstimate <- function(X , Xstar , H , KernelFUN = KDE_GaussianKernel){
-  
   return( mean(KernelFUN(X , Xstar , H)) )
   
 }
@@ -102,4 +101,75 @@ KDE_MaxIm <- function(Im , SecondOrderImSpecifictaion){
 KDE_JointIm <- function(Im , SecondOrderImSpecifictaion){
   diff <- as.matrix(Im - SecondOrderImSpecifictaion$mu)
   return( t(diff)%*%SecondOrderImSpecifictaion$Inv_Sigma%*%diff )
+}
+KDE_HistoryMatchBandWidth <- function( Trainingset , Validationset , numberofsamples = 1000 , EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings = BE_CreateDefaultHistoryMatchClass() , PriorRange = c(0,0.1)){
+  print('Calculating Second Order Specification for Diagnostics.')  
+  SecondOrderImSpecifictaion <- KDE_CreateSecondOrderSpecificationImp(Trainingset = Trainingset 
+                                                                      , Validationset = Validationset  
+                                                                      , numberofsamples = numberofsamples
+                                                                      , numberofrepitions = 1000)  
+  print('Second Order Specification for Diagnostics Calculated.')  
+  
+  print('History Matching')
+  {
+    SizechiStariMinus1 <- 1
+    WaveCounter <- 1
+    chi_star <<- matrix(0 , 1 , 1)
+    while( length(chi_star) >=  SizechiStariMinus1 ){
+      
+      SizechiStariMinus1 <- length(chi_star)
+      
+      tmp <- BE_CalulateNonImplausibleSets(EmulatorSettings = EmulatorSettings , 
+                                           HistoryMatchSettings = HistoryMatchSettings , 
+                                           PriorRange = PriorRange,
+                                           chi_star = chi_star , WaveCounter)
+      chi_star <<- tmp$chi_star
+      EmulatorSettings <- tmp$EmulatorSettings
+      
+      
+      PriorRange <- DP_CalculateLimits(chi_star)
+      print(paste0('Number of Non-Implausible Points = ', length(chi_star)))
+      print(paste0('Wave ' , WaveCounter , 'completed.'))
+      abline(v = PriorRange[1])
+      abline(v = PriorRange[2])
+      
+      if(is.na(chi_star[1])){
+        break
+      }
+      
+      WaveCounter <- WaveCounter + 1
+      
+    }
+    HistoryMatchSettings$AddPointsToEmulator = 1
+    chi_star <<- sample( chi_star , SizechiStariMinus1 , replace = TRUE)
+    
+    SizechiStariMinus1 <- 10
+    while(var(chi_star) <=  SizechiStariMinus1){
+      
+      SizechiStariMinus1 <- var(chi_star)
+      
+      tmp <- BE_CalulateNonImplausibleSets(EmulatorSettings = EmulatorSettings , 
+                                           HistoryMatchSettings = HistoryMatchSettings , 
+                                           PriorRange = PriorRange,
+                                           chi_star = chi_star , WaveCounter )
+      chi_star <<- tmp$chi_star
+      EmulatorSettings <- tmp$EmulatorSettings
+      
+      PriorRange <- DP_CalculateLimits(chi_star)
+      print(paste0('Number of Non-Implausible Points = ', length(chi_star)))
+      print(paste0('Wave ' , WaveCounter , 'completed.'))
+      WaveCounter <- WaveCounter + 1
+      abline(v = PriorRange[1])
+      abline(v = PriorRange[2])
+      
+      
+      if(is.na(chi_star[1])){
+        break
+      }
+      
+    }
+  }
+  
+  print('History Match Complete.')
+  return(chi_star)
 }

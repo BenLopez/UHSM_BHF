@@ -5,34 +5,60 @@
 }else{
   pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
   source("LibrariesAndSettings.R" , print.eval  = TRUE )
-  DP_LoadPatientIndex()
+  PatIndex2017 <- DP_LoadPatientIndex()
   DP_ChooseDataReps()
   FilestoProcess <- DP_ChooseECGstoProcess() 
   HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter()
+  #HowtoFilterops <- read.csv(file.choose( caption = "Select files" ) , stringsAsFactors = FALSE  )
+  set.seed(1)
 }
 }
 
-# Optionsforprocessing
-checkforprocessedfiles <- 0
-OnlyAFPatientes <- 0
+# Options for processing.
+{
+  UserResponse <- winDialog(type = c('yesno') , message = 'Would you check for processed files and only process waveforms which have not been processed?')
+  if(UserResponse == 'NO'){
+    checkforprocessedfiles <- 0
+  }else{
+    checkforprocessedfiles <- 1
+  }
+  UserResponse <- winDialog(type = c('yesno') , message = 'Would you to only process AFib patients?')
+  if(UserResponse == 'NO'){
+    OnlyAFPatientes <- 0
+  }else{
+    OnlyAFPatientes <- 1
+  }
+  
+  UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to filter waveforms?')
+  if(UserResponse == 'YES'){
+    HowtoFilterops <- read.csv(file.choose(  ) , stringsAsFactors = FALSE  )
+    listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
+  } 
+}
 
-listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
-listAllPatients <- select.list(listAllPatients , graphics = TRUE , multiple = TRUE)
+listAllPatients <- select.list(listAllPatients , graphics = TRUE , multiple = TRUE , title = 'Select patients to process')
+
+
 listofpatientswithnotgoodtimes <- list()
 counter2<-1
-#1:length(listAllPatients)
 for( ii in  1:length(listAllPatients) ){
-  processdata <- 1
+  # Some set up for the parameters used in the loop.
+  {processdata <- 1
   outputdata  <- list()  
   rm(timestamp)
-  sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])
+  sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])}
   
-  if(OnlyAFPatientes == 1){
-    if(is.na(sub_pat$ConfirmedFirstNewAF) || sub_pat$ConfirmedFirstNewAF == 'CNAF'){
-      print(paste0('skipping patient ' , listAllPatients[ii]))
-      next
-    }
+  # Logic to skip patient if they should not (or can not) be processed.
+  {if( DP_checkfilesprocessed(path , listAllPatients[ii] , FilestoProcess[1]) == 0  ){
+    print(paste0('Skipping patient ', listAllPatients[ii] ,' as no ECGI processed.'))
+    next
   }
+    if(OnlyAFPatientes == 1){
+      if(DP_CheckIfAFPatient(sub_pat) == FALSE){
+        print(paste0('Skipping patient ' , listAllPatients[ii] , '.'))
+        next
+      }
+    }}
   
   for( jj in 1:length(FilestoProcess) ){
     
@@ -48,26 +74,22 @@ for( ii in  1:length(listAllPatients) ){
       timestamp <- c(WaveData$Date[1] , WaveData$Date[length(WaveData$Date)])
       print('Reduced file loaded.')
       crop = 0
-    }  
-    sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])
+    }
+    
+    #sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[ii])
     
     if( crop == 1 ){
       print('Cropping ECG.') 
-      # Patient in AF  
-      if(!is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) & sub_pat$ConfirmedFirstNewAF[1] != 'CNAF' & jj == 1){
-        #timeindex <- which.min(abs(difftime(WaveData$Date , DP_StripTime(sub_pat$ConfirmedFirstNewAF[1]) , units = 'mins' )))[1]
-        timeindex<- c(0,0)
-        timeindex[1] <- DP_AddHour(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1] ) , -HoursBeforeandAfter$numberhoursbefore)
-        timeindex[2] <- DP_AddHour(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1] ) , HoursBeforeandAfter$numberhoursafter)
-        WaveData <-  PE_ReturnWaveformwithPositiveOrientation(DP_CropWaveData(WaveData ,  timeindex , HoursBeforeandAfter))
-        timestamp <- c(WaveData$Date[1] , WaveData$Date[length(WaveData$Date)])
+      # Processing ECGI for a patient in AF.  
+      {if( DP_CheckIfAFPatient(sub_pat) & jj == 1 ){
+        timeindex <-  DP_CalculateTimelimits( sub_pat ,  HoursBeforeandAfter)
+        WaveData  <-  DP_CropWaveData(WaveData ,  timeindex , HoursBeforeandAfter)
+        WaveData  <-  PE_ReturnWaveformwithPositiveOrientation(WaveData)
+        timestamp <-  c( WaveData$Date[1] , WaveData$Date[length(WaveData$Date)] )
       }
-      #if(is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) & jj == 1){
-      #  timeindex <- which.min(abs(difftime(WaveData$Date , DP_StripTime(sub_pat$FirstNewAF), units = 'mins' )))[1]
-      #  WaveData <- DP_CropWaveData(WaveData ,  timeindex , HoursBeforeandAfter)
-      #}
-      if((is.na(DP_StripTime(sub_pat$ConfirmedFirstNewAF[1])) || sub_pat$ConfirmedFirstNewAF[1] == 'CNAF') & jj == 1){
-        if(jj == 1){
+      # If non AF Patient find n hour period with good data.  
+      if( DP_CheckIfAFPatient(sub_pat) == FALSE & jj == 1){
+        if( jj == 1 ){
           counter <- 1
           
           while(counter < 100){
@@ -77,16 +99,16 @@ for( ii in  1:length(listAllPatients) ){
               counter <- 101
               break}    
             
-
+            
             timeindex <- sample( (1 + (HoursBeforeandAfter$numberhoursbefore*(60^2)/indent)):(length(WaveData$Date) - (HoursBeforeandAfter$numberhoursafter*(60^2)/indent)) , 1  )
             timedifference <- abs(difftime( WaveData$Date[timeindex - (HoursBeforeandAfter$numberhoursbefore*(60^2)/indent)]  , WaveData$Date[timeindex + (HoursBeforeandAfter$numberhoursafter*(60^2)/indent)] , units ='hours'))
             
             if(timedifference > (HoursBeforeandAfter$numberhoursbefore + HoursBeforeandAfter$numberhoursafter + 1)){
               counter <- counter + 1  
               next}else{
-              WaveData <-  PE_ReturnWaveformwithPositiveOrientation(DP_CropWaveData(WaveData ,  timeindex , HoursBeforeandAfter))
-              timestamp <- c(WaveData$Date[1],WaveData$Date[length(WaveData$Date)]) 
-              break}
+                WaveData <-  PE_ReturnWaveformwithPositiveOrientation(DP_CropWaveData(WaveData ,  timeindex , HoursBeforeandAfter))
+                timestamp <- c(WaveData$Date[1],WaveData$Date[length(WaveData$Date)]) 
+                break}
           }
           
           if(counter > 99){
@@ -95,26 +117,26 @@ for( ii in  1:length(listAllPatients) ){
             counter2 <- counter2
             processdata <- 0    
             break}  
-          
         }
       } 
-      if(jj > 1){
+      if( jj > 1 ){
         tmp <- DP_CropWaveData(WaveData ,  timestamp , data.frame(numberhoursbefore = 0 , numberhoursafter = (HoursBeforeandAfter$numberhoursbefore + HoursBeforeandAfter$numberhoursafter)))
-      if(nrow(tmp) == 0){ 
-        tmp <- DP_LoadECGReduced(path , listAllPatients[ii] , numberrep , 1 ) }else{
-        WaveData <-  PE_ReturnWaveformwithPositiveOrientation(tmp)}
-      }
+        if( nrow(tmp) == 0 ){ 
+          tmp <- DP_LoadECGReduced(path , listAllPatients[ii] , numberrep , 1 ) }else{
+            WaveData <-  PE_ReturnWaveformwithPositiveOrientation(tmp)}
+      }}
       print('ECG cropped.')   
       Time <- WaveData$Date[1]  
     }
     
     if(processdata == 1){  
       print('Extracting Rpeaks.')
-      tmp <- RPeakExtractionWavelet( PE_ReturnWaveformwithPositiveOrientation(WaveData) , Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5)
+      tmp <- PE_RPeakExtractionWavelet( PE_ReturnWaveformwithPositiveOrientation(WaveData) , Filter = wt.filter(filter = "d6" , modwt=TRUE, level=1) , nlevels = 12 , ComponetsToKeep = c(3,4) , stdthresh = 2.5)
       if(nrow(tmp) < 1000){
         processdata = 0
         break}
-      outputdata[[jj]] <- CleanRpeaks(tmp , 2)
+      outputdata[[jj]] <- PE_CleanRpeaks( tmp , 2 )
+      rm(tmp)
       print('Rpeaks extracted.')
     }
     print('Saving Waveform.')
@@ -124,16 +146,13 @@ for( ii in  1:length(listAllPatients) ){
     
   }
   
-#  if(counter > 99){
-#   DP_WaitBar(ii/length(listAllPatients))
-#    break} 
-  
+# Combine peak informtion from all three ECGs.
   if(processdata == 1){ 
     print('Combining Rpeaks.')
     ECGs <- DP_LoadReducedECGs(path , listAllPatients[[ii]] , numberrep , FilestoProcess)
-    outputdata[[length(outputdata) + 1]] <- sub_pat 
+    outputdata[[4]] <- sub_pat 
     outputdata <- setNames( outputdata , c(FilestoProcess , 'Meta_Data') )
-    outputdata[[length(outputdata) + 1]] <- PE_MultipleECGRPeaks(outputdata , ECGs = ECGs)
+    outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , ECGs = ECGs)
     outputdata <- setNames( outputdata , c(FilestoProcess , 'Meta_Data' , 'RRCombined') )
     print('Saving output.')
     save( outputdata , file = paste0(path , '\\' , listAllPatients[ii] , '\\Zip_out\\' ,  listAllPatients[ii]  , '_RPeaks.RData' ) )
@@ -141,6 +160,7 @@ for( ii in  1:length(listAllPatients) ){
     print('Rpeaks combined.')
     rm(outputdata)
   }
+  
   DP_WaitBar(ii/length(listAllPatients))
 }
 
