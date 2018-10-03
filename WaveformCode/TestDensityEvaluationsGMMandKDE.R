@@ -49,16 +49,17 @@ ImMeasure <- function( ProbabiliticCalibrationOutput ){
 PriorRange = c(0,0.5)
 
 HistoryMatchSettings <- BE_CreateDefaultHistoryMatchClass()
-HistoryMatchSettings$Im_Thresh <- 1
+HistoryMatchSettings$Im_Thresh <- 0.3
 
 EmulatorSettings <- BE_CreateDefaultEmulationClass()
 EmulatorSettings$w <- function(X){
-  return(0.001)
+  return(0.01)
 }
 
 
-Chi_star <- BE_HistoryMatch(TrainingSet , TrainingSet2, EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings = BE_CreateDefaultHistoryMatchClass() , PriorRange = PriorRange )
-
+Chi_star <- BE_HistoryMatch(TrainingSet , TrainingSet2, EmulatorSettings = EmulatorSettings  , HistoryMatchSettings = HistoryMatchSettings , PriorRange = PriorRange )
+EmulatorSettings = Chi_star$EmulatorSettings
+chi_star = Chi_star$chi_star
 
 PosteriorProbabilities <- apply(Validationset , 1 , function(X){CalculateGMMPosteriorProb(LocalDistributionStruct , t( as.matrix(X) ))} )
 
@@ -70,7 +71,6 @@ ProbabiliticCalibrationOutput <- BC_CleanProbCalibrationOutput(BC_CreateCalibrat
                                                                                 ,  alpha 
                                                                                 , numberofvalidationsamples )) 
   , BinWidth = 0.05))
-
 
 
 

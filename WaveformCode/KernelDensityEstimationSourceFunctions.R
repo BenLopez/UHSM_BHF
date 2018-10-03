@@ -176,3 +176,19 @@ KDE_HistoryMatchBandWidth <- function( Trainingset , Validationset , numberofsam
   return(chi_star)
 }
 ##### pusedo Kernel density estimation #####
+
+##### One Dimensional Kernel Density Estimation #####
+KDE_OneDDenistyEstimateBatch <- function(X , Xstar , H){
+  X <- as.matrix(X)
+  Xstar <- as.matrix(Xstar)
+  
+  return(apply(Xstar , 1 , function(Y){ KDE_OneDDenistyEstimate(X , Y , H ) } ))
+}
+KDE_OneDDenistyEstimate <- function(X , Xstar , H){
+  X <- as.matrix(X)
+  Xstar <- as.matrix(Xstar)
+  
+  f_i <- apply(X , 1 , function(Y){dnorm(x = Xstar , mean = Y , sd = sqrt(H) ) })
+  
+  return(mean(f_i))
+}

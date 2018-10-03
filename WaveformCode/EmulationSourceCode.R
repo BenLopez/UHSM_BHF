@@ -53,7 +53,7 @@ CF_NeuralNetwork<- function(x , xstar , Sigma = diag(c(10,10))){
       
     }
   }
-  return(xstar)
+  return(KXX)
 }
 
 ##### Emulation functions #####
@@ -156,6 +156,46 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
 
   E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
   V_z_y <- SigmaHat*KXstarXstar - Cov_XstarD%*%Var_D%*%t(Cov_XstarD)
+  
+  return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
+}
+
+BE_BayesLinearEmulatorLSEstimatesBatchMode<- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass()){
+  
+  x <- as.matrix(EmulatorSettings$X)
+  y <- as.matrix(EmulatorSettings$Y)
+  n <- dim(x)[1]
+  l <- EmulatorSettings$CorrelationLength( x , 1 )
+  w <- EmulatorSettings$w(x)
+  
+  KXX <- EmulatorSettings$CorrFunction(x , x , l )
+  H <- EmulatorSettings$MeanFunction(x)
+  sizeh = dim(H)
+  sizex <- dim(x)[1]
+  
+  BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
+  epsilon <- y - H%*%BetaHat
+  SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
+  SigmaHat <- as.numeric(SigmaHat - EmulatorSettings$w(x))
+  
+  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)*diag(sizeh[1]))
+  
+  E_z_y <- matrix(0 , dim(xstar)[1] , 1)
+  V_z_y <- matrix(0 , dim(xstar)[1] , 1)
+    
+  batches <- seq(1 , dim(xstar)[1]  , 1000)
+  if(batches[length(batches)] != dim(xstar)[1]){ batches = c( batches , dim(xstar)[1])}
+  
+  for(i in 1:(length(batches) - 1)){
+  
+  Hstar <- EmulatorSettings$MeanFunction(xstar[batches[i]:batches[i+1] , ] )
+  KXstarX <-  EmulatorSettings$CorrFunction( xstar[batches[i]:batches[i+1] , ] , x , l )
+  Cov_XstarD <- SigmaHat*KXstarX
+  
+  E_z_y[batches[i]:batches[i+1] , ] <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
+  V_z_y[batches[i]:batches[i+1] , ] <- (SigmaHat - diag(Cov_XstarD%*%Var_D%*%t(Cov_XstarD)) )
+  DP_WaitBar(i/(length(batches) - 1))
+  }
   
   return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
 }
@@ -309,7 +349,9 @@ BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){
   lines(Xstar ,  Em_output$E_D_fX  , col = 'red')
   lines(Xstar ,  Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX)) , col = 'blue')
   lines(Xstar ,  Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)) , col = 'blue')
+  if(exists('HistoryMatchSettings')){
   abline(HistoryMatchSettings$Im_Thresh,0)
+  }
 }
 
 #BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){

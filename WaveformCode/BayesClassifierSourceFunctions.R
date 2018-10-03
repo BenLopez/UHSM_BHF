@@ -512,15 +512,16 @@ BC_EstimateGlobalandLocalParameters<-function( Z ){
 }
 BC_CreateCalibrationStructure <- function(GlobalProbCalibrationStruct ,   BinWidth = 0.1){
   ProbabililtyBins <- seq(0,1,BinWidth)
-  ProbabililtyBinStruct <-  matrix(0 , (length(ProbabililtyBins) -1) , 1)
-  EstimatorError <- ProbabililtyBinStruct
+  ProbabililtyBinStruct <-  matrix(0 , (length(ProbabililtyBins) -1) , 2)
+  EstimatorError <-  matrix(0 , (length(ProbabililtyBins) -1) , 1)
   
   for(i in 1:(dim(ProbabililtyBinStruct)[1])){
     tmplogical <- ((GlobalProbCalibrationStruct[,1] >= ProbabililtyBins[i])*(GlobalProbCalibrationStruct[,1] <= ProbabililtyBins[i+1])) == 1
-    ProbabililtyBinStruct[i,] <- mean( GlobalProbCalibrationStruct[tmplogical , 2] )
-    EstimatorError[i,] <- BC_CalulateBernoulliEstimatorUncertainty(p = ProbabililtyBinStruct[i,], length(GlobalProbCalibrationStruct[tmplogical , 2]) )
+    ProbabililtyBinStruct[i,1] <- mean( GlobalProbCalibrationStruct[tmplogical , 2] )
+    ProbabililtyBinStruct[i,2] <- mean( GlobalProbCalibrationStruct[tmplogical , 1] )
+    EstimatorError[i,] <- BC_CalulateBernoulliEstimatorUncertainty(p = ProbabililtyBinStruct[i,1], length(GlobalProbCalibrationStruct[tmplogical , 2]) )
   }
-  return(data.frame(x = ProbabililtyBins[1:dim(ProbabililtyBinStruct)[1]] + BinWidth/2, y =ProbabililtyBinStruct , sd = sqrt(EstimatorError) ) )
+  return(data.frame(x = ProbabililtyBinStruct[,2], y =ProbabililtyBinStruct[,1] , sd = sqrt(EstimatorError) ) )
 }
 BC_CalulateBernoulliEstimatorUncertainty <- function( p , n){
   return( (p*(1 - p)/n) + 1/(n^2) )

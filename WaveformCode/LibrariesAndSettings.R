@@ -25,6 +25,7 @@ library( mclust )
 library( MASS )
 library( latex2exp )
 library( ggpubr )
+library( ks )
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
