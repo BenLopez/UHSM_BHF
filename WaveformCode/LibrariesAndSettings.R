@@ -23,7 +23,8 @@ library( moments )
 library( mvtnorm )
 library( mclust )
 library( MASS )
-
+library( latex2exp )
+library( ggpubr )
 # Load Data
 options(digits = 15)
 options(digits.secs=3)

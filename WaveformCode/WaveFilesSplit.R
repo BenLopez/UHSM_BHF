@@ -63,8 +63,7 @@ for (PatientCode in subList){
       sub_pat = list()
       print(paste0("Patient ", PatientCode , " not in PatientIndex: skipping to next patient"))
       next }
-  } 
-  else 
+  }else 
   {
     error("No Patient Info provided")
     # sub_pat = list()

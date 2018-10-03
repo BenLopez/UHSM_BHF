@@ -7,9 +7,9 @@ for(i in 1:length(chooseWave2Read)){
   numberofprocessedfiles <- numberofprocessedfiles + as.numeric(file.exists(paste0( pathZIPs , chooseWave2Read[i] , '_' ,  PatientCode , '.RData') ) )
 }
 
-if(numberofprocessedfiles == length(chooseWave2Read)){
-print(paste0('All ECG files processed for' , PatientCode , ' moving to next patient'))
-next}
+#if(numberofprocessedfiles == length(chooseWave2Read)){
+#print(paste0('All ECG files processed for' , PatientCode , ' moving to next patient'))
+#next}
 
 zip_files = list.files(path = paste0(path,"\\",PatientCode),pattern="*\\.zip*$")
 
@@ -197,3 +197,4 @@ readWriteWave(Paw_files,
               choose_outputs,
               "Paw",pathIn,pathOutFilesExtra,Use7z, UseZip)
 }
+

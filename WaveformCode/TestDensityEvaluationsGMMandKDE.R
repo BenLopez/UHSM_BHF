@@ -1,27 +1,143 @@
-Mcluststruct <- LocalDistributionStruct[[1]] 
-
 #Mcluststruct$parameters$mean <- Mcluststruct$parameters$mean[1:2 , ]
 #Mcluststruct$parameters$variance$sigma <- Mcluststruct$parameters$variance$sigma[1:2 ,1:2, ]
 
-Trainingset <- BC_SampleGMM( LocalDistributionStruct[[1]] , 10000 )
-Trainingset2 <- BC_SampleGMM( LocalDistributionStruct[[2]] , 10000 )
 
-Validationset <- rbind( BC_SampleGMM( LocalDistributionStruct[[1]] , 1000 ) ,  BC_SampleGMM( LocalDistributionStruct[[2]] , 1000 ))
+alpha = c(0.5 , 0.5)
 
-H <- 0.1*cov(Trainingset)
-tildeH <- 0.075*cov(Trainingset2)
+numberoftrainingsamples <- 10000
+numberofvalidationsamples <- 10000
 
-blah <- matrix(0 , dim(Validationset)[1] , 1)
-for(i in 1:dim(Validationset)[1]){
-  blah[i,] <-  (sum(mahalanobis(Trainingset , center  = Validationset[i,] , cov = H) < 28)/dim(Trainingset)[1]) / ((sum(mahalanobis(Trainingset , center  = Validationset[i,] , cov = H) < 28)/dim(Trainingset)[1])+(sum(mahalanobis(Trainingset2 , center  = Validationset[i,] , cov = tildeH) < 28)/dim(Trainingset2)[1]))
+Trainingset <- BC_SampleGMM( LocalDistributionStruct[[1]] , numberoftrainingsamples )
+Trainingset2 <- BC_SampleGMM( LocalDistributionStruct[[2]] , numberoftrainingsamples )
+
+Validationset <- rbind( BC_SampleGMM(LocalDistributionStruct[[1]] , round(alpha[1]* numberofvalidationsamples) ) ,  BC_SampleGMM( LocalDistributionStruct[[2]] , round(alpha[2]*numberofvalidationsamples) ))
+
+
+KDE_CalulatePuesdoProd <- function( Trainingset , x , H , thresh = 28 ){
+  return(sum(mahalanobis(Trainingset , center  = x , cov = H) < 28))/length(Trainingset)
 }
-plot(blah)
-title(mean(blah[!is.na(blah)]))
+KDE_CalulatePuesdoPosteriorProb <- function(Trainingset ,Trainingset2 , alpha = c(0.5,0.5) , x , H , H2 , thresh = 28){
+  return((alpha[1]*KDE_CalulatePuesdoProd(Trainingset , x , H , thresh )) / (alpha[1]*KDE_CalulatePuesdoProd(Trainingset , x , H , thresh ) + alpha[2]*KDE_CalulatePuesdoProd(Trainingset2 , x , H2 , thresh ) ))
+}
+CalculateGMMPosteriorProb <- function(LocalDistributionStruct , x , alpha = c(0.5,0.5)){
+  return( (alpha[1]*BC_PredictGMMDensity(LocalDistributionStruct[[1]] , x)) / ((alpha[1]*BC_PredictGMMDensity(LocalDistributionStruct[[1]] , x)) + (alpha[2]*BC_PredictGMMDensity(LocalDistributionStruct[[2]] , x))) )
+} 
 
-0.999*(( 2*pi*det(H) )^(-0.5))
 
-x <- t(as.matrix(Validationset[3,]))
-       
-KDE_DensityEstimate(  X = Trainingset 
-                    , Xstar =  x
-                    , H = H) / BC_PredictGMMDensity(Mcluststruct , x)
+
+Simulator <- function(X){
+  H <- X*cov( rbind(Trainingset , Trainingset2) )
+  H2 <-H
+  
+  PuesdoPosteriorProbabilities <- apply(Validationset , 1 , function(X){KDE_CalulatePuesdoPosteriorProb(Trainingset , Trainingset2 , alpha , t( as.matrix(X) ) , H , H2 , thresh = 28)} )
+  
+  ProbabiliticCalibrationOutput <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(
+    GlobalProbCalibrationStruct = DP_RemoveNaRows(BC_CreateProbCalibrationStruct( as.matrix(PuesdoPosteriorProbabilities) 
+                                                                                  ,  alpha 
+                                                                                  , numberofvalidationsamples )) 
+    , BinWidth = 0.05))
+  return(ProbabiliticCalibrationOutput)
+  
+}
+
+ImMeasure <- function( ProbabiliticCalibrationOutput ){
+  return(abs( mean((ProbabiliticCalibrationOutput$x - ProbabiliticCalibrationOutput$y)/ProbabiliticCalibrationOutput$sd)) )
+}
+
+
+# Define some parameters and settings for emulation and history matching.
+PriorRange = c(0,0.5)
+
+HistoryMatchSettings <- BE_CreateDefaultHistoryMatchClass()
+HistoryMatchSettings$Im_Thresh <- 1
+
+EmulatorSettings <- BE_CreateDefaultEmulationClass()
+EmulatorSettings$w <- function(X){
+  return(0.001)
+}
+
+
+Chi_star <- BE_HistoryMatch(TrainingSet , TrainingSet2, EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings = BE_CreateDefaultHistoryMatchClass() , PriorRange = PriorRange )
+
+
+PosteriorProbabilities <- apply(Validationset , 1 , function(X){CalculateGMMPosteriorProb(LocalDistributionStruct , t( as.matrix(X) ))} )
+
+plot( PosteriorProbabilities )
+title(mean( PosteriorProbabilities ))
+
+ProbabiliticCalibrationOutput <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(
+  GlobalProbCalibrationStruct = DP_RemoveNaRows(BC_CreateProbCalibrationStruct( as.matrix(PosteriorProbabilities) 
+                                                                                ,  alpha 
+                                                                                , numberofvalidationsamples )) 
+  , BinWidth = 0.05))
+
+
+
+
+BC_PlotCreateProbabilityCalibrationPlot(ProbabiliticCalibrationOutput) + ggtitle('Local Calibration Probabilities')
+
+mean((ProbabiliticCalibrationOutput$x - ProbabiliticCalibrationOutput$y)/ProbabiliticCalibrationOutput$sd)
+
+H <- 0.15*cov( Trainingset )
+H2 <-H
+#H2 <- 0.075*cov( Trainingset2 )
+
+PuesdoPosteriorProbabilities <- apply(Validationset , 1 , function(X){KDE_CalulatePuesdoPosteriorProb(Trainingset , Trainingset2 , alpha , t( as.matrix(X) ) , H , H2 , thresh = 28)} )
+
+plot( PuesdoPosteriorProbabilities )
+title( mean( PuesdoPosteriorProbabilities[!is.na(PuesdoPosteriorProbabilities)] ) )
+
+
+ProbabiliticCalibrationOutput <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(
+  GlobalProbCalibrationStruct = DP_RemoveNaRows(BC_CreateProbCalibrationStruct( as.matrix(PuesdoPosteriorProbabilities) 
+                                                                ,  alpha 
+                                                                , numberofvalidationsamples )) 
+  , BinWidth = 0.05))
+
+
+
+BC_PlotCreateProbabilityCalibrationPlot(ProbabiliticCalibrationOutput) + ggtitle('Local Calibration Probabilities')
+
+mean((ProbabiliticCalibrationOutput$x - ProbabiliticCalibrationOutput$y)/ProbabiliticCalibrationOutput$sd)
+
+
+######
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+E_X <- alpha[1]
+V_X <- alpha[1]*(1 - alpha[1])
+E_D <- mean(ProbabiliticCalibrationOutput$y)
+V_D <- var(ProbabiliticCalibrationOutput$y)
+
+corr_DX <- cor( ProbabiliticCalibrationOutput$y ,  ProbabiliticCalibrationOutput$x)
+cov_DX  <- corr_DX*sqrt( V_X*V_D )
+
+E_D_X <- E_X + (cov_DX/V_D)*(ProbabiliticCalibrationOutput$y - E_D)
+V_D_X <- V_X - (cov_DX/V_D)*cov_DX
+ 
+
+
+ProbabiliticCalibrationOutput <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(
+  GlobalProbCalibrationStruct = DP_RemoveNaRows(BC_CreateProbCalibrationStruct( as.matrix(E_D_X) 
+                                                                                ,  alpha 
+                                                                                , numberofvalidationsamples )) 
+  , BinWidth = 0.05))
+
+
+
+BC_PlotCreateProbabilityCalibrationPlot(ProbabiliticCalibrationOutput) + ggtitle('Local Calibration Probabilities')
+mean((ProbabiliticCalibrationOutput$x - ProbabiliticCalibrationOutput$y)/ProbabiliticCalibrationOutput$sd)

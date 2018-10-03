@@ -34,6 +34,27 @@ distmatrix < - apply(distmatrix , 3 , sum)
 KXXstar <- exp( -0.5 * distmatrix )
 return(KXXstar)
 }
+CF_NeuralNetworkSingle <- function(x , xstar , Sigma){
+  tildex <- cbind( matrix( 1 , dim(x)[1] , 1) , x )
+  tildexstar <- cbind( matrix( 1 , dim(xstar)[1] , 1), xstar )
+  return((2/pi)*asin(  ((2*(tildex%*%Sigma%*%t(tildexstar)) ) / sqrt(( 1 + 2*tildex%*%Sigma%*%t(tildex) )*( 1 + 2*tildexstar%*%Sigma%*%t(tildexstar)))) ))
+  
+}
+CF_NeuralNetwork<- function(x , xstar , Sigma = diag(c(10,10))){
+  x <- as.matrix(x)
+  xstar <- as.matrix(xstar)
+  KXX <- matrix(0 , dim(x)[1] ,dim(xstar)[1] )
+  # Vectorise this horror loop!
+  for(i in 1:dim(x)[1]){
+    for(j in 1:dim(xstar)[1]){
+      KXX[i,j] <- CF_NeuralNetworkSingle(x = as.matrix(x[i,]) ,
+                                         xstar = as.matrix(xstar[j,]) ,
+                                         Sigma = Sigma )
+      
+    }
+  }
+  return(xstar)
+}
 
 ##### Emulation functions #####
 
@@ -113,9 +134,9 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   
   x <- as.matrix(EmulatorSettings$X)
   y <- as.matrix(EmulatorSettings$Y)
-  n <- dim(X)[1]
+  n <- dim(x)[1]
   l <- EmulatorSettings$CorrelationLength( x , 1 )
-  w <- EmulatorSettings$w(X)
+  w <- EmulatorSettings$w(x)
   
   KXX <- EmulatorSettings$CorrFunction(x , x , l )
   KXstarX <-  EmulatorSettings$CorrFunction( xstar , x , l )
@@ -128,9 +149,9 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
   epsilon <- y - H%*%BetaHat
   SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
-  SigmaHat <- as.numeric(SigmaHat - EmulatorSettings$w(X))
+  SigmaHat <- as.numeric(SigmaHat - EmulatorSettings$w(x))
   
-  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(X)*diag(sizeh[1]))
+  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)*diag(sizeh[1]))
   Cov_XstarD <- SigmaHat*KXstarX
 
   E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
@@ -169,16 +190,17 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
   if(HistoryMatchSettings$KDE == 0 || length(chi_star) ==1 ){
   X <- DP_RescaleZeroOneToab(randomLHS(n_emulatortrainingpoints , p) , PriorRange[1] , PriorRange[2])
   }
-  if(HistoryMatchSettings$KDE == 1 & length(chi_star) > 1){
-  X <- BC_SampleGMM( MclustDistributionStruct =  KDE_CreateMclustClassFromSample(X = as.matrix(chi_star) , H = 0.00001*sqrt( var(chi_star)) ) ,numberofsamples =  n_emulatortrainingpoints)
-  X <- X[ X >0 ]
-  }
+  
+  #if(HistoryMatchSettings$KDE == 1 & length(chi_star) > 1){
+  #X <- BC_SampleGMM( MclustDistributionStruct =  KDE_CreateMclustClassFromSample(X = as.matrix(chi_star) , H = 0.00001*sqrt( var(chi_star)) ) ,numberofsamples =  n_emulatortrainingpoints)
+  #X <- X[ X >0 ]
+  #}
   
   print('Evaluating simulator.')
   Im <- BE_CalculateImEmulatorTrainingSet(X , Simulator , ImMeasure)
-  if(WaveCounter  == 1){
-    X = rbind(0,X)
-    Im = rbind(0,Im)}
+  #if(WaveCounter  == 1){
+  #  X = rbind(0,X)
+  #  Im = rbind(0,Im)}
   print('Simulator evaluated.')
   
   EmulatorSettings <- BE_EmulationClassAddData( y = Im , x = X , EmulatorSettings = EmulatorSettings , HistoryMatchSettings = HistoryMatchSettings)
@@ -186,10 +208,10 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
   if(HistoryMatchSettings$KDE == 0|| length(chi_star) ==1){
   Xstar <- sort(rbind(DP_RescaleZeroOneToab(randomLHS(n_emulatorsamplepoints , p) , PriorRange[1] , PriorRange[2]) , PriorRange[1] ))
   }
-  if(HistoryMatchSettings$KDE == 1 & length(chi_star) > 1){
-  Xstar <- BC_SampleGMM( MclustDistributionStruct =  KDE_CreateMclustClassFromSample(X = as.matrix(chi_star) , H = 0.00001*sqrt( var(chi_star)) ) ,numberofsamples =  n_emulatorsamplepoints)
-  Xstar <- sort(Xstar[Xstar > 0])
-  }
+  #if(HistoryMatchSettings$KDE == 1 & length(chi_star) > 1){
+  #Xstar <- BC_SampleGMM( MclustDistributionStruct =  KDE_CreateMclustClassFromSample(X = as.matrix(chi_star) , H = 0.00001*sqrt( var(chi_star)) ) ,numberofsamples =  n_emulatorsamplepoints)
+  #Xstar <- sort(Xstar[Xstar > 0])
+  #}
   print( 'Evaluating emulator.' )
   Em_output <- BE_BayesLinearEmulatorLSEstimates(xstar  = Xstar , EmulatorSettings = EmulatorSettings)
   print( 'Emulator evaluated.' )
@@ -203,6 +225,70 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
       chi_star <- NA}
   
     }
+  return(list('chi_star' = chi_star , 'EmulatorSettings' = EmulatorSettings))  
+}
+BE_HistoryMatch<-function(TrainingSet , TrainingSet2, EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings = BE_CreateDefaultHistoryMatchClass() , PriorRange = c(0,1) ){
+  
+  print('History Matching')
+  SizechiStariMinus1 <- 1
+  WaveCounter <- 1
+  chi_star <<- matrix(0 , 1 , 1)
+  while( length(chi_star) >=  SizechiStariMinus1 ){
+    
+    SizechiStariMinus1 <- length(chi_star)
+    
+    tmp <- BE_CalulateNonImplausibleSets(EmulatorSettings = EmulatorSettings , 
+                                         HistoryMatchSettings = HistoryMatchSettings , 
+                                         PriorRange = PriorRange,
+                                         chi_star = chi_star , 
+                                         WaveCounter = WaveCounter)
+    chi_star <<- tmp$chi_star
+    EmulatorSettings <- tmp$EmulatorSettings
+    
+    
+    PriorRange <- DP_CalculateLimits(chi_star)
+    print(paste0('Number of Non-Implausible Points = ', length(chi_star)))
+    print(paste0('Wave ' , WaveCounter , 'completed.'))
+    abline(v = PriorRange[1])
+    abline(v = PriorRange[2])
+    
+    if(is.na(chi_star[1])){
+      break
+    }
+    
+    WaveCounter <- WaveCounter + 1
+  }
+  HistoryMatchSettings$AddPointsToEmulator = 1
+  chi_star <<- sample( chi_star , SizechiStariMinus1 , replace = TRUE)
+  EmulatorSettings$CorrelationLength <- function(X , n){
+    return(DP_FindMeanMindistances(EmulatorSettings$X))
+  }
+  SizechiStariMinus1 <- 10
+  while(var(chi_star) <=  SizechiStariMinus1){
+    
+    SizechiStariMinus1 <- var(chi_star)
+    
+    tmp <- BE_CalulateNonImplausibleSets(EmulatorSettings = EmulatorSettings , 
+                                         HistoryMatchSettings = HistoryMatchSettings , 
+                                         PriorRange = PriorRange,
+                                         chi_star = chi_star , WaveCounter )
+    chi_star <<- tmp$chi_star
+    EmulatorSettings <- tmp$EmulatorSettings
+    
+    PriorRange <- DP_CalculateLimits(chi_star)
+    print(paste0('Number of Non-Implausible Points = ', length(chi_star)))
+    print(paste0('Wave ' , WaveCounter , 'completed.'))
+    WaveCounter <- WaveCounter + 1
+    abline(v = PriorRange[1])
+    abline(v = PriorRange[2])
+    
+    
+    if(is.na(chi_star[1])){
+      break
+    }
+    
+  }
+  
   return(list('chi_star' = chi_star , 'EmulatorSettings' = EmulatorSettings))  
 }
 
@@ -247,3 +333,10 @@ BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){
   #lines(Xstar ,  Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)) , col = 'blue')
   
 #}
+ 
+
+##### Sampling functions #####
+BE_SampleGP <- function(KXX){
+  L = chol(KXX + 0.0000000000001 * diag(dim(KXX)[1]) )
+  return(t(L) %*% rnorm(dim(KXX)[1]))
+}

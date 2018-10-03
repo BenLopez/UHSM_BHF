@@ -576,6 +576,15 @@ DP_FindMeanMindistances <- function(X ){
 DP_CalculateLimits <- function(X){
   return(c(min(X) , max(X)))
 }
+DP_RemoveEmptyElementsfromlist <- function(X ){
+  baddataindicies <- which(unlist(lapply(X , length))==0)
+  while(length(baddataindicies) > 0 ){
+    X[[baddataindicies[1]]] <- NULL
+    baddataindicies <- which(unlist(lapply(X , length))==0)
+    
+  }
+  return(X)
+}
 
 ##### Quality of life functions ######
 size <- function( X ){

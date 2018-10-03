@@ -113,7 +113,6 @@ BC_LoadInAllCDFS <- function(path , listAllPatients , PatIndex2017 ){
                                  'NAFPatinetsNames') )
   return(output)
 }
-
 BC_CreateAFandNOAFDataStructure <- function(DataBaseMaster , PatIndex2017){
   Numberofvariables <- dim(DataBaseMaster$AFPatientsDatabase)[3] - 1
   timevariable <- dim(DataBaseMaster$AFPatientsDatabase)[3]
@@ -166,14 +165,12 @@ BC_CreateAFandNOAFDataStructure <- function(DataBaseMaster , PatIndex2017){
   }
   return(setNames( list( AFVector , NAFVector , mmAF , mmNAF ) , c('AF , NAF' , 'M_AF' , 'M_NAF') ) )
 }  
-
 BC_Removezerovariancevariables <- function(DataBase){
   for(i in 1:length(DataBase)){
     DataBase[[i]] <- DataBase[[i]][ , which(DP_FindZeroVarianceRows(DataBase[[i]]) == FALSE)]
   }
   return(DataBase)
 }
-
 BC_CreateAFPreAFandNOAFDataStructure <- function(DataBaseMaster){
 Numberofvariables <- dim(DataBaseMaster$AFPatientsDatabase)[2] - 1
 timevariable <- dim(DataBaseMaster$AFPatientsDatabase)[2]
@@ -264,19 +261,18 @@ BC_EstimateGlobalEffect <- function( Z ){
   }
   output <- setNames( list(mmAF , Z ) , c('M' , 'W'))
 }
-
 BC_EstimateGlobalandLocalParametersDisSum <- function( DistributionSummaries ){
   Numberofvariables <- (length(DistributionSummaries) -1)
   t <- DistributionSummaries[[length(DistributionSummaries)]]
   mm <- matrix(0 , 1 , Numberofvariables)
-  W <- matrix(0 , length(t) , Numberofvariables)
+  W <- matrix(0 , length(DistributionSummaries[[1]]) , Numberofvariables)
   for(i in 1:Numberofvariables){
     W[,i] <- DistributionSummaries[[i]]
     }
   W[W[,8] == 1 , 9] <- 0
   W[W[,8] == 1,10] <- 0
   
-  if(length(t)< 5000){
+  if(length(DistributionSummaries[[1]])< 5000){
     mm <- apply( W[,1:Numberofvariables],2,function(X){mean(X , na.rm = TRUE)} )
     next}else{
     mm <- apply(W[1:5000,1:Numberofvariables],2,function(X){mean(X , na.rm = TRUE)})
@@ -286,7 +282,6 @@ BC_EstimateGlobalandLocalParametersDisSum <- function( DistributionSummaries ){
   }
   return(setNames(list(W , mm) , c('W' , 'M') ))
 }
-
 BC_EstimateGlobalandLocalParametersCDFs <- function( CDFs ){
   Numberofvariables <- dim(CDFs$CDFs )[2]
   t <- CDFs$time
@@ -310,7 +305,6 @@ BC_EstimateGlobalandLocalParametersCDFs <- function( CDFs ){
   
   return(setNames(list(W , mm) , c('W' , 'M') ))
 }
-
 BC_CalulateImplausabilty <- function( Z , mu , Sigma ){
   Sigma <- Sigma + 0.000000001*diag(dim(Sigma)[1])
   Implausability <- mahalanobis(x = Z , center = mu , cov = Sigma )
@@ -386,7 +380,6 @@ for(i in 1:size(f_i)[2]){
 }
   return( f_i )  
 }
-
 BC_GlobalCalulateImplausabiltySecondOrderStatistics <- function(DataBase , SecondOrderStruct){
   num_classes <-  2
   output <- list()
@@ -424,7 +417,6 @@ BC_GlobalBayesianBeliefUpdateMVN <- function( M , GlobalSecondOrderStruct , Prio
   output <- BC_CaculateBeatWiseProbabiltiesAFDetection(output) 
   return(output)
 }
-
 BC_GlocalBayesianBeliefUpdateGMM <- function(M , GlobalDistributionStruct ,  Priorprobabilities , n =1 ){
   num_classes <- length(GlobalDistributionStruct)
   f_i <- BC_CalulateDenistiesGMM(W = M , LocalDistributionStruct = GlobalDistributionStruct) 
@@ -434,8 +426,6 @@ BC_GlocalBayesianBeliefUpdateGMM <- function(M , GlobalDistributionStruct ,  Pri
   output <- BC_CaculateBeatWiseProbabiltiesAFDetection(output) 
   return(output)
 }
-
-
 BC_CreateAFAnnotationFomMetaData <- function(t , MetaData){
   output <- matrix(0 , length(t) , 1)
   output[ (t>DP_StripTime(MetaData$ConfirmedFirstNewAF))*(t<DP_StripTime(MetaData$EndFirstNewAF)) == 1] <- 1
@@ -464,7 +454,6 @@ BC_CalulatePerformance <- function(AnnotatedAFMetaData ,  AnnotatedAFInference ,
   NPV  <- TN /(TN + FN) 
   return( data.frame(Sensitvity = Sen , Specifictity = Spec , PPV = PPV , NPV = NPV , P = P , N = N , Total=Total , TP = TP , TN = TN , FP = FP , FN=FN) )
 }
-
 BC_CheckForTimeGaps <- function(AFLocations , BadDataLocations , t , ECGs , beatlims = c(45 , 300) , readinglim = 0.65){
   output <- AFLocations
   for(i in 1:length(AFLocations[ , 1])){
@@ -528,10 +517,13 @@ BC_CreateCalibrationStructure <- function(GlobalProbCalibrationStruct ,   BinWid
   
   for(i in 1:(dim(ProbabililtyBinStruct)[1])){
     tmplogical <- ((GlobalProbCalibrationStruct[,1] >= ProbabililtyBins[i])*(GlobalProbCalibrationStruct[,1] <= ProbabililtyBins[i+1])) == 1
-    ProbabililtyBinStruct[i,] <- sum(GlobalProbCalibrationStruct[tmplogical , 2])/length((GlobalProbCalibrationStruct[tmplogical , 2]))
-    EstimatorError[i,] <- (ProbabililtyBinStruct[i,])*(1-ProbabililtyBinStruct[i,])/length((GlobalProbCalibrationStruct[tmplogical , 2]))
+    ProbabililtyBinStruct[i,] <- mean( GlobalProbCalibrationStruct[tmplogical , 2] )
+    EstimatorError[i,] <- BC_CalulateBernoulliEstimatorUncertainty(p = ProbabililtyBinStruct[i,], length(GlobalProbCalibrationStruct[tmplogical , 2]) )
   }
   return(data.frame(x = ProbabililtyBins[1:dim(ProbabililtyBinStruct)[1]] + BinWidth/2, y =ProbabililtyBinStruct , sd = sqrt(EstimatorError) ) )
+}
+BC_CalulateBernoulliEstimatorUncertainty <- function( p , n){
+  return( (p*(1 - p)/n) + 1/(n^2) )
 }
 BC_CreateDefaultmclustStruct <- function(){
   MclustDistributionStruct <- list( parameters = list() )  
@@ -542,9 +534,29 @@ BC_CreateDefaultmclustStruct <- function(){
   MclustDistributionStruct$parameters$variance <- setNames(list(1) , c('sigma'))
   return(MclustDistributionStruct)
 }
-
+BC_CreateProbCalibrationStruct <- function(PosteriorProbabilities ,  alpha , numberofvalidationsamples){
+  return( cbind(as.matrix(PosteriorProbabilities) , 
+                rbind(matrix(1 , round(alpha[1]* numberofvalidationsamples)  , 1) , 
+                      matrix(0 , round(alpha[2]* numberofvalidationsamples)  , 1) ) ) )
+}
+BC_PredictGMMDensity <- function(MclustDistributionStruct , x){
+  N = length( MclustDistributionStruct$parameters$pro)
+  f_i <- matrix(0 , N , 1)
+  for(ii in 1:N){
+    f_i[ii,] <- MclustDistributionStruct$parameters$pro[ii]*exp(DF_mvnpdf(x , mu = MclustDistributionStruct$parameters$mean[ , ii] , Sigma =  MclustDistributionStruct$parameters$variance$sigma[ , , ii]))   
+  }
+  return(sum(f_i))
+}
+BC_CleanProbCalibrationOutput <- function(ProbabiliticCalibrationOutput){
+  ProbabiliticCalibrationOutput$sd[is.na(ProbabiliticCalibrationOutput$y)] <- 1
+  ProbabiliticCalibrationOutput$y[is.na(ProbabiliticCalibrationOutput$y)] <- ProbabiliticCalibrationOutput$x[is.na(ProbabiliticCalibrationOutput$y)]
+  ProbabiliticCalibrationOutput$sd[1] <- ProbabiliticCalibrationOutput$sd[1] + 0.005
+  ProbabiliticCalibrationOutput$sd[length(ProbabiliticCalibrationOutput$sd)] <- ProbabiliticCalibrationOutput$sd[length(ProbabiliticCalibrationOutput$sd)] + 0.005
+  return(ProbabiliticCalibrationOutput)
+}
 
 ###### Plotting Functions ######
+
 BC_PlotCreateggImplausabilities <- function(TimeVector , RegIm){
 if(dim(RegIm)[2] == 2){
   Implot <- BC_PlotCreateggImplausabilitiesBase(TimeVector , RegIm ) +
@@ -720,13 +732,12 @@ BC_plotAddColouredRegions <- function(plotstruct , Locations  , fillcolor = 'pin
 BC_PlotCreateProbabilityCalibrationPlot <- function(Data){
   GlobalProbabilityCalibrationPlot <- ggplot(Data  , aes(x = x , y = y)) +
     geom_point( color = 'blue') +
-    geom_errorbar(aes(ymin = y - 2*sd , ymax = y + 2*sd ) , width = .01 ) +
+    geom_errorbar(aes(ymin =  y - 2*sd , ymax = y + 2*sd ) , width = .01 ) +
     geom_line(aes(x = x , y = x))+
     xlab('Predicted Probability') +
     ylab('Estimated Probability')
-    return(GlobalProbabilityCalibrationPlot)
+  return(GlobalProbabilityCalibrationPlot)
 }
-
 BC_plotValidateDensityEstimationMarginalHistograms <- function(A , B , C , D ){
   x11(20,14)
   par(mfrow = c(2 , 5))
@@ -749,7 +760,6 @@ BC_plotValidateDensityEstimationMarginalHistograms <- function(A , B , C , D ){
                  round(sum( abs(tmp2$density - tmp4$density)) , 3)) )
   }
 }
-
 BC_PlotPairsFromTwoVariables <- function( X , Y , alpha = 0.01 ){
   x11(20 , 14)
   pairs( rbind(X , Y) ,  col = rbind(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1]) , rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1])) , pch = 16) 
@@ -778,6 +788,21 @@ BC_PlotCompareTwoHists <- function( X , Y ){
          , add = T)   
   }
 }  
+BC_CreateSecondOrderSpecificationHistImp <- function(Trainingset , Validationset ,  numberofsamples = 1000 , numberofrepitions = 100){
+  Immatrix <- matrix(0 , numberofrepitions ,  size(Trainingset)[2]  )
+  
+  for( ii in 1:numberofrepitions ){
+    
+    sampleindexes <- sample( 1:dim(Validationset)[1] , numberofsamples )
+    validationsample <- Validationset[sampleindexes , ]
+    
+    Immatrix[ii , 1:( size(Trainingset)[2] )] <- KDE_CalulateHistImplausability( Trainingset , validationsample) 
+    
+  }
+  output <- list( mu = apply(Immatrix , 2 , mean) , Sigma = cov(Immatrix) , Inv_Sigma = solve(cov(Immatrix)) )
+  return(output)
+}
+
 ##### Sampling functions #####
 
 BC_SampleGMM <- function(MclustDistributionStruct , numberofsamples){
@@ -796,11 +821,19 @@ BC_SampleGMM <- function(MclustDistributionStruct , numberofsamples){
   
   return(output)  
 }
-BC_PredictGMMDensity <- function(MclustDistributionStruct , x){
-  N = length( MclustDistributionStruct$parameters$pro)
-  f_i <- matrix(0 , N , 1)
-  for(ii in 1:N){
-    f_i[ii,] <- MclustDistributionStruct$parameters$pro[ii]*exp(DF_mvnpdf(x , mu = MclustDistributionStruct$parameters$mean[ , ii] , Sigma =  MclustDistributionStruct$parameters$variance$sigma[ , , ii]))   
+BC_SampleMGMM <- function( GMMmodelbyPatient , numberofsamples, alpha ){
+  
+  N = length( GMMmodelbyPatient)
+  Sample1 <- t(rmultinom(numberofsamples, size = 1 , alpha)) 
+  
+  output <- matrix(0 , numberofsamples  , dim(GMMmodelbyPatient[[1]]$parameters$mean)[1])
+  
+  for( i in 1:N ){
+    if(sum(Sample1[,i] == 1) ==0){next}
+    output[Sample1[,i] == 1 , ] <- BC_SampleGMM(GMMmodelbyPatient[[i]] , numberofsamples = sum(Sample1[,i]))
+    
   }
-  return(sum(f_i))
+  
+  return(output) 
+  
 }

@@ -1,3 +1,5 @@
+
+##### Kernel density estimation #####
 KDE_GaussianKernel <- function(X , Xstar , H){
   
   
@@ -173,3 +175,4 @@ KDE_HistoryMatchBandWidth <- function( Trainingset , Validationset , numberofsam
   print('History Match Complete.')
   return(chi_star)
 }
+##### pusedo Kernel density estimation #####
