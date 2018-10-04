@@ -147,12 +147,13 @@ ImMeasure <- function( ProbabiliticCalibrationOutput ){
 PriorSample <- randomLHS(n = 100000 , k = 2 )
 Implausability <- matrix(0 , dim(PriorSample)[1] , 1)
 
+
 for(i in 1:dim(PriorSample)[1]){
   Implausability[i, ] <- ImMeasure(BC_CleanProbCalibrationOutput(Simulator(PriorSample[i,1] , PriorSample[i,2])))
   DP_WaitBar(i/dim(PriorSample)[1])
 }
 
-Implausability[is.na(Implausability)] = 100
+
 
 plot(PriorSample[Implausability >3 , 1] , PriorSample[Implausability >3 , 2] , pch = 16 , col = rgb(1,0,0, alpha = 0.5))
 points(PriorSample[Implausability <3 , 1] , PriorSample[Implausability <3 , 2] , pch = 16 , col = rgb(0,0,1, alpha = 0.5))

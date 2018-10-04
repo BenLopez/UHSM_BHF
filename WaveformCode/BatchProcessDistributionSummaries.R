@@ -6,25 +6,32 @@
   DP_LoadPatientIndex()
   DP_ChooseDataReps()
   FilestoProcess <- DP_ChooseECGstoProcess() 
-  HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter()
 }
 }
 
 SettingsAFDetection <- AFD_CreateDefaultSettings()
-AFPatientsOnly <- 0
 
-for(ii in 1:length(listAllPatients)){
+UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to only process AFib patients?')
+if(UserResponse == 'NO'){
+  AFPatientsOnly <- 0
+}else{
+  AFPatientsOnly <- 1
+}
+
+for( ii in 1:length(listAllPatients) ){
   
 sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[[ii]])
 
 if(nrow(sub_pat) == 0 ){
   DP_WaitBar(ii/length(listAllPatients))
-  next} 
+  next}
+
 if(AFPatientsOnly == 1){
 if( is.na(sub_pat$ConfirmedFirstNewAF) || sub_pat$ConfirmedFirstNewAF == 'CNAF'){
   print(paste0('Skipping Patient ' , listAllPatients[[ii]]))
   next}
 }
+
 if(DP_checkRpeaksfilesprocessed(path , listAllPatients[[ii]])){
   outputdata <- DP_LoadRpeaksfile(path , listAllPatients[ii])
   }else{

@@ -16,13 +16,13 @@
 
 # Options for processing.
 {
-  UserResponse <- winDialog(type = c('yesno') , message = 'Would you check for processed files and only process waveforms which have not been processed?')
+  UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to check for processed files and only process waveforms which have not been processed?')
   if(UserResponse == 'NO'){
     checkforprocessedfiles <- 0
   }else{
     checkforprocessedfiles <- 1
   }
-  UserResponse <- winDialog(type = c('yesno') , message = 'Would you to only process AFib patients?')
+  UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to only process AFib patients?')
   if(UserResponse == 'NO'){
     OnlyAFPatientes <- 0
   }else{

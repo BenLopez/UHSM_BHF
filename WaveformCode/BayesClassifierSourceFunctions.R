@@ -519,8 +519,10 @@ BC_CreateCalibrationStructure <- function(GlobalProbCalibrationStruct ,   BinWid
     tmplogical <- ((GlobalProbCalibrationStruct[,1] >= ProbabililtyBins[i])*(GlobalProbCalibrationStruct[,1] <= ProbabililtyBins[i+1])) == 1
     ProbabililtyBinStruct[i,1] <- mean( GlobalProbCalibrationStruct[tmplogical , 2] )
     ProbabililtyBinStruct[i,2] <- mean( GlobalProbCalibrationStruct[tmplogical , 1] )
+    if(is.na(mean( GlobalProbCalibrationStruct[tmplogical , 1] )) ){ProbabililtyBinStruct[i,2] <- (ProbabililtyBins[i] + BinWidth/2)  }
     EstimatorError[i,] <- BC_CalulateBernoulliEstimatorUncertainty(p = ProbabililtyBinStruct[i,1], length(GlobalProbCalibrationStruct[tmplogical , 2]) )
   }
+  
   return(data.frame(x = ProbabililtyBinStruct[,2], y =ProbabililtyBinStruct[,1] , sd = sqrt(EstimatorError) ) )
 }
 BC_CalulateBernoulliEstimatorUncertainty <- function( p , n){
