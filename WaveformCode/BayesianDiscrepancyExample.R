@@ -154,12 +154,38 @@ for(i in 1:dim(PriorSample)[1]){
 }
 
 
+x11()
+opticaldensity <- BE_CreateOpticalDensityplot2D(PriorSample , Implausability < 2)
+opticaldensity <- opticaldensity + ggtitle('History Matched Points') + xlab(TeX('b_1')) + ylab(TeX('b_2'))
+hist_top <- ggplot()+geom_histogram(aes(PriorSample[Implausability < 2 , 1]), colour = 'blue' , fill = 'blue' , alpha = 0.75) + xlab(TeX('Acceptable Matches $b_1$'))
+hist_right <- ggplot()+geom_histogram(aes(PriorSample[Implausability < 2 , 2]) , colour = 'blue', fill = 'blue' , alpha = 0.75) +coord_flip()+ xlab(TeX('Acceptable Matches $b_2$'))
+empty <- ggplot()+geom_point(aes(1,1), colour="white")+
+  theme(axis.ticks=element_blank(), 
+        panel.background=element_blank(), 
+        axis.text.x=element_blank(), axis.text.y=element_blank(),           
+        axis.title.x=element_blank(), axis.title.y=element_blank())
+grid.arrange(hist_top, empty, opticaldensity, hist_right, ncol=2, nrow=2, widths=c(4, 1), heights=c(1, 4))
+
+
+Nonimplausiblesample <- Simulator(X = 0.025 , X2 = 0.025)
+
+x11()
+Data <- Nonimplausiblesample
+GlobalProbabilityCalibrationPlot <- ggplot(Data  , aes(x = x , y = y)) +
+  geom_point( color = 'blue') +
+  geom_errorbar(aes(ymin =  y - 2*sd , ymax = y + 2*sd ) , width = .01 ) +
+  geom_line(aes(x = x , y = x))+
+  xlab(TeX('$B( P , z )$')) +
+  ylab(TeX('Estimated $P_t(X| z)$' )) +
+  ggtitle(TeX('Acceptable Match'))
+print(GlobalProbabilityCalibrationPlot)
+
 
 plot(PriorSample[Implausability >3 , 1] , PriorSample[Implausability >3 , 2] , pch = 16 , col = rgb(1,0,0, alpha = 0.5))
 points(PriorSample[Implausability <3 , 1] , PriorSample[Implausability <3 , 2] , pch = 16 , col = rgb(0,0,1, alpha = 0.5))
 
 
-HistoryMatchOutput <- BE_HistoryMatch(TrainingSet , TrainingSet2, EmulatorSettings = EmulatorSettings  , HistoryMatchSettings = HistoryMatchSettings , PriorRange = PriorRange )
+HistoryMatchOutput <- BE_HistoryMatch(TrainingSet , TrainingSet2, EmulatorSettings = EmulatorSettings  , HistoryMatchSettings = HistoryMatchSettings , PriorRange = PriorRange  )
 EmulatorSettings = HistoryMatchOutput$EmulatorSettings
 chi_star = HistoryMatchOutput$chi_star
 

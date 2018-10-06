@@ -12,19 +12,6 @@ Trainingset2 <- BC_SampleGMM( LocalDistributionStruct[[2]] , numberoftrainingsam
 
 Validationset <- rbind( BC_SampleGMM(LocalDistributionStruct[[1]] , round(alpha[1]* numberofvalidationsamples) ) ,  BC_SampleGMM( LocalDistributionStruct[[2]] , round(alpha[2]*numberofvalidationsamples) ))
 
-
-KDE_CalulatePuesdoProd <- function( Trainingset , x , H , thresh = 28 ){
-  return(sum(mahalanobis(Trainingset , center  = x , cov = H) < 28))/length(Trainingset)
-}
-KDE_CalulatePuesdoPosteriorProb <- function(Trainingset ,Trainingset2 , alpha = c(0.5,0.5) , x , H , H2 , thresh = 28){
-  return((alpha[1]*KDE_CalulatePuesdoProd(Trainingset , x , H , thresh )) / (alpha[1]*KDE_CalulatePuesdoProd(Trainingset , x , H , thresh ) + alpha[2]*KDE_CalulatePuesdoProd(Trainingset2 , x , H2 , thresh ) ))
-}
-CalculateGMMPosteriorProb <- function(LocalDistributionStruct , x , alpha = c(0.5,0.5)){
-  return( (alpha[1]*BC_PredictGMMDensity(LocalDistributionStruct[[1]] , x)) / ((alpha[1]*BC_PredictGMMDensity(LocalDistributionStruct[[1]] , x)) + (alpha[2]*BC_PredictGMMDensity(LocalDistributionStruct[[2]] , x))) )
-} 
-
-
-
 Simulator <- function(X){
   H <- X*cov( rbind(Trainingset , Trainingset2) )
   H2 <-H
@@ -41,7 +28,7 @@ Simulator <- function(X){
 }
 
 ImMeasure <- function( ProbabiliticCalibrationOutput ){
-  return(abs( mean((ProbabiliticCalibrationOutput$x - ProbabiliticCalibrationOutput$y)/ProbabiliticCalibrationOutput$sd)) )
+  return(max(abs( (ProbabiliticCalibrationOutput$x - ProbabiliticCalibrationOutput$y)/ProbabiliticCalibrationOutput$sd)) )
 }
 
 
@@ -49,7 +36,7 @@ ImMeasure <- function( ProbabiliticCalibrationOutput ){
 PriorRange = c(0,0.5)
 
 HistoryMatchSettings <- BE_CreateDefaultHistoryMatchClass()
-HistoryMatchSettings$Im_Thresh <- 0.3
+HistoryMatchSettings$Im_Thresh <- 3
 
 EmulatorSettings <- BE_CreateDefaultEmulationClass()
 EmulatorSettings$w <- function(X){

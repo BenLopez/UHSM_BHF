@@ -382,3 +382,14 @@ BE_SampleGP <- function(KXX){
   L = chol(KXX + 0.0000000000001 * diag(dim(KXX)[1]) )
   return(t(L) %*% rnorm(dim(KXX)[1]))
 }
+BE_CreateOpticalDensityplot2D <- function(PriorSample , ImplausabilityLogical ){
+  
+  output <- ggplot(  ) +
+    geom_point(data = data.frame(x = PriorSample[ImplausabilityLogical == 0 ,1],
+                                 y = PriorSample[ImplausabilityLogical == 0 ,2]),
+               aes(x , y) , colour = 'red' , alpha = 0.05) +
+    geom_point(data = data.frame(x = PriorSample[ImplausabilityLogical == 1  ,1],
+                                 y = PriorSample[ImplausabilityLogical == 1  ,2]),
+               aes(x , y) , colour = 'blue' , alpha = 0.05) 
+  return(output)            
+}

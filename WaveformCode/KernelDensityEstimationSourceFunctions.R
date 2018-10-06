@@ -176,7 +176,15 @@ KDE_HistoryMatchBandWidth <- function( Trainingset , Validationset , numberofsam
   return(chi_star)
 }
 ##### pusedo Kernel density estimation #####
-
+KDE_CalulatePuesdoProd <- function( Trainingset , x , H , thresh = 28 ){
+  return(sum(mahalanobis(Trainingset , center  = x , cov = H) < 28))/length(Trainingset)
+}
+KDE_CalulatePuesdoPosteriorProb <- function(Trainingset ,Trainingset2 , alpha = c(0.5,0.5) , x , H , H2 , thresh = 28){
+  return((alpha[1]*KDE_CalulatePuesdoProd(Trainingset , x , H , thresh )) / (alpha[1]*KDE_CalulatePuesdoProd(Trainingset , x , H , thresh ) + alpha[2]*KDE_CalulatePuesdoProd(Trainingset2 , x , H2 , thresh ) ))
+}
+CalculateGMMPosteriorProb <- function(LocalDistributionStruct , x , alpha = c(0.5,0.5)){
+  return( (alpha[1]*BC_PredictGMMDensity(LocalDistributionStruct[[1]] , x)) / ((alpha[1]*BC_PredictGMMDensity(LocalDistributionStruct[[1]] , x)) + (alpha[2]*BC_PredictGMMDensity(LocalDistributionStruct[[2]] , x))) )
+} 
 ##### One Dimensional Kernel Density Estimation #####
 KDE_OneDDenistyEstimateBatch <- function(X , Xstar , H){
   X <- as.matrix(X)
