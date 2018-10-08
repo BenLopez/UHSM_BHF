@@ -41,13 +41,21 @@ unzipfileMatch = function(outfile,filename,path,strType){
   write('End If', outfile, append = TRUE)
   
   write('set objShell = CreateObject("Shell.Application")', outfile, append = TRUE)
-  write('set FilesInZip=objShell.NameSpace(ZipFile).items', outfile, append = TRUE)
-  write('For Each objItem in FilesInZip', outfile, append = TRUE)
-  tline = paste0('If Cdbl(InStr(objItem.Name,"',strType,'"))>0 Then', sep="", collapse = "")
-  write(tline, outfile, append = TRUE)
-  write('objShell.NameSpace(ExtractTo).CopyHere(objItem)', outfile, append = TRUE)
+
+  write('Sub ExtractWithSubfolders(PathToExtract, Pattern, OutputPath)', outfile, append = TRUE)
+  write('For Each objItem in objShell.NameSpace(PathToExtract).items', outfile, append = TRUE)
+  write('If objItem.Type = "File folder" Then', outfile, append = TRUE)
+  write('ExtractWithSubfolders objItem.GetFolder, Pattern, OutputPath', outfile, append = TRUE)
+  write('Else', outfile, append = TRUE)
+  write('If Cdbl(InStr(objItem.Name,"ECG II.W"))>0 Then', outfile, append = TRUE)
+  write('objShell.NameSpace(OutputPath).CopyHere(objItem)', outfile, append = TRUE)
+  write('End If', outfile, append = TRUE)
   write('End If', outfile, append = TRUE)
   write('Next', outfile, append = TRUE)
+  write('End Sub', outfile, append = TRUE)
+
+  write('ExtractWithSubfolders ZipFile, "ECG II.W", ExtractTo', outfile, append = TRUE)
+
   write('Set fso = Nothing', outfile, append = TRUE)
   write('Set objShell = Nothing', outfile, append = TRUE)
   shell.exec(outfile)
