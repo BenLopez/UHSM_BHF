@@ -51,16 +51,16 @@ for (zipF in zip_files){
   print(zipF)
   print(cnt)
   tpath = paste0(path,"\\",PatientCode,"\\temp_zip\\",zipF)
-  filez = list.files(tpath)
+  filez = list.files(tpath, recursive = TRUE)
   sapply(filez,FUN=function(eachPath){
     file.rename(from=paste0(tpath,"\\",eachPath),to=sub(pattern=".csv",replacement=paste0(cnt,".csv",sep=""),paste0(tpath,"\\",eachPath)))
   })
-  filez = list.files(tpath, include.dirs = FALSE)
+  filez = list.files(tpath, include.dirs = FALSE, recursive = TRUE)
   sapply(filez,FUN=function(eachPath){
     file.move(paste0(tpath,"\\",eachPath),paste0(path,"\\",PatientCode,"\\temp_zip\\"))
   })
   Sys.sleep(1)
-  filez = list.files(tpath, include.dirs = FALSE)
+  filez = list.files(tpath, include.dirs = FALSE, recursive = TRUE)
   sapply(filez,FUN=function(eachPath){
     file.move(paste0(tpath,"\\",eachPath),paste0(path,"\\",PatientCode,"\\temp_zip\\"))
   })
