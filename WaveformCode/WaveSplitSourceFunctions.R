@@ -36,16 +36,15 @@ unzipfileMatch = function(outfile,filename,path,strType){
   write(paste0('ExtractTo = "', ExtractTo, '"',  sep = "", collapse =""), outfile, append = TRUE)
   
   write('Set fso = CreateObject("Scripting.FileSystemObject")', outfile, append = TRUE)
-  write('If NOT fso.FolderExists(ExtractTo) Then', outfile, append = TRUE)
-  write('fso.CreateFolder(ExtractTo)', outfile, append = TRUE)
-  write('End If', outfile, append = TRUE)
-  
   write('set objShell = CreateObject("Shell.Application")', outfile, append = TRUE)
 
   write('Sub ExtractWithSubfolders(PathToExtract, Pattern, OutputPath)', outfile, append = TRUE)
+  write('If NOT fso.FolderExists(OutputPath) Then', outfile, append = TRUE)
+  write('fso.CreateFolder(OutputPath)', outfile, append = TRUE)
+  write('End If', outfile, append = TRUE)
   write('For Each objItem in objShell.NameSpace(PathToExtract).items', outfile, append = TRUE)
   write('If objItem.Type = "File folder" Then', outfile, append = TRUE)
-  write('ExtractWithSubfolders objItem.GetFolder, Pattern, OutputPath', outfile, append = TRUE)
+  write('ExtractWithSubfolders objItem.GetFolder, Pattern, OutputPath + "\\" + objItem.Name', outfile, append = TRUE)
   write('Else', outfile, append = TRUE)
   write('If Cdbl(InStr(objItem.Name,"ECG II.W"))>0 Then', outfile, append = TRUE)
   write('objShell.NameSpace(OutputPath).CopyHere(objItem)', outfile, append = TRUE)
