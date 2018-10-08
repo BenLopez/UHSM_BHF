@@ -122,8 +122,13 @@ bayesPPV2[ii] <- beta[2]*Sensivity2/(beta[2]*Sensivity2 + beta[1]*(1-Specifictit
 
 }
 
+x11()
 plot1 <- ggplot()+
          geom_point(data = data.frame(x = listofprops , y=PPV1)  , aes(x,y) , col = 'blue') +
          geom_point(data = data.frame(x = listofprops , y=PPV2) , aes(x,y) , col = 'red') +
          geom_point(data = data.frame(x = listofprops , y=bayesPPV1)  , aes(x,y) , col = 'black') +
-         geom_point(data = data.frame(x = listofprops , y=bayesPPV2) , aes(x,y) , col = 'green')
+         geom_point(data = data.frame(x = listofprops , y=bayesPPV2) , aes(x,y) , col = 'green') +
+         ggtitle(TeX('Comparison of Full Bayes and Bayes Linear Classifiers')) +
+         ylab(TeX('PPV')) +
+         xlab(TeX('$w$'))
+print(plot1)
