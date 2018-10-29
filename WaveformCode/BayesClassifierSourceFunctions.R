@@ -171,19 +171,19 @@ BC_Removezerovariancevariables <- function(DataBase){
   }
   return(DataBase)
 }
-BC_CreateAFPreAFandNOAFDataStructure <- function(DataBaseMaster){
-Numberofvariables <- dim(DataBaseMaster$AFPatientsDatabase)[2] - 1
-timevariable <- dim(DataBaseMaster$AFPatientsDatabase)[2]
+BC_CreateAFPreAFandNOAFDataStructure <- function(DataBaseMaster , PatIndex2017){
+Numberofvariables <- dim(DataBaseMaster$AFPatientsDatabase)[3] - 1
+timevariable <- dim(DataBaseMaster$AFPatientsDatabase)[3]
   
   AFVector <- matrix(0 , 1 , Numberofvariables)
   PreAFVector <- matrix(0 , 1 , Numberofvariables)
   NAFVector<- matrix(0 , 1 , Numberofvariables)
   mmAF <- matrix(0 ,  size(DataBaseMaster$AFPatientsDatabase)[1],Numberofvariables)
   mmNAF <- matrix(0 ,  size(DataBaseMaster$NAFPatientsDatabase)[1],Numberofvariables)
-  sub_pat <- DP_ExtractPatientRecordforIndex(PatIndex2017 , DataBaseMaster$AFPatinetsNames[[ii]])
   
   for(ii in 1:size(DataBaseMaster$AFPatientsDatabase)[1]){
-    tmp <- DataBaseMaster$AFPatientsDatabase[ii ,DataBaseMaster$AFPatientsDatabase[ii , ,1] != 0 ,]
+    sub_pat <- DP_ExtractPatientRecordforIndex(PatIndex2017 , DataBaseMaster$AFPatinetsNames[[ii]])
+      tmp <- DataBaseMaster$AFPatientsDatabase[ii ,DataBaseMaster$AFPatientsDatabase[ii , ,1] != 0 ,]
     if(nrow(tmp)< 5000){
       mmAF[ii,] <- apply( tmp[,1:Numberofvariables],2,function(X){mean(X , na.rm = TRUE)} )
       next}
@@ -497,6 +497,15 @@ BC_ExtractValidationPriors <- function(Priorprobabilities , DataBaseMaster , Dat
   DataSetPriorProbabilities <- BC_CaculateBeatWiseProbabiltiesAFDetection( DataSetPriorProbabilities )
   return(DataSetPriorProbabilities)
 }
+BC_ExtractValidationPriorsLocalPrediction <- function(Priorprobabilities , DataBaseMaster , DataBase){
+  
+  DataSetPriorProbabilities <- Priorprobabilities
+  DataSetPriorProbabilities$A <- length(DataBaseMaster$AFPatinetsNames)/(length(DataBaseMaster$NAFPatinetsNames)+length(DataBaseMaster$AFPatinetsNames))
+  DataSetPriorProbabilities$`A^c` <- 1 - DataSetPriorProbabilities$A
+  DataSetPriorProbabilities$`B|A` <- dim(DataBase[[2]])[1] /( dim(DataBase[[2]])[1] + dim(DataBase[[3]])[1])
+  DataSetPriorProbabilities <- BC_CaculateBeatWiseProbabiltiesAFDetection( DataSetPriorProbabilities )
+  return(DataSetPriorProbabilities)
+}
 BC_EstimateGlobalandLocalParameters<-function( Z ){
   Numberofvariables <- dim(Z)[2]
   mm <- matrix(0 , 1 , Numberofvariables)
@@ -553,9 +562,31 @@ BC_PredictGMMDensity <- function(MclustDistributionStruct , x){
 BC_CleanProbCalibrationOutput <- function(ProbabiliticCalibrationOutput){
   ProbabiliticCalibrationOutput$sd[is.na(ProbabiliticCalibrationOutput$y)] <- 1
   ProbabiliticCalibrationOutput$y[is.na(ProbabiliticCalibrationOutput$y)] <- ProbabiliticCalibrationOutput$x[is.na(ProbabiliticCalibrationOutput$y)]
-  ProbabiliticCalibrationOutput$sd[1] <- ProbabiliticCalibrationOutput$sd[1] + 0.005
-  ProbabiliticCalibrationOutput$sd[length(ProbabiliticCalibrationOutput$sd)] <- ProbabiliticCalibrationOutput$sd[length(ProbabiliticCalibrationOutput$sd)] + 0.005
+  ProbabiliticCalibrationOutput$sd[1] <- ProbabiliticCalibrationOutput$sd[1] + 0.001
+  ProbabiliticCalibrationOutput$sd[length(ProbabiliticCalibrationOutput$sd)] <- ProbabiliticCalibrationOutput$sd[length(ProbabiliticCalibrationOutput$sd)] + 0.001
   return(ProbabiliticCalibrationOutput)
+}
+BC_BeliefUpdateWithUncertainDensities <- function( f_i , d , V_d  , numberofsamples = 100 ){
+  
+  sampleofpoints <- runif(numberofsamples , min = d - 2*sqrt(V_d) , max = d + 2*sqrt(V_d))
+  sampleofpoints <- sampleofpoints[sampleofpoints > 0]
+  sampleofpoints <- sampleofpoints[sampleofpoints < 1]
+  posteriorsample <- sampleofpoints*f_i[1] / (sampleofpoints*f_i[1] + (1-sampleofpoints)*f_i[2]) 
+  output <- setNames(list( mean(posteriorsample) ,  var(posteriorsample) ), c('E_P' , 'V_P'))
+  return(output)
+}
+BC_ReifiedBeliefUpdateWithUncertainDensities <- function( f_i , E_d , V_d , LocalEmulationClass , numbersamples = 100 , alpha = 1 ){
+  
+  sampleofpoints <- runif(n = numbersamples , min = E_d - 2*sqrt(V_d) , max = E_d + 2*sqrt(V_d) )
+  sampleofpoints <- sampleofpoints[sampleofpoints > 0]
+  sampleofpoints <- sampleofpoints[sampleofpoints < 1]
+  posteriorsample <- sampleofpoints*f_i[2] / (sampleofpoints*f_i[2] + (1-sampleofpoints)*f_i[1]) 
+  xstar <- cbind(as.matrix(sampleofpoints) , as.matrix(posteriorsample) )
+  emulatoroutput <- BE_BayesLinearEmulatorLSEstimatesBatchMode(xstar = xstar , EmulatorSettings = LocalEmulationClass)
+  emulatoroutput$E_D_fX = posteriorsample + alpha*emulatoroutput$E_D_fX
+  output <- setNames(list( mean(emulatoroutput$E_D_fX) , var(emulatoroutput$E_D_fX) + mean(emulatoroutput$V_D_fX) ) ,  c('E_Pt' , 'V_Pt' ) )
+  return(output)
+  
 }
 
 ###### Plotting Functions ######
@@ -769,7 +800,7 @@ BC_PlotPairsFromTwoVariables <- function( X , Y , alpha = 0.01 ){
 }
 BC_PlotPairs<- function(X , alpha = 0.01 ){
   x11(20 , 14)
-  pairs( X , col = rgb(1 , 0 , 0 , alpha = 0.01) , pch =16) 
+  pairs( X , col = rgb(1 , 0 , 0 , alpha = alpha) , pch =16) 
 }
 BC_PlotCompareTwoHists <- function( X , Y ){
   x11(20 , 14)
@@ -803,6 +834,29 @@ BC_CreateSecondOrderSpecificationHistImp <- function(Trainingset , Validationset
     
   }
   output <- list( mu = apply(Immatrix , 2 , mean) , Sigma = cov(Immatrix) , Inv_Sigma = solve(cov(Immatrix)) )
+  return(output)
+}
+BC_PlotCompareSingleHists <- function(X , Y, ...){
+  x11()
+  tmphist <- hist( rbind(as.matrix(X),as.matrix(Y)) , breaks = 30 , plot = FALSE ) 
+  hist(X
+       , col=rgb(1,0,0,alpha =0.5) 
+       , freq = FALSE 
+       , breaks = tmphist$breaks, ...)
+  hist(Y
+       , col = rgb(0,0,1,alpha =0.5) 
+       , freq = FALSE 
+       , breaks = tmphist$breaks
+       , add = T)   
+}
+BC_PlotPrevision <- function( Prevision ){
+  output <- ggplot( )+
+    geom_line(data = data.frame(x = t[DP_FindNARows(AdjustedBeliefs$W)] , y = Prevision[2:dim(Prevision)[1],1])  , aes(x , y) , col = 'blue' , alpha = 0.5) +
+    geom_line(data = data.frame(x = t[DP_FindNARows(AdjustedBeliefs$W)] , y = Prevision[2:dim(Prevision)[1],1]  + 2*sqrt(Prevision[2:dim(Prevision)[1],2]) ) , aes(x , y) , col = 'red', alpha = 0.5) +
+    geom_line(data = data.frame(x = t[DP_FindNARows(AdjustedBeliefs$W)] , y = Prevision[2:dim(Prevision)[1],1]  - 2*sqrt(Prevision[2:dim(Prevision)[1],2]) ) , aes(x , y) , col = 'red', alpha = 0.5) +
+    ggtitle(TeX('Updated Beliefs for Prevision'))+
+    xlab( TeX( 'Time' ) ) +
+    ylab( TeX( 'Adjusted Beliefs Prevision' ) )
   return(output)
 }
 

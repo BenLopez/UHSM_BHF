@@ -13,7 +13,7 @@ sizex <- dim(x)
 sizexstar <- dim(xstar)
 
 
-distmatrix = matrix(0, sizex[1] , sizexstar[1] , sizex[2])
+distmatrix = array(0, c(sizex[1] , sizexstar[1] , sizex[2]))
 
 if(sizex[2] > 1){
 
@@ -28,7 +28,7 @@ if(sizex[2] > 1){
 }
 if(sizex[2] > 1)
 {
-distmatrix < - apply(distmatrix , 3 , sum)
+distmatrix <- rowSums(distmatrix , dims = 2)
 }
 
 KXXstar <- exp( -0.5 * distmatrix )
@@ -149,40 +149,40 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
   epsilon <- y - H%*%BetaHat
   SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
-  SigmaHat <- as.numeric(SigmaHat - EmulatorSettings$w(x))
+  SigmaHat <- as.numeric(SigmaHat - median(EmulatorSettings$w(x)[EmulatorSettings$w(x) !=0]))
   
-  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)*diag(sizeh[1]))
+  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)%*%diag(sizeh[1]))
   Cov_XstarD <- SigmaHat*KXstarX
 
   E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
-  V_z_y <- SigmaHat*KXstarXstar - Cov_XstarD%*%Var_D%*%t(Cov_XstarD)
+  V_z_y <- SigmaHat*KXstarXstar - (Cov_XstarD%*%Var_D%*%t(Cov_XstarD))
   
   return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
 }
 
 BE_BayesLinearEmulatorLSEstimatesBatchMode<- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass()){
   
+  
+  if(BE_CheckifPreCalulationhasBeenPerformed(EmulatorSettings) == FALSE){
+    EmulatorSettings <-  BE_PerformPreCalulationForLSEEmulator(EmulatorSettings)
+  }
+  
   x <- as.matrix(EmulatorSettings$X)
   y <- as.matrix(EmulatorSettings$Y)
   n <- dim(x)[1]
   l <- EmulatorSettings$CorrelationLength( x , 1 )
   w <- EmulatorSettings$w(x)
+  KXX <- EmulatorSettings$KXX
+  H <- EmulatorSettings$H
+  sizeh <- EmulatorSettings$sizeh
+  sizex <-  EmulatorSettings$sizex
   
-  KXX <- EmulatorSettings$CorrFunction(x , x , l )
-  H <- EmulatorSettings$MeanFunction(x)
-  sizeh = dim(H)
-  sizex <- dim(x)[1]
-  
-  BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
-  epsilon <- y - H%*%BetaHat
-  SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
-  SigmaHat <- as.numeric(SigmaHat - EmulatorSettings$w(x))
-  
-  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)*diag(sizeh[1]))
-  
+  BetaHat <- EmulatorSettings$BetaHat
+  epsilon <- EmulatorSettings$epsilon
+  SigmaHat <-EmulatorSettings$SigmaHat
+  Var_D <- EmulatorSettings$Var_D
   E_z_y <- matrix(0 , dim(xstar)[1] , 1)
   V_z_y <- matrix(0 , dim(xstar)[1] , 1)
-    
   batches <- seq(1 , dim(xstar)[1]  , 1000)
   if(batches[length(batches)] != dim(xstar)[1]){ batches = c( batches , dim(xstar)[1])}
   
@@ -194,10 +194,73 @@ BE_BayesLinearEmulatorLSEstimatesBatchMode<- function(xstar , EmulatorSettings =
   
   E_z_y[batches[i]:batches[i+1] , ] <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
   V_z_y[batches[i]:batches[i+1] , ] <- (SigmaHat - diag(Cov_XstarD%*%Var_D%*%t(Cov_XstarD)) )
+  
+  if(length(batches) > 1000){
   DP_WaitBar(i/(length(batches) - 1))
+  }
   }
   
   return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
+}
+BE_BayesLinearEmulatorWithInputUncertainty <- function(xstar , v_xstar , EmulatorSettings , numbersamples = 1000 ){
+  SampleofPoints <- BE_SampleLHSinab(numbersamples , a = xstar - 2*sqrt(v_xstar) , b = xstar + 2*sqrt(v_xstar)   )
+  emulatoroutput <- BE_BayesLinearEmulatorLSEstimatesBatchMode(xstar = SampleofPoints , EmulatorSettings = LocalEmulationClass)
+  output <- setNames(list( mean(emulatoroutput$E_D_fX) , var(emulatoroutput$E_D_fX) + mean(emulatoroutput$V_D_fX) ) ,  c('E_D_fX' , 'V_D_fX' ))
+  return(output)
+}
+
+BE_PerformPreCalulationForLSEEmulator <- function(EmulatorSettings){
+  x <- as.matrix(EmulatorSettings$X)
+  y <- as.matrix(EmulatorSettings$Y)
+  n <- dim(x)[1]
+  l <- EmulatorSettings$CorrelationLength( x , 1 )
+  w <- EmulatorSettings$w(x)
+  
+  KXX <- EmulatorSettings$CorrFunction(x , x , l )
+  EmulatorSettings$KXX <- KXX
+  H <- EmulatorSettings$MeanFunction(x)
+  EmulatorSettings$H <- H
+  sizeh = dim(H)
+  EmulatorSettings$sizeh <- sizeh
+  sizex <- dim(x)[1]
+  EmulatorSettings$sizex <- sizex
+  
+  BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
+  EmulatorSettings$BetaHat <- BetaHat
+  epsilon <- y - H%*%BetaHat
+  EmulatorSettings$epsilon <- epsilon
+  SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
+  SigmaHat <- as.numeric(SigmaHat - median(EmulatorSettings$w(x)[EmulatorSettings$w(x) !=0]))
+  EmulatorSettings$SigmaHat <- SigmaHat
+  
+  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)%*%diag(sizeh[1]))
+  EmulatorSettings$Var_D <- Var_D
+  
+  
+  if(SigmaHat < 0 ){warning('Negative variance! Please check sigmaHat calulation')}
+  
+  return(EmulatorSettings)
+  
+}
+BE_CheckifPreCalulationhasBeenPerformed <- function(EmulatorSettings){
+  setoffields <- c("MeanFunction",
+                   "CorrFunction",
+                   "CorrelationLength",
+                   "w",
+                   "X",
+                   "Y",
+                   "KXX",
+                   "H",
+                   "sizeh",
+                   "sizex",
+                   "BetaHat",
+                   "epsilon",
+                   "Var_D",
+                   "SigmaHat") 
+  
+  if(sum(names(EmulatorSettings) %in% setoffields) == length(setoffields) ){output <- TRUE}
+  if(sum(names(EmulatorSettings) %in% setoffields) != length(setoffields) ){output <- FALSE}
+  return(output)
 }
 
 #### History Matching Functions #####
@@ -267,7 +330,7 @@ BE_CalulateNonImplausibleSets <- function(EmulatorSettings = BE_CreateDefaultEmu
     }
   return(list('chi_star' = chi_star , 'EmulatorSettings' = EmulatorSettings))  
 }
-BE_HistoryMatch<-function(TrainingSet , TrainingSet2, EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings = BE_CreateDefaultHistoryMatchClass() , PriorRange = c(0,1) ){
+BE_HistoryMatch <- function(TrainingSet , TrainingSet2, EmulatorSettings = BE_CreateDefaultEmulationClass() , HistoryMatchSettings = BE_CreateDefaultHistoryMatchClass() , PriorRange = c(0,1) ){
   
   print('History Matching')
   SizechiStariMinus1 <- 1
@@ -332,8 +395,6 @@ BE_HistoryMatch<-function(TrainingSet , TrainingSet2, EmulatorSettings = BE_Crea
   return(list('chi_star' = chi_star , 'EmulatorSettings' = EmulatorSettings))  
 }
 
-
-
 ##### Plotting function #####
 
 BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){
@@ -344,14 +405,25 @@ BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){
        xlab = 'x' ,
        ylab = 'f(x)', 
        main = 'Emulator Performance')
-  points(EmulatorSettings$X , EmulatorSettings$Y + 2*sqrt(EmulatorSettings$w(X)) , col = 'blue')
-  points(EmulatorSettings$X , EmulatorSettings$Y - 2*sqrt(EmulatorSettings$w(X)) , col = 'blue')
+  points(EmulatorSettings$X , EmulatorSettings$Y + 2*sqrt(diag(EmulatorSettings$w(X))) , col = 'blue')
+  points(EmulatorSettings$X , EmulatorSettings$Y - 2*sqrt(diag(EmulatorSettings$w(X))) , col = 'blue')
   lines(Xstar ,  Em_output$E_D_fX  , col = 'red')
   lines(Xstar ,  Em_output$E_D_fX + 2*sqrt(diag(Em_output$V_D_fX)) , col = 'blue')
   lines(Xstar ,  Em_output$E_D_fX - 2*sqrt(diag(Em_output$V_D_fX)) , col = 'blue')
   if(exists('HistoryMatchSettings')){
   abline(HistoryMatchSettings$Im_Thresh,0)
   }
+}
+BE_PlotStdResiduals <- function(zstar , emulatoroutput , e=0){
+  
+  StdResids = (zstar - emulatoroutput$E_D_fX)/sqrt(diag(emulatoroutput$V_D_fX) + e)
+  
+  output <- ggplot( data.frame(index = c(1:length(StdResids)) , StdResids = StdResids) , aes(index , StdResids) ) +
+    geom_point( color = 'blue') + ggtitle('Standardised Residuals') + geom_hline( yintercept  = 3)+ geom_hline( yintercept  = -3)
+  
+  x11()
+  print(output)
+  return(output)
 }
 
 #BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){
@@ -377,11 +449,6 @@ BE_PlotOneDOutput <- function(Em_output ,  EmulatorSettings , Xstar ){
 #}
  
 
-##### Sampling functions #####
-BE_SampleGP <- function(KXX){
-  L = chol(KXX + 0.0000000000001 * diag(dim(KXX)[1]) )
-  return(t(L) %*% rnorm(dim(KXX)[1]))
-}
 BE_CreateOpticalDensityplot2D <- function(PriorSample , ImplausabilityLogical ){
   
   output <- ggplot(  ) +
@@ -392,4 +459,18 @@ BE_CreateOpticalDensityplot2D <- function(PriorSample , ImplausabilityLogical ){
                                  y = PriorSample[ImplausabilityLogical == 1  ,2]),
                aes(x , y) , colour = 'blue' , alpha = 0.05) 
   return(output)            
+}
+
+##### Sampling functions #####
+BE_SampleGP <- function(KXX){
+  L = chol(KXX + 0.0000000000001 * diag(dim(KXX)[1]) )
+  return(t(L) %*% rnorm(dim(KXX)[1]))
+}
+BE_SampleLHSinab <- function(a , b, numbersamples = 1000 ){
+  # Function to sample a latin hypercube on ranges definned by (a) and (b)
+  output <- randomLHS(numbersamples , length(a))
+  for(i in 1:length(a)){
+    output[ , i] <- DP_RescaleZeroOneToab(X = output[ , i] , a = a[i] , b = b[i])  
+  }
+  return(output)
 }

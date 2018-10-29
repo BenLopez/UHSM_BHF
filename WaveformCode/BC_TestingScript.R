@@ -1,6 +1,5 @@
 
 {Patinettotest <- DP_choosepatient(listAllPatients = listAllPatients)
-BCParameters$TS_Likelihood_clique <- 200
 source('BC_LoadDataandTestSinglePatient.R')
 if(nrow(AFLocations)>0){
   timetoview <- AFLocations$Start[1]
@@ -14,10 +13,9 @@ x11(15,12)
 print(grid.arrange( ECGIPlot,
                     ECGIIPlot,
                     ECGIIIPlot,
-                    RAPlot,
                     RRPlot,
                     Inferenceplot,
-                    nrow = 6 ,
+                    nrow = 5 ,
                     ncol = 1  , 
                     top = paste0('Sensitivity= ' , Performance$Sensitvity , ' Specifictity= ' , Performance$Specifictity ,' PPV= ' ,Performance$NPV , ' NPV= ' , Performance$PPV ) ) )
 }

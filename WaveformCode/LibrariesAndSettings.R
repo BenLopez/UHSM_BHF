@@ -26,6 +26,7 @@ library( MASS )
 library( latex2exp )
 library( ggpubr )
 library( ks )
+library( plot3D )
 # Load Data
 options(digits = 15)
 options(digits.secs=3)

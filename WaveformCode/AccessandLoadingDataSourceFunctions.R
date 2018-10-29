@@ -532,7 +532,8 @@ DP_ProcessRpeaksMultipleECGs <- function(ECGs , PatientRecord = DP_CreateDummyMe
   return(outputdata)
 }
 DP_RemoveNaRows <- function(X){
-  return(X[DP_FindNARows(X) , ])
+  X <- as.matrix(X)
+  return(as.matrix(X[DP_FindNARows(X) , ]))
 
 }
 DP_FindNARows <- function(X){
@@ -585,7 +586,9 @@ DP_RemoveEmptyElementsfromlist <- function(X ){
   }
   return(X)
 }
-
+DP_NormaliseData <- function(X){
+  return( (X - mean(X[!is.na(X)]))/(sqrt(var(X[!is.na(X)]))) )
+}
 ##### Quality of life functions ######
 size <- function( X ){
   dim(X)}
@@ -600,3 +603,4 @@ is.Date <- function( X ){
 isodd <- function( A ){
   return( (A %% 2) == 0)
 }
+

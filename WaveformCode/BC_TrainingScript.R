@@ -34,7 +34,7 @@ if(BCOptions[[2]] == 'AFClassifier' ){
   }else{
     print('Pre computed database master not found. Processing.')
     DataBase <- BC_CreateAFandNOAFDataStructure(DataBaseMaster =  DataBaseMaster,PatIndex2017 = PatIndex2017)
-for(i in 1:length(DataBase)){DataBase[[i]] <- DataBase[[i]][ , 2:31] }
+#for(i in 1:length(DataBase)){DataBase[[i]] <- DataBase[[i]][ , 2:31] }
   save( DataBase , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,  'DataBase'  ,'.RData')) )
 }
 #source('BC_ValidationPlots.R')  
@@ -69,6 +69,7 @@ if(BCOptions[[3]] == 'GMM'){
   GlobalSecondOrderStruct   <-  BC_EstimateGlobalDensitiesMVN( DataBase )
   save( GlobalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,BCOptions[[3]]  ,   'DistributionSummaries'  ,'.RData')) )
 }  
+
 
 if(BCOptions[[4]] == 'MVN'){
   LocalDistributionStruct <-  BC_EstimateLocalDensitiesMVN(DataBase)
@@ -121,12 +122,15 @@ if(BCOptions$DensityEstimationGlobal == 'GMM'){
       }
 }
 x11()
-        tmp <- hist(GlobalUpdateDiagnostics[52:dim(GlobalUpdateDiagnostics)[1], ] , col=rgb(0,0,1,alpha = 0.5) ,
+        tmp <- hist(GlobalUpdateDiagnostics[dim(DataBaseMaster$AFPatientsDatabase)[1]:dim(GlobalUpdateDiagnostics)[1], ] , col=rgb(0,0,1,alpha = 0.5) ,
                 main= paste0('Global Update Diagnostics' , ' Histogram') , 
                 xlab = 'Updated Probabilities' , 
                 freq = FALSE , 
                 ylim = c(0,100) , breaks = 50 )
-    hist(GlobalUpdateDiagnostics[1:52, ], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(0 , tmp$breaks, 1))
+    hist(GlobalUpdateDiagnostics[1:dim(DataBaseMaster$AFPatientsDatabase)[1], ], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(0 , tmp$breaks, 1))
     hist(0.2 + 0*GlobalUpdateDiagnostics, col=rgb(0,1,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(0 , tmp$breaks, 1))
   }
+# Cross validation.
+source('BC_CrossValidateGMMGlobalUpdateModel.R')
+  
 }

@@ -3,63 +3,100 @@ DataSetPriorProbabilities <- BC_ExtractValidationPriors(Priorprobabilities , Dat
 
 GlobalUpdateDiagnostics <- matrix(0 , dim(DataBase[[3]])[1] + dim(DataBase[[4]])[1] , 1 )
 counter <-1
+rm(DataBase)
+rm(DataBaseMaster)
+
+# Load or create master data.
+if( BCOptions[[1]] == 'DistributionSummaries' ){
+    print('Pre computed database master not found. Processing.')
+    DataBaseMaster <- BC_LoadInAllDistributionSummaries(path , listAllPatients , PatIndex2017)
+}
+
+if( BCOptions[[1]] == 'CDFs' ){
+    print('Pre computed database master not found. Processing.')
+    DataBaseMaster <- BC_LoadInAllCDFS(path , listAllPatients , PatIndex2017)
+}
+
+
+# Load or create database.
+if(BCOptions[[2]] == 'AFClassifier' ){
+    print('Pre computed database master not found. Processing.')
+    DataBase <- BC_CreateAFandNOAFDataStructure(DataBaseMaster =  DataBaseMaster,PatIndex2017 = PatIndex2017)
+  #for(i in 1:length(DataBase)){DataBase[[i]] <- DataBase[[i]][ , 2:31] }
+  #source('BC_ValidationPlots.R')  
+}
 
 if(BCOptions$DensityEstimationGlobal == 'MVN'){
   for(i in 1:dim(DataBase[[3]])[1]){
-    GlobalUpdateDiagnostics[counter,] <- BC_GlobalBayesianBeliefUpdateMVN(M = DataBase[[3]][i,] , GlobalSecondOrderStruct = GlobalSecondOrderStruct , Priorprobabilities = Priorprobabilities)$A
+    GlobalUpdateDiagnostics[counter,] <- BC_GlobalBayesianBeliefUpdateMVN(M = DataBase[[3]][i,] , GlobalSecondOrderStruct = GlobalSecondOrderStruct , Priorprobabilities = DataSetPriorProbabilities)$A
     counter <- counter +1
   }
   for(i in 1:dim(DataBase[[4]])[1]){
-    GlobalUpdateDiagnostics[counter,] <- BC_GlobalBayesianBeliefUpdateMVN(M = DataBase[[4]][i,] , GlobalSecondOrderStruct = GlobalSecondOrderStruct , Priorprobabilities = Priorprobabilities)$A
+    GlobalUpdateDiagnostics[counter,] <- BC_GlobalBayesianBeliefUpdateMVN(M = DataBase[[4]][i,] , GlobalSecondOrderStruct = GlobalSecondOrderStruct , Priorprobabilities = DataSetPriorProbabilities)$A
     counter <- counter +1
   }
 }
 if(BCOptions$DensityEstimationGlobal == 'GMM'){
   for(i in 1:dim(DataBase[[3]])[1]){
     if(sum(is.na(t(as.matrix(DataBase[[3]][i,]))))>0){next}
-    GlobalUpdateDiagnostics[counter,] <- BC_GlocalBayesianBeliefUpdateGMM(M = t(as.matrix(DataBase[[3]][i,])) , GlobalDistributionStruct = GlobalDistributionStruct , Priorprobabilities = Priorprobabilities)$A
+    GlobalUpdateDiagnostics[counter,] <- BC_GlocalBayesianBeliefUpdateGMM(M = t(as.matrix(DataBase[[3]][i,])) , GlobalDistributionStruct = GlobalDistributionStruct , Priorprobabilities = DataSetPriorProbabilities)$A
     counter <- counter +1
   }
   for(i in 1:dim(DataBase[[4]])[1]){
     if(sum(is.na(t(as.matrix(DataBase[[4]][i,]))))>0){next}
-    GlobalUpdateDiagnostics[counter,] <- BC_GlocalBayesianBeliefUpdateGMM(M = t(as.matrix(DataBase[[4]][i,])) , GlobalDistributionStruct = GlobalDistributionStruct , Priorprobabilities = Priorprobabilities)$A
+    GlobalUpdateDiagnostics[counter,] <- BC_GlocalBayesianBeliefUpdateGMM(M = t(as.matrix(DataBase[[4]][i,])) , GlobalDistributionStruct = GlobalDistributionStruct , Priorprobabilities = DataSetPriorProbabilities)$A
     counter <- counter +1
   }
+  GlobalUpdateDiagnostics[1:dim(CrossValidatedProbability)[1] , ] <- CrossValidatedProbability
 }  
 
+
 GlobalProbCalibrationStruct <- cbind(GlobalUpdateDiagnostics , 0*GlobalUpdateDiagnostics)
-GlobalProbCalibrationStruct[1:52 , 2] <- 1 
+GlobalProbCalibrationStruct[1:dim(DataBaseMaster$AFPatientsDatabase)[1] , 2] <- 1 
 GlobalProbCalibrationStruct <- DP_RemoveNaRows(GlobalProbCalibrationStruct)
 
+
 #plot(GlobalProbCalibrationStruct[,1] , GlobalProbCalibrationStruct[,2]  , pch = 16 , col = rgb(0,0,1,alpha = 0.1))
+GlobalProbCalibrationStruct <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(GlobalProbCalibrationStruct , BinWidth = 0.1))
 
-BinWidth <- 0.1
-ProbabililtyBins <- seq(0,1,BinWidth)
-ProbabililtyBinStruct <-  matrix(0 , (length(ProbabililtyBins) -1) , 1)
-EstimatorError <- ProbabililtyBinStruct
-  
-for(i in 1:(dim(ProbabililtyBinStruct)[1])){
-  tmplogical <- ((GlobalProbCalibrationStruct[,1] >= ProbabililtyBins[i])*(GlobalProbCalibrationStruct[,1] <= ProbabililtyBins[i+1])) == 1
-  ProbabililtyBinStruct[i,] <- sum(GlobalProbCalibrationStruct[tmplogical , 2])/length((GlobalProbCalibrationStruct[tmplogical , 2]))
-  EstimatorError[i,] <- (ProbabililtyBinStruct[i,])*(1-ProbabililtyBinStruct[i,])/length((GlobalProbCalibrationStruct[tmplogical , 2]))
+x11(20,14)
+print(BC_PlotCreateProbabilityCalibrationPlot(GlobalProbCalibrationStruct))
+
+#bound = 0.5
+#sensitivity <- sum( GlobalUpdateDiagnostics[ c(1:dim(DataBaseMaster$AFPatientsDatabase)[1]), ] > bound )/dim(DataBaseMaster$AFPatientsDatabase)[1]
+#specificity <- sum( GlobalUpdateDiagnostics[ -c(1:dim(DataBaseMaster$AFPatientsDatabase)[1]), ] < bound)/dim(DataBaseMaster$NAFPatientsDatabase)[1]
+#PPV <- ( 0.2*sensitivity )/( (0.2*sensitivity) + ( (1 - specificity )*0.8 ))
+#NPV <- ( 0.8*specificity )/( (0.2*(1-sensitivity)) + ( ( specificity )*0.8 ))
+
+
+GlobalEmulationClass = BE_CreateDefaultEmulationClass()
+GlobalEmulationClass$X = GlobalProbCalibrationStruct$x
+GlobalEmulationClass$CorrelationLength <- function(X , n){
+  return(0.2)
 }
-x11()
-EstimatorError[is.na(EstimatorError)] <- max(EstimatorError[!is.na(EstimatorError)] )
-EstimatorError[EstimatorError < 0.0000000000001] <- max(EstimatorError[!is.na(EstimatorError)] )
-GlobalProbabilityCalibrationPlot <- ggplot(data.frame(x =  ProbabililtyBins[1:dim(ProbabililtyBinStruct)[1]] + BinWidth/2, 
-                                                     y = ProbabililtyBinStruct,  
-                                                     sd = sqrt(EstimatorError) )  , aes(x = x , y = y)) +
-                                    geom_point( color = 'blue') +
-                                    geom_errorbar(aes(ymin = y - 2*sd , ymax = y + 2*sd ) , width = .01 ) +
-                                    geom_line(aes(x = x , y = x))+
-                                    ggtitle('Global Calibrated Expert Probability') +
-                                    xlab('Predicted Probability') +
-                                    ylab('Estimated Probability')
-print(GlobalProbabilityCalibrationPlot)
+GlobalEmulationClass$Y = GlobalProbCalibrationStruct$y - GlobalProbCalibrationStruct$x
+GlobalEmulationClass$w <- function(X){
+  return( diag(GlobalProbCalibrationStruct$sd^2) )
+}
+xstar = as.matrix(seq(0,1,0.001))
 
-#bound = 0.000001
+emulatoroutput <- BE_BayesLinearEmulatorLSEstimates(xstar =xstar , EmulatorSettings = GlobalEmulationClass)
 
-#sensitivity <- sum( GlobalUpdateDiagnostics[c(1:52), ] > bound )/52
-#specificity <- sum(GlobalUpdateDiagnostics[-c(1:52), ] < bound)/250 
-#PPV <- ( 0.2*sensitivity )/( (0.2*sensitivity) + ( (1-specificity)*0.8 ))
-#NPV <- ( 0.8*specificity )/( (0.2*(1-sensitivity)) + ( (specificity)*0.8 ))
+BE_PlotOneDOutput(emulatoroutput , GlobalEmulationClass , xstar)
+
+tmp <- BE_BayesLinearEmulatorLSEstimates(xstar = as.matrix(GlobalUpdateDiagnostics) , EmulatorSettings = GlobalEmulationClass)
+
+E_Pt <- GlobalUpdateDiagnostics + tmp$E_D_fX
+V_Pt <- as.matrix(diag(tmp$V_D_fX))
+
+GlobalProbCalibrationStruct <- cbind( E_Pt , 0*GlobalUpdateDiagnostics)
+GlobalProbCalibrationStruct[1:dim(DataBaseMaster$AFPatientsDatabase)[1] , 2] <- 1 
+GlobalProbCalibrationStruct <- DP_RemoveNaRows(GlobalProbCalibrationStruct)
+
+
+#plot(GlobalProbCalibrationStruct[,1] , GlobalProbCalibrationStruct[,2]  , pch = 16 , col = rgb(0,0,1,alpha = 0.1))
+GlobalProbCalibrationStruct <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(GlobalProbCalibrationStruct , BinWidth = 0.05))
+
+x11(20,14)
+print(BC_PlotCreateProbabilityCalibrationPlot(GlobalProbCalibrationStruct))
+

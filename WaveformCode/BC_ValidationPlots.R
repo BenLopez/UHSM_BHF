@@ -15,14 +15,13 @@ x11(20,14)
 
 {
 x11(30,20)
-SAMPLENUM <- 10000
-variable = c(1:10)
+SAMPLENUM <- 2000
+variable = c(1:11)
 tmp <- rbind(DataBase[[1]][sample(1:size(DataBase[[1]])[1] , SAMPLENUM ),variable] , DataBase[[2]][sample(1:size(DataBase[[2]])[1] , SAMPLENUM ),variable])
-al = 0.01
+al = 0.05
 colvector <- c(rep(rgb(0 ,0 , 1, alpha = al)   , SAMPLENUM) ,  rep(rgb(1 , 0 , 0, alpha = al)   , SAMPLENUM))
 pairs(tmp , pch = 16 , col = colvector , labels = AFD_CreateDistributionSummaryNames()[variable])
 }
-  title(' Local Pairs' , outer=TRUE)
 }
 
 if(BCOptions[[2]] == 'AFClassifier' &  BCOptions$GlobalUpdate == 'Yes' & BCOptions$DataType == 'DistributionSummaries'){

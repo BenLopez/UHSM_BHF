@@ -12,16 +12,16 @@ for(i in 1:dim(DataBaseMaster$AFPatientsDatabase)[1]){
     next
   }
   Z <- DataBaseMaster$AFPatientsDatabase[i , , 1:11]
-  Z[is.na(Z)] <- 100
-  Z[Z[,8] == 1 , 9] <- 0
-  Z[Z[,8] == 1,10] <- 0
+  Z[ is.na(Z) ] <- 100
+  Z[ Z[,8] == 1 , 9 ] <- 0
+  Z[ Z[,8] == 1 , 10 ] <- 0
   AdjustedBeliefs <- BC_EstimateGlobalandLocalParameters(Z)
   
   if(BCOptions$GlobalUpdate == 'Yes'){
     if(BCOptions$DensityEstimationGlobal == 'MVN'){
       GlobalUpdatedBeliefs <- BC_GlobalBayesianBeliefUpdateMVN(M = AdjustedBeliefs$M , GlobalSecondOrderStruct = GlobalSecondOrderStruct , Priorprobabilities = DataSetPriorProbabilities)
     }
-    if( BCOptions$DensityEstimationGlobal == 'GMM' ){
+  if( BCOptions$DensityEstimationGlobal == 'GMM' ){
       if( sum(is.na(t(as.matrix( AdjustedBeliefs$M))))>0 ){
         next}
       GlobalUpdatedBeliefs <- BC_GlocalBayesianBeliefUpdateGMM(M = t(as.matrix( AdjustedBeliefs$M)) , GlobalDistributionStruct = GlobalDistributionStruct , Priorprobabilities = DataSetPriorProbabilities)
@@ -34,8 +34,10 @@ for(i in 1:dim(DataBaseMaster$AFPatientsDatabase)[1]){
   Probabilities <- BC_BayesianBeliefUpdateGMM( W = AdjustedBeliefs$W , LocalDistributionStruct =  LocalDistributionStruct , Probabilities = GlobalUpdatedBeliefs , n = BCParameters$TS_Likelihood_clique )[1:length(t),1]
   Implausability <- BC_CalulateCulmulativeImplausability( Implausability = BC_TestingCalulateRegularisedImplausabilty(AdjustedBeliefs$W , SecondOrderStruct = LocalSecondOrderStruct , ImSecondOrderStruct) , n = BCParameters$TS_Likelihood_clique )[1:length(t),]
   Probabilities[Implausability[,1]>3] <- 0.00000000000001
+  
   LocalUpdateDiagnostics[[counter]][1:length(t) , 1] <-  Probabilities
   LocalUpdateDiagnostics[[counter]][1:length(t) , 2] <-  BC_CreateAFAnnotationFomMetaData(t , MetaData)
+  
   Implausability[is.na(Implausability)] <- 100
   if(sum(((Implausability[,1]>3)*(Implausability[,2]>3)) == 1) >0 ){
   LocalUpdateDiagnostics[[counter]] <- LocalUpdateDiagnostics[[counter]][-which(((Implausability[,1]>3)*(Implausability[,2]>3)) == 1) , ]
