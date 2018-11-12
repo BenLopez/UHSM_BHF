@@ -8,8 +8,8 @@ v2 <-  1.1*v1
 #mu2 <- sum(LocalDistributionStruct[[3]]$parameters$mean[2 , ]*LocalDistributionStruct[[3]]$parameters$pro)  
 #v2 <-  sum((LocalDistributionStruct[[3]]$parameters$mean[2 , ]^2 + LocalDistributionStruct[[3]]$parameters$variance$sigma[2 , 2 , ])*LocalDistributionStruct[[3]]$parameters$pro) - mu2^2
 
-X <- matrix(c(1:1000) ,1000 , 1)
-l <- 100
+X <- matrix(c(1:100) ,100 , 1)
+l <- 10
 p <- 1
 KXX <- CF_ExponentialFamily(X , X , l , p)
 
@@ -231,7 +231,7 @@ for( jj in 1:numberofsamples){
 
 
 {par(mfrow = c(1,1))
-indiex <- 49
+indiex <- 90
 plot((AdjustedProbabilities[  , 1,indiex] ) , type ='l' , col = rgb(0,0,1 , alpha = 0.5) , ylim = c(0,1))
 lines((AdjustedProbabilities[  , 1,indiex] ) - 3*sqrt(AdjustedProbabilities[  , 2 , indiex] ) , type ='l' , col = rgb(0,1,1 , alpha = 0.5))
 lines((AdjustedProbabilities[  , 1,indiex] ) + 3*sqrt(AdjustedProbabilities[  , 2 , indiex] ) , type ='l' , col = rgb(0,1,1 , alpha = 0.5))
@@ -246,6 +246,7 @@ CorrelationM <- matrix(1 , n - (numberinupdate+2)  , numberinupdate+2)
 VarianceX <- matrix(0 , n - (numberinupdate+2)  , 1)
 VarianceY <- array(0 , c( n - (numberinupdate+2)  , numberinupdate+2 , numberinupdate+2))
 CovarianceXY <- matrix(0 , n - (numberinupdate+2) , numberinupdate+2)
+
 
 for(i in (numberinupdate+2):n){
   ExpectationX[i- (numberinupdate+2)] <- SOS[[i]]$E_X
@@ -279,5 +280,29 @@ title('SOS Correlation')
 plot(AdjustedProbabilities[  , 2,1] , col = rgb(0,0,1 , alpha = 0.5)  , xlab = 'time' )
 title('Adjusted Variance')
 }
+
+
+
+
+
+X <- matrix(c(1:500) ,500 , 1)
+l <- 100
+p <- 1
+KXX <- CF_ExponentialFamily(X , X , l , p)
+
+mu1 <-  colMeans( DP_RemoveNaRows(DataBase[[3]]) ) 
+mu2 <-  colMeans( DP_RemoveNaRows(DataBase[[2]]) ) 
+Sigma1 <-  cov( DP_RemoveNaRows(DataBase[[3]]) ) 
+Sigma2 <-  cov( DP_RemoveNaRows(DataBase[[2]]) ) 
+
+#SampleGP <- t(apply(BE_SampleSeparableMVGP(KXX , Sigma1)   , 1 , function(X){X + mu1}))
+
+SampleGP <- DataBaseMaster$AFPatientsDatabase[2 , 10001:10500 , 1:11]
+
+test1 <- CD_CalculateActualUpdatedProbabilitiesMOGP(SampleGP , alpha , KXX , mu1 , mu2 , Sigma1 , Sigma2 )
+test2 <- CD_CalculateIndividualDensitiesMOPG( SampleGP , mu1 , mu2 , Sigma1 , Sigma2 )
+
+plot(alpha*test2[,1] / (alpha*test2[,1] + (1-alpha)*test2[,2]) , type = 'l' , ylim = c(0,1))
+lines(test1 , type = 'l', col = 'red')
 
 

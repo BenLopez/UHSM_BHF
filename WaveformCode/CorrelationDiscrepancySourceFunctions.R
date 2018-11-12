@@ -35,6 +35,14 @@ CD_CalculateIndividualDensities <- function(SampleGP ,mu1 , mu2 , v1,v2 ){
   return(f_i)
 }
 
+CD_CalculateIndividualDensitiesMOPG <- function( SampleGP , mu1 , mu2 , Sigma1 , Sigma2 ){
+  SampleGP <- as.matrix(SampleGP)
+  f_i = matrix( 0, dim(SampleGP)[1] , 2 )
+  f_i[ , 1] <- dmvnorm( SampleGP , mean = mu1  ,  sigma =  Sigma1 )
+  f_i[ , 2] <- dmvnorm( SampleGP , mean = mu2  ,  sigma =  Sigma2 )
+  return( f_i )
+}
+
 CD_CalulateIndenpendentEstimatedProbabilities <- function(SampleGP , alpha ,mu1 , mu2 , v1,v2 ){
   
   f_i = CD_CalculateIndividualDensities(SampleGP , mu1 , mu2 , v1 , v2 )
@@ -86,4 +94,46 @@ CD_CalculateAdjustedUpdate <- function(AdjustedBeliefsStruct , SampleGP , mu1 , 
   
   output <- setNames( list( mean(SampleProbabilities) , var(SampleProbabilities))  , c('E_B' , 'V_B') )
   return(output)  
+}
+
+CD_CalculateActualUpdatedProbabilitiesMOGP <- function(SampleGP , alpha , KXX , mu1 , mu2 , Sigma1 , Sigma2 ){
+  ActualProbabilities <- matrix(0, dim(SampleGP)[1] + 1 , 1)
+  ActualProbabilities[1 , ] <- alpha
+  
+  for(jj in 2:(dim(ActualProbabilities)[1])){
+    ii = jj - 1
+    if(ii == 1){
+      f_1 = dmvnorm(x = SampleGP[ii,] , mean = mu1 , sigma = Sigma1)
+      f_2 = dmvnorm(x = SampleGP[ii,] , mean = mu2 , sigma = Sigma2)
+    }
+    if(ii == 2){
+      # Maniplulation to deal with R's horror handeling of matrices.
+      invD <- solve(KXX[1:(ii-1) , 1:(ii-1) ] + 0.00000001*diag(dim(as.matrix(KXX[1:(ii-1) ,1:(ii-1) ]))[1]) )
+      E_D1 <- t(mu1) + (rev(KXX[2:(ii) , 1]) )%*%invD%*%(SampleGP[1:(ii-1),] - t(mu1) )
+      V_D1 <- kronecker(Sigma1 , (1  - ( rev(KXX[2:(ii) , 1]) )%*%invD%*%(rev(KXX[2:(ii) , 1]) )))  
+      
+      E_D2 <- t(mu2) + (rev(KXX[2:(ii) , 1]) )%*%invD%*%(SampleGP[1:(ii-1),] - t(mu2) )
+      V_D2 <- kronecker(Sigma2,(1  - (rev(KXX[2:(ii) , 1]) )%*%invD%*%(rev(KXX[2:(ii) , 1]) )))
+      
+      f_1 = dmvnorm( SampleGP[ii,] , mean = t(E_D1) , sigma  = V_D1 )
+      f_2 = dmvnorm( SampleGP[ii,] , mean = t(E_D2) , sigma =  V_D2 ) 
+    }
+    
+    if(ii > 2){
+      # Recursive conditioning
+      # Gaussian process update.
+      invD <- solve(KXX[1:(ii-1) , 1:(ii-1) ] + 0.00000001*diag(dim(as.matrix(KXX[1:(ii-1) ,1:(ii-1) ]))[1]) )
+      E_D1 <- t(mu1) + (rev(KXX[2:(ii) , 1]) )%*%invD%*%(SampleGP[1:(ii-1),] - t(matrix(mu1 , dim(SampleGP[1:(ii-1),])[2] ,dim(SampleGP[1:(ii-1),])[1] )) )
+      V_D1 <- kronecker(Sigma1 , (1  - ( rev(KXX[2:(ii) , 1]) )%*%invD%*%(rev(KXX[2:(ii) , 1]) )))  
+      
+      E_D2 <- t(mu2) + (rev(KXX[2:(ii) , 1]) )%*%invD%*%(SampleGP[1:(ii-1),] - t(matrix(mu2 , dim(SampleGP[1:(ii-1),])[2] ,dim(SampleGP[1:(ii-1),])[1] )) )
+      V_D2 <- kronecker(Sigma2,(1  - (rev(KXX[2:(ii) , 1]) )%*%invD%*%(rev(KXX[2:(ii) , 1]) )))
+      
+      f_1 = dmvnorm( SampleGP[ii,] , mean = t(E_D1) , sigma  = V_D1 )
+      f_2 = dmvnorm( SampleGP[ii,] , mean = t(E_D2) , sigma =  V_D2 )
+    }
+    ActualProbabilities[jj , 1] <-  (ActualProbabilities[jj-1 , 1]*f_1) / ((1 - ActualProbabilities[jj-1 , 1])*f_2 + ActualProbabilities[jj-1 , 1]*f_1)
+    DP_WaitBar(ii/(dim(ActualProbabilities)[1]))
+  }
+  return(ActualProbabilities)
 }

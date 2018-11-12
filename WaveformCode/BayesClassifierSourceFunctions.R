@@ -588,7 +588,24 @@ BC_ReifiedBeliefUpdateWithUncertainDensities <- function( f_i , E_d , V_d , Loca
   return(output)
   
 }
-
+BC_CalculateMeanFromGMMDistributionStruct <- function( GMMStruct ){
+  
+  mu <- GMMStruct$parameters$mean[ , ]%*%GMMStruct$parameters$pro
+  return(mu)
+  
+}
+BC_CalulateVarianceFromGMMDistributionStruct <- function( GMMStruct ){
+  
+  mu <- BC_CalculateMeanFromGMMDistributionStruct( GMMStruct )
+  
+  output <- matrix(0 , dim(GMMStruct$parameters$mean)[1]  , dim(GMMStruct$parameters$mean)[1])
+  for(i in 1:length(GMMStruct$parameters$pro)){
+    output <-  output + (GMMStruct$parameters$mean[ , i]%*%t(GMMStruct$parameters$mean[ , i]) + GMMStruct$parameters$variance$sigma[ ,  , i])*GMMStruct$parameters$pro[i] 
+  }
+  
+  output <- output - mu%*%t(mu)
+  return(output)
+}
 ###### Plotting Functions ######
 
 BC_PlotCreateggImplausabilities <- function(TimeVector , RegIm){
