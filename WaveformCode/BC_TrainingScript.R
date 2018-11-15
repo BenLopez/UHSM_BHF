@@ -80,11 +80,12 @@ if(BCOptions[[4]] == 'GMM'){
   )){
     print(paste0('Pre computed database master found. If you do not want to use this delete',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN'  , BCOptions[[4]],  'DistributionSummaries'  ,'.RData') ,' from ' , precomputedfolderpath , '.'))
     load(paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN' , BCOptions[[4]] ,   'DistributionSummaries'  ,'.RData')))
+    print('Data loaded.')
     LocalSecondOrderStruct <- BC_EstimateLocalDensitiesMVN(DataBase)
   }else
     LocalDistributionStruct <-  BC_EstimateLocalDensitiesGMM( DataBase , numberofcomponents = BCParameters$NumberComponentsforGMM )
     LocalSecondOrderStruct <- BC_EstimateLocalDensitiesMVN( DataBase )
-  save( LocalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN'  , BCOptions[[4]],  'DistributionSummaries'  ,'.RData')) )
+    save( LocalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN'  , BCOptions[[4]],  'DistributionSummaries'  ,'.RData')) )
 }
 
 ImSecondOrderStruct <- BC_CalulateImplausabiltySecondOrderStatistics(DataBase = DataBase , SecondOrderStruct = LocalSecondOrderStruct )
@@ -131,6 +132,6 @@ x11()
     hist(0.2 + 0*GlobalUpdateDiagnostics, col=rgb(0,1,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(0 , tmp$breaks, 1))
   }
 # Cross validation.
-source('BC_CrossValidateGMMGlobalUpdateModel.R')
+#source('BC_CrossValidateGMMGlobalUpdateModel.R')
   
 }

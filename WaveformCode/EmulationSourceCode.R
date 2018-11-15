@@ -466,7 +466,6 @@ BE_SampleGP <- function(KXX){
   L = chol(KXX + 0.0000000000001 * diag(dim(KXX)[1]) )
   return(t(L) %*% rnorm(dim(KXX)[1]))
 }
-
 BE_SampleSeparableMVGP <- function( KXX , Sigma , L = NA ){
   if( is.na(L) ){
     L1 <-  chol( KXX + 0.0000000001*diag(dim(KXX)[1]) ) 
@@ -476,8 +475,6 @@ BE_SampleSeparableMVGP <- function( KXX , Sigma , L = NA ){
   output <- t(matrix(t(L) %*% rnorm( dim(L)[1] ) , dim(Sigma)[1] , dim(KXX)[1] ))
   return( output )
 }
-  
-  
 BE_SampleLHSinab <- function(a , b, numbersamples = 1000 ){
   # Function to sample a latin hypercube on ranges definned by (a) and (b)
   output <- randomLHS(numbersamples , length(a))
@@ -485,4 +482,8 @@ BE_SampleLHSinab <- function(a , b, numbersamples = 1000 ){
     output[ , i] <- DP_RescaleZeroOneToab(X = output[ , i] , a = a[i] , b = b[i])  
   }
   return(output)
+}
+BE_SampleTP <- function(KXX , df = 5,mean = 0 ){
+output <-t(rmvt(n = 1 , sigma = ((df - 2)/(df))*(KXX + 0.0000000000001 * diag(dim(KXX)[1])) , df = df , delta = as.matrix(rep(mean , dim(KXX)[1]))))
+return(output)
 }

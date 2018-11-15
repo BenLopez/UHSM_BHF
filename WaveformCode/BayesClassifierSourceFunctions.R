@@ -911,3 +911,4 @@ BC_SampleMGMM <- function( GMMmodelbyPatient , numberofsamples, alpha ){
   return(output) 
   
 }
+
