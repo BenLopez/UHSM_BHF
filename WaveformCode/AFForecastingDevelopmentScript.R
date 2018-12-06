@@ -28,21 +28,23 @@ SecondOrderStructNAF <- AFF_ExtractMeanandCovarianceTimeSeries(DataBaseMaster$NA
 SecondOrderStructNAF2 <- AFF_ExtractMeanandCovarianceTimeSeries(DataBaseMaster$NAFPatientsDatabase[sample(1:dim(DataBaseMaster$NAFPatientsDatabase)[1] ,  100 ) , , ])
 
 
-i <- 3
+i <- 9
 plot(DP_NormaliseData(SecondOrderStructAF$mu[SecondOrderStructAF$mu[,i] !=0,i] -  SecondOrderStructNAF$mu[SecondOrderStructAF$mu[,i]!=0,i]) , type ='l' , col = rgb(0,0,1,alpha = 0.5) , ylab = 'Variable' , xlab='time')
 abline(0,0)
 
 
 DiscrepancyMatrix <- matrix( 0 , dim(SecondOrderStructAF$mu )[1] , 1)
 DiscrepancyMatrix2 <- matrix( 0 , dim(SecondOrderStructAF$mu )[1] , 1)
+nAF <- apply(DataBaseMaster$AFPatientsDatabase[  , , 1]!= 0 , 2 , sum)
+nNAF <- apply(DataBaseMaster$NAFPatientsDatabase[  , , 1]!= 0 , 2 , sum)
 
 for(i in 1: dim(SecondOrderStructAF$mu )[1]){
-  DiscrepancyMatrix[i,] = mahalanobis(SecondOrderStructAF$mu[i,] - SecondOrderStructNAF$mu[i,] , 0 , SecondOrderStructAF$Sigma[i,,] + SecondOrderStructNAF$Sigma[i,,]) 
+  DiscrepancyMatrix[i,] = mahalanobis(SecondOrderStructAF$mu[i,] - SecondOrderStructNAF$mu[i,] , 0 , ((nAF[i] + 1)/(nAF[i]))*SecondOrderStructAF$Sigma[i,,] + ((nNAF[i] + 1)/(nNAF[i]))*SecondOrderStructNAF$Sigma[i,,]) 
   DiscrepancyMatrix2[i,] = mahalanobis(SecondOrderStructNAF2$mu[i,] - SecondOrderStructNAF$mu[i,] , 0 , SecondOrderStructNAF2$Sigma[i,,] + SecondOrderStructNAF$Sigma[i,,]) 
   }
 
 x11(20,14)
-plot(rollmean(DiscrepancyMatrix[SecondOrderStructAF$mu[,1] !=0,] - DiscrepancyMatrix2[SecondOrderStructAF$mu[,1] !=0,] , k = 500) , type = 'l' , col = rgb(0,0,1 , alpha = 0.5) , xlab = 'Time Realtive to FNAF' , ylab = 'Discrepancy Between AF and NAF populations' , ylim = c(0,100))
+plot(DiscrepancyMatrix[SecondOrderStructAF$mu[,1] !=0,]  , type = 'l' , col = rgb(0,0,1 , alpha = 0.5) , xlab = 'Time Realtive to FNAF' , ylab = 'Discrepancy Between AF and NAF populations' , ylim = c(0,100) , xlim = c(0,30000))
 title('Time Series of Discrepancy between Population who go into AF and do not go into AF')
 abline(0,0)
 

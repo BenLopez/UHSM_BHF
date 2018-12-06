@@ -52,6 +52,22 @@ CD_CalulateIndenpendentEstimatedProbabilities <- function(SampleGP , alpha ,mu1 
   return(JointProbabilties)
   
 }
+CD_CalulateIndenpendentEstimatedProbabilitiesMO <- function(SampleGP , alpha , mu1 , mu2 , v1 , v2 , weight = 0 ){
+  
+  f_i = CD_CalculateIndividualDensitiesMOPG(SampleGP , mu1 , mu2 , v1 , v2 )
+  
+  JointProbabilties <- matrix(0, dim(SampleGP)[1] + 1 , 1)
+  JointProbabilties[1, 1] = alpha 
+  
+  for(ii in 2:dim(JointProbabilties)[1]){
+    JointProbabilties[ii , 1] <-  (JointProbabilties[ii-1 , 1]*f_i[ii-1,1]) / ((1 - JointProbabilties[ii-1 , 1])*f_i[ii-1,2] + JointProbabilties[ii-1 , 1]*f_i[ii-1,1])
+    if(weight != 0){
+    JointProbabilties[ii , 1] <-  weight*JointProbabilties[ii-1 , 1] + (1-weight)*JointProbabilties[ii , 1] 
+    }
+    }
+  return(JointProbabilties)
+  
+}
 CD_CreateSecondorderSpecifiction <- function(X , Y){
   X <- as.matrix(X)
   Y <- as.matrix(Y)
@@ -88,10 +104,17 @@ CD_CalculateAdjustedUpdate <- function(AdjustedBeliefsStruct , SampleGP , mu1 , 
   output <- setNames( list( mean(SampleProbabilities) , var(SampleProbabilities))  , c('E_B' , 'V_B') )
   return(output)  
 }
-CD_CalculateActualUpdatedProbabilitiesMOGP <- function(SampleGP , alpha , KXX , invD = 0 , mu1 , mu2 , Sigma1 , Sigma2 ){
-  ActualProbabilities <- matrix(0, dim(SampleGP)[1] + 1 , 1)
-  ActualProbabilities[1 , ] <- alpha
+CD_CalculateActualUpdatedProbabilitiesMOGP <- function(SampleGP , alpha = 0.1 , KXX , invD = 0 , mu1 , mu2 , Sigma1 , Sigma2 ){
+  Probabilities <- matrix(0, dim(SampleGP)[1] + 1 , 1)
+  Probabilities[1 , ] <- alpha
   
+  E_D1 <- matrix(0, dim(SampleGP)[1]  , length(mu1))
+  V_D1 <- array(0, c(dim(SampleGP)[1]  , length(mu1),length(mu1) ))
+  E_D2 <- matrix(0, dim(SampleGP)[1]  , length(mu1))
+  V_D2 <- array(0, c(dim(SampleGP)[1]  , length(mu1),length(mu1) ) )
+  mahal  <- matrix(0, dim(SampleGP)[1]  , 2)
+    f_1  <- matrix(0, dim(SampleGP)[1]  , 1)
+  f_2  <- matrix(0, dim(SampleGP)[1]  , 1)
   if(is.list(invD) == FALSE){
     invD = CD_CalculateInverseVarDStack(KXX)
   }
@@ -99,39 +122,46 @@ CD_CalculateActualUpdatedProbabilitiesMOGP <- function(SampleGP , alpha , KXX , 
   for(jj in 2:(dim(ActualProbabilities)[1])){
     ii = jj - 1
     if(ii == 1){
-      f_1 = dmvnorm(x = SampleGP[ii,] , mean = mu1 , sigma = Sigma1)
-      f_2 = dmvnorm(x = SampleGP[ii,] , mean = mu2 , sigma = Sigma2)
+      f_1[ii,] = dmvnorm(x = SampleGP[ii,] , mean = mu1 , sigma = Sigma1)
+      f_2[ii,] = dmvnorm(x = SampleGP[ii,] , mean = mu2 , sigma = Sigma2)
     }
     if(ii == 2){
       # Maniplulation to deal with R's horror handeling of matrices.
       tmp <- invD[[ii]]
-      E_D1 <- t(mu1) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(mu1) )
-      V_D1 <- kronecker(Sigma1 , (1  - ( rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))  
+      E_D1[ii,] <- t(mu1) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(mu1) )
+      V_D1[ii,,] <- kronecker(Sigma1 , (1  - ( rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))  
       
-      E_D2 <- t(mu2) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(mu2) )
-      V_D2 <- kronecker(Sigma2,(1  - (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))
+      E_D2[ii,] <- t(mu2) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(mu2) )
+      V_D2[ii,,] <- kronecker(Sigma2,(1  - (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))
       
-      f_1 = dmvnorm( SampleGP[ii,] , mean = t(E_D1) , sigma  = V_D1 )
-      f_2 = dmvnorm( SampleGP[ii,] , mean = t(E_D2) , sigma =  V_D2 ) 
-    }
+      f_1[ii,] = dmvnorm( SampleGP[ii,] , mean = t(E_D1[ii,]) , sigma  = V_D1[ii,,] )
+      f_2[ii,] = dmvnorm( SampleGP[ii,] , mean = t(E_D2[ii,]) , sigma =  V_D2[ii,,] ) 
+      mahal[ii,1] = t(E_D1[ii,] - SampleGP[ii,])%*%solve(V_D1[ii,,])%*%(E_D1[ii,] - SampleGP[ii,])
+      mahal[ii,2] = t(E_D2[ii,] - SampleGP[ii,])%*%solve(V_D2[ii,,])%*%(E_D2[ii,] - SampleGP[ii,])
+      
+            }
     
     if(ii > 2){
       # Recursive conditioning
       # Gaussian process update.
       tmp <- invD[[ii]]
-      E_D1 <- t(mu1) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(matrix(mu1 , dim(SampleGP[1:(ii-1),])[2] ,dim(SampleGP[1:(ii-1),])[1] )) )
-      V_D1 <- kronecker(Sigma1 , (1  - ( rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))  
+      E_D1[ii,] <- t(mu1) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(matrix(mu1 , dim(SampleGP[1:(ii-1),])[2] ,dim(SampleGP[1:(ii-1),])[1] )) )
+      V_D1[ii,,] <- kronecker(Sigma1 , (1  - ( rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))  
       
-      E_D2 <- t(mu2) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(matrix(mu2 , dim(SampleGP[1:(ii-1),])[2] ,dim(SampleGP[1:(ii-1),])[1] )) )
-      V_D2 <- kronecker(Sigma2 , (1  - (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))
+      E_D2[ii,] <- t(mu2) + (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(SampleGP[1:(ii-1),] - t(matrix(mu2 , dim(SampleGP[1:(ii-1),])[2] ,dim(SampleGP[1:(ii-1),])[1] )) )
+      V_D2[ii,,] <- kronecker(Sigma2 , (1  - (rev(KXX[2:(ii) , 1]) )%*%tmp%*%(rev(KXX[2:(ii) , 1]) )))
       
-      f_1 = dmvnorm( SampleGP[ii,] , mean = t(E_D1) , sigma  = V_D1 )
-      f_2 = dmvnorm( SampleGP[ii,] , mean = t(E_D2) , sigma =  V_D2 )
-    }
-    ActualProbabilities[jj , 1] <-  (ActualProbabilities[jj-1 , 1]*f_1) / ((1 - ActualProbabilities[jj-1 , 1])*f_2 + ActualProbabilities[jj-1 , 1]*f_1)
+      f_1[ii,] = dmvnorm( SampleGP[ii,] , mean = t(E_D1[ii,]) , sigma  = V_D1[ii,,] )
+      f_2[ii,] = dmvnorm( SampleGP[ii,] , mean = t(E_D2[ii,]) , sigma =  V_D2[ii,,] )
+      
+      mahal[ii,1] = t(E_D1[ii,] - SampleGP[ii,])%*%solve(V_D1[ii,,])%*%(E_D1[ii,] - SampleGP[ii,])
+      mahal[ii,2] = t(E_D2[ii,] - SampleGP[ii,])%*%solve(V_D2[ii,,])%*%(E_D2[ii,] - SampleGP[ii,])
+      
+      }
+    Probabilities[jj , 1] <-  (Probabilities[jj-1 , 1]*f_1[ii,]) / ((1 - Probabilities[jj-1 , 1])*f_2[ii,] + Probabilities[jj-1 , 1]*f_1[ii,])
     #DP_WaitBar(ii/(dim(ActualProbabilities)[1]))
   }
-  return(ActualProbabilities)
+  return(Probabilities)
 }
 CD_CreateDefaultSpecification1D <- function(l =10 , p=2 , mu=0.02 , v=0.4 , n=500){
   
@@ -510,7 +540,8 @@ CD_CalculateUpdatedProbabilitiesFromSpecificationsMO <- function(SetofSamples , 
   Probabilities <- matrix(0 , dim(SetofSamples)[1]  + 1 ,  dim(SetofSamples)[3])
   for(kk in 1:dim(SetofSamples)[3] ){
     Probabilities[ , kk] <- CD_CalculateActualUpdatedProbabilitiesMOGP( SampleGP = as.matrix(SetofSamples[,,kk]) , alpha = alpha ,KXX =  KXX , invD = invD , mu1 =  Specification1$mu , mu2 = Specification2$mu  , Sigma1 = Specification1$v, Sigma2 = Specification2$v )
-  }
+  DP_WaitBar(kk/dim(SetofSamples)[3])
+    }
   
   return(Probabilities)
   
@@ -548,7 +579,7 @@ CD_CalculateSecondOrderSpecificationMO <- function( Specification1 , Specificati
     # Calculate indepedent approximation
     for( jj in 1:numberofsamples){
       
-      AdjustedBeliefsStruct <-  setNames( list( AdjustedProbabilities[kk ,1 ,  jj] , 0 ) , c('E_y_X' , 'V_y_X') )
+      AdjustedBeliefsStruct <-  setNames( list( AdjustedProbabilities[kk ,1 ,  jj] , AdjustedProbabilities[kk ,2 ,  jj] ) , c('E_y_X' , 'V_y_X') )
       IndendepntApproxStruct <- CD_CalculateAdjustedUpdateMO(AdjustedBeliefsStruct , SampleGP = SetofSamples[ kk , , jj] , Specification1 , Specification2 )
       
       if(jj ==1){

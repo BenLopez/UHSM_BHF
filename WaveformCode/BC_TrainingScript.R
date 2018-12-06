@@ -3,7 +3,8 @@ if( BCOptions[[1]] == 'DistributionSummaries' ){
   if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath, paste0(BCOptions[[1]] , 'DataBaseMaster'  ,'.RData')) ){
     print(paste0('Pre computed database master found. If you do not want to use this delete ', paste0(BCOptions[[1]] , 'DataBaseMaster'  ,'.RData'), 'from'  , precomputedfolderpath , '.'))
     load(file = paste0(precomputedfolderpath , '\\' , paste0(BCOptions[[1]] , 'DataBaseMaster'  ,'.RData')))  
-  }else{ 
+    print('Data loaded.')
+    }else{ 
     print('Pre computed database master not found. Processing.')
     DataBaseMaster <- BC_LoadInAllDistributionSummaries(path , listAllPatients , PatIndex2017)
     print('Saving file.')
@@ -16,7 +17,8 @@ if( BCOptions[[1]] == 'CDFs' ){
   if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath, paste0(BCOptions[[1]] , 'DataBaseMaster'  ,'.RData')) ){
     print(paste0('Pre computed database master found. If you do not want to use this delete ', paste0(BCOptions[[1]] , 'DataBaseMaster'  ,'.RData'), 'from'  , precomputedfolderpath , '.'))
     load(file = paste0(precomputedfolderpath , '\\' , paste0(BCOptions[[1]] , 'DataBaseMaster'  ,'.RData')))  
-  }else{ 
+    print('Data loaded.')
+    }else{ 
     print('Pre computed database master not found. Processing.')
     DataBaseMaster <- BC_LoadInAllCDFS(path , listAllPatients , PatIndex2017)
     print('Saving file.')
@@ -31,7 +33,8 @@ if(BCOptions[[2]] == 'AFClassifier' ){
   )){
     print(paste0('Pre computed database master found. If you do not want to use this delete', paste0(BCOptions[[1]] ,BCOptions[[2]] ,  'DataBase'  ,'.RData'), ' from ' , precomputedfolderpath , '.'))
     load(paste0(precomputedfolderpath, '\\' , paste0(BCOptions[[1]] ,BCOptions[[2]] ,  'DataBase'  ,'.RData')))
-  }else{
+    print('Data loaded.')
+    }else{
     print('Pre computed database master not found. Processing.')
     DataBase <- BC_CreateAFandNOAFDataStructure(DataBaseMaster =  DataBaseMaster,PatIndex2017 = PatIndex2017)
 #for(i in 1:length(DataBase)){DataBase[[i]] <- DataBase[[i]][ , 2:31] }
@@ -46,7 +49,8 @@ if(BCOptions[[2]] == 'AFPreAFClassifier' ){
   )){
     print(paste0('Pre computed database master found. If you do not want to use this delete', paste0(BCOptions[[1]] ,BCOptions[[2]] ,  'DataBase'  ,'.RData'), ' from ' , precomputedfolderpath , '.'))
     load(paste0(precomputedfolderpath, '\\' , paste0(BCOptions[[1]] ,BCOptions[[2]] ,  'DataBase'  ,'.RData')))
-  }else{
+    print('Data loaded.')
+    }else{
     print('Pre computed database master not found. Processing.')
     DataBase <- BC_CreateAFPreAFandNOAFDataStructure( DataBaseMaster =  DataBaseMaster,PatIndex2017 = PatIndex2017)
     save( DataBase , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,  'DataBase'  ,'.RData')) )
@@ -64,7 +68,8 @@ if(BCOptions[[3]] == 'GMM'){
   )){
     print(paste0('Pre computed database master found. If you do not want to use this delete',paste0(BCOptions[[1]] ,BCOptions[[2]] ,BCOptions[[3]]  ,   'DistributionSummaries'  ,'.RData') ,' from ' , precomputedfolderpath , '.'))
     load(paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,BCOptions[[3]]  ,   'DistributionSummaries'  ,'.RData')))
-  }
+    print('Data loaded.')
+    }
   GlobalDistributionStruct  <-  BC_EstimateGlobalDensitiesGMM( DataBase = DataBase , numberofcomponents = BCParameters$GlobalNumberComponentsforGMM)
   GlobalSecondOrderStruct   <-  BC_EstimateGlobalDensitiesMVN( DataBase )
   save( GlobalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,BCOptions[[3]]  ,   'DistributionSummaries'  ,'.RData')) )
@@ -82,10 +87,11 @@ if(BCOptions[[4]] == 'GMM'){
     load(paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN' , BCOptions[[4]] ,   'DistributionSummaries'  ,'.RData')))
     print('Data loaded.')
     LocalSecondOrderStruct <- BC_EstimateLocalDensitiesMVN(DataBase)
-  }else
+  }else{
     LocalDistributionStruct <-  BC_EstimateLocalDensitiesGMM( DataBase , numberofcomponents = BCParameters$NumberComponentsforGMM )
-    LocalSecondOrderStruct <- BC_EstimateLocalDensitiesMVN( DataBase )
+    LocalSecondOrderStruct  <-  BC_EstimateLocalDensitiesMVN( DataBase )
     save( LocalDistributionStruct , file = paste0(precomputedfolderpath, '\\',paste0(BCOptions[[1]] ,BCOptions[[2]] ,'MVN'  , BCOptions[[4]],  'DistributionSummaries'  ,'.RData')) )
+}
 }
 
 ImSecondOrderStruct <- BC_CalulateImplausabiltySecondOrderStatistics(DataBase = DataBase , SecondOrderStruct = LocalSecondOrderStruct )
@@ -127,11 +133,11 @@ x11()
                 main= paste0('Global Update Diagnostics' , ' Histogram') , 
                 xlab = 'Updated Probabilities' , 
                 freq = FALSE , 
-                ylim = c(0,100) , breaks = 50 )
+                ylim = c(0,30) , breaks = 25 )
     hist(GlobalUpdateDiagnostics[1:dim(DataBaseMaster$AFPatientsDatabase)[1], ], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(0 , tmp$breaks, 1))
     hist(0.2 + 0*GlobalUpdateDiagnostics, col=rgb(0,1,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(0 , tmp$breaks, 1))
   }
 # Cross validation.
-#source('BC_CrossValidateGMMGlobalUpdateModel.R')
+# source('BC_CrossValidateGMMGlobalUpdateModel.R')
   
 }

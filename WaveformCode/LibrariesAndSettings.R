@@ -1,33 +1,67 @@
 # A script to load appropriate libraries and settings.
 # Load in libraries
 
-library( ggplot2 )
-library( plotly )
-library( peakPick )
-library( signal )
-library( smoother )
-library( pdist )
-library( abind )
-library( wavelets )
-library( FNN )
-library( zoo )
-library( deSolve )
-library( fields )
-library( grid )
-library( gridExtra )
-library( R.matlab )
+check.packages <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg)) 
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+# Usage example
+packages<-c("ggplot2",
+            "plotly", 
+            "peakPick", 
+            "signal", 
+            "smoother",
+            "pdist",
+            "abind",
+            "wavelets",
+            "FNN",
+            "zoo",
+            "deSolve",
+            "fields",
+            "grid",
+            "gridExtra",
+            "R.matlab",
+            "lhs",
+            "lattice",
+            "moments",
+            "mvtnorm",
+            "mclust",
+            "MASS",
+            "latex2exp",
+            "ggpubr",
+            "ks",
+            "plot3D")
+check.packages(packages)
+
+library( ggplot2 )#
+library( plotly )#
+library( peakPick )#
+library( signal )#
+library( smoother )#
+library( pdist )#
+library( abind )#
+library( wavelets )#
+library( FNN )#
+library( zoo )#
+library( deSolve )#
+library( fields )#
+library( grid )#
+library( gridExtra )#
+library( R.matlab )#
 #library( sn )
-library( lhs )
-library( lattice )
-library( moments )
-library( mvtnorm )
-library( mclust )
-library( MASS )
-library( latex2exp )
-library( ggpubr )
-library( ks )
-library( plot3D )
-library( MASS)
+library( lhs )#
+library( lattice )#
+library( moments )#
+library( mvtnorm )#
+library( mclust )#
+library( MASS )#
+library( latex2exp )#
+library( ggpubr )#
+library( ks )#
+library( plot3D )#
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
@@ -51,5 +85,6 @@ source( 'DenistyFunctionsSourceFunctions.R' )
 source( 'BayesClassifierSourceFunctions.R' )
 source( 'KernelDensityEstimationSourceFunctions.R' )
 source( 'CorrelationDiscrepancySourceFunctions.R' )
+source('BayesLinearUpdateSourceFunctions.R' )
 print('Libraries, data options and source functions loaded.')
 

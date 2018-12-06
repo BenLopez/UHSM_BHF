@@ -603,4 +603,19 @@ is.Date <- function( X ){
 isodd <- function( A ){
   return( (A %% 2) == 0)
 }
+DP_cummean <- function(X){
+  return( cumsum(X)/cumsum(rep(1  , length(X))) )
+}
+DP_cumvar <- function(X){
+  cummu = DP_cummean(X)
+  return( cumsum( (X - DP_cummean(X))^2)/(cumsum(rep(1  , length(X)) )- 1) )
+}
 
+DP_AddNugget <- function(X , nugget = 0.000000000001){
+  
+  if(is.matrix(nugget) == FALSE){
+    return(X + nugget*diag(dim(X)[1])  )}
+  if(is.matrix(nugget) == TRUE){
+    return(X + nugget  )}
+  
+}
