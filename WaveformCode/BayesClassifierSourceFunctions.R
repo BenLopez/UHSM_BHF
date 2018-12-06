@@ -606,6 +606,21 @@ BC_CalulateVarianceFromGMMDistributionStruct <- function( GMMStruct ){
   output <- output - mu%*%t(mu)
   return(output)
 }
+BC_CleanAFTimes <- function( Locations , minutes = 10 ){
+  counter <- 1
+  while( counter <= ( nrow(Locations) -1 ) && nrow(Locations) > 1 ){
+    if( as.numeric(difftime( Locations$Start[counter+1] , Locations$End[counter] , units = c('mins'))) <= minutes ){
+      Locations$End[counter] <- Locations$End[counter+1]
+      Locations <- Locations[-(counter+1),]
+      next
+    }
+    if( as.numeric(difftime( Locations$Start[counter + 1 ] , Locations$End[counter] , units = c('mins'))) > minutes ){
+      counter <- counter +1
+      next
+    }
+  }
+  return(Locations)
+}
 ###### Plotting Functions ######
 
 BC_PlotCreateggImplausabilities <- function(TimeVector , RegIm){
@@ -876,7 +891,35 @@ BC_PlotPrevision <- function( Prevision ){
     ylab( TeX( 'Adjusted Beliefs Prevision' ) )
   return(output)
 }
-
+BC_PlotPWaveAnalysis <- function( ECG  , Beats , Beats2  , QSwidth  = 0){
+  
+  ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[1000:min(1500 , dim(Beats)[1]),] , QSwidth  = QSwidth)
+  ECGBeats2 <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats2[1000:min(1500 , dim(Beats2)[1]),] , QSwidth  = QSwidth)
+  
+  output = ggplot( )
+  
+  for(i in 1:(dim(ECGBeats$Date)[1] -50)){
+    if(ECGBeats$numvalues[i ] > as.numeric(quantile( ECGBeats$numvalues  , 0.95)) ){next}
+    if(ECGBeats$numvalues[i ] < as.numeric(quantile( ECGBeats$numvalues  , 0.5)) ){next}
+    tmp = 1:(min(dim(ECGBeats$Date)[2] , ECGBeats$numvalues[i ]) -1)
+    output <-   output + geom_line(data = data.frame(time = (1:length(ECGBeats$Date[i,tmp]))/length(ECGBeats$Date[i,tmp]),
+                                                     V =  ECGBeats$Value[i,tmp] - mean(ECGBeats$Value[i,tmp])) ,
+                                   aes(time , V) , color =  rgb(1 , 0 , 0 , alpha = 0.05) )
+  }  
+  
+  
+  for(i in 1:(dim(ECGBeats2$Date)[1] -50)){
+    if(ECGBeats2$numvalues[i ] > as.numeric(quantile( ECGBeats2$numvalues  , 0.95)) ){next}
+    if(ECGBeats2$numvalues[i ] < as.numeric(quantile( ECGBeats2$numvalues  , 0.5)) ){next}
+    tmp = 1:(min(dim(ECGBeats2$Date)[2] , ECGBeats2$numvalues[i ]) -1)
+    output <-   output + geom_line(data = data.frame(time = (1:length(ECGBeats2$Date[i,tmp]))/length(ECGBeats2$Date[i,tmp]),
+                                                     V =  ECGBeats2$Value[i,tmp] - mean(ECGBeats2$Value[i,tmp])) ,
+                                   aes(time , V) , color =  rgb(0 , 0 , 1 , alpha = 0.05) )
+  }  
+  
+  
+  return(output)
+}
 ##### Sampling functions #####
 
 BC_SampleGMM <- function(MclustDistributionStruct , numberofsamples){
@@ -910,5 +953,38 @@ BC_SampleMGMM <- function( GMMmodelbyPatient , numberofsamples, alpha ){
   
   return(output) 
   
+}
+
+##### GUI Functions #####
+
+BC_TimetoViewChange <- function(timetoview ){
+  jumpschoices <- BC_CreateJumpChoices()
+  jump <- select.list(  jumpschoices
+                        , preselect = jumpschoices[1]
+                        , multiple = FALSE
+                        , title = 'Select number of hours before.'
+                        , graphics = TRUE )
+  if( jump == jumpschoices[1] ){ timetoview <- timetoview + 1 }
+  if( jump == jumpschoices[2] ){ timetoview <- timetoview + 10 }
+  if( jump == jumpschoices[3] ){ timetoview <- timetoview + 100 }
+  if( jump == jumpschoices[4] ){ timetoview <- timetoview + 500 }
+  if( jump == jumpschoices[5] ){ timetoview <- timetoview + 1000 }
+  if( jump == jumpschoices[6] ){ timetoview <- timetoview - 1 }
+  if( jump == jumpschoices[7] ){ timetoview <- timetoview - 10 }
+  if( jump == jumpschoices[8] ){ timetoview <- timetoview - 100 }
+  if( jump == jumpschoices[9] ){ timetoview <- timetoview - 500 }
+  if( jump == jumpschoices[10] ){ timetoview <- timetoview - 1000 }
+  if( jump == jumpschoices[11] ){ timetoview <- timetoview + as.numeric(winDialogString(message = 'Enter step and direction. For example, default is back 20.' , default = '-20'))}
+  return(timetoview)
+}
+BC_CreateJumpChoices <- function(){
+  return(c('next second' , 'next 10' , 'next 100' , 'next 500' , 'next 1000' , 'previous second' , 'previous 10' , 'previous 100' , 'previous 500' ,'previous 1000'  , 'custom'))
+}
+BC_SelectTimesofECGtoview <- function(){
+return(as.numeric(select.list(unique(as.character(c(1:100)))
+                         , preselect = '10'
+                         , multiple = FALSE
+                         , title = 'Select number of seconds of full ECG to be viewed'
+                         , graphics = TRUE )))  
 }
 

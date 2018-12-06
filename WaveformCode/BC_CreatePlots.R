@@ -14,3 +14,26 @@ RRPlot <- BC_PlotAddViewingRegionLines(RRPlot , c(timetoview, timetoview + lengt
 Inferenceplot <- BC_PlotCreatePosteriorBeliefPlot(t = RPeaksStruct$RRCombined$t , Implausability , PosteriorProbabilities)
 RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = AFLocations , fillcolor = 'pink')
 RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = BadDataLocations , fillcolor = 'Black')
+
+
+x11(15,12)
+print(grid.arrange( ECGIPlot,
+                    ECGIIPlot,
+                    ECGIIIPlot,
+                    RRPlot,
+                    Inferenceplot,
+                    nrow = 5 ,
+                    ncol = 1  , 
+                    top = paste0('Sensitivity= ' , Performance$Sensitvity , ' Specifictity= ' , Performance$Specifictity ,' PPV= ' ,Performance$NPV , ' NPV= ' , Performance$PPV ) ) )
+
+UserResponse <- winDialog(type = c('yesnocancel') , message = 'Would you like to view another time period?')
+
+if(UserResponse == 'CANCEL')
+{
+}
+if(UserResponse == 'YES')
+{
+  timetoview <- BC_TimetoViewChange(timetoview)
+  dev.off()
+  source('BC_CreatePlots.R')
+}

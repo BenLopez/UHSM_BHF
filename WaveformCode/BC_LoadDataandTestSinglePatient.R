@@ -69,13 +69,21 @@ logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 #iqr <- rollapply(RPeaksStruct$RRCombined$RR , width = 250 , na.pad = TRUE , FUN = function(X){IQR(X, na.rm= TRUE)} )
 #iqr[is.na(iqr)] <- 0
 
+# Testing component
+logicaltimeseries <- rollmean(logicaltimeseries , k = 500) > 0.3
+logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 AFLocations <- ASWF_GetStartEndAF(t = RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = BCParameters[[4]])
-logicaltimeseries <-(Implausability[,1] > 3)*(Implausability[,2] > 3) ==1
+
+AFLocations <- BC_CleanAFTimes(AFLocations , minutes = 20)
+
+
+logicaltimeseries <- (Implausability[,1] > 3)*(Implausability[,2] > 3) ==1
 logicaltimeseries[is.na(logicaltimeseries)] <- TRUE
 BadDataLocations <- ASWF_GetStartEndAF(RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = 0.1)
 if(nrow(AFLocations) > 0){
 AFLocations <- BC_CheckForTimeGaps(AFLocations = AFLocations , BadDataLocations =BadDataLocations , t = RPeaksStruct$RRCombined$t , ECGs = ECGs  )
 }
+
 AnnotatedAFInference <- BC_CreateAnnotationFromInference(t =RPeaksStruct$RRCombined$t , AFLocations = AFLocations)
 
 AnnotatedBadLocations <- BC_CreateAnnotationFromInference(t = RPeaksStruct$RRCombined$t , AFLocations = BadDataLocations)
