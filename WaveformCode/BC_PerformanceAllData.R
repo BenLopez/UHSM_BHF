@@ -9,13 +9,13 @@ Beat_Spec <- array(0 , c(length(CliqueList) , length(ProbabilityList) , length(M
 Patient_Sen <- array(0 , c(length(CliqueList) , length(ProbabilityList) , length(MinutesThesholdList)))
 Patient_Spec <- array(0 , c(length(CliqueList) , length(ProbabilityList) , length(MinutesThesholdList)))
 
-for(ii in 4:length(CliqueList)){
-  for(jj in 1:length(ProbabilityList)){  
-    for(kk in 1:length(MinutesThesholdList)){
+for(ii in 1){
+  for(jj in 1){  
+    for(kk in 1){
 
-BCParameters$TS_Likelihood_clique <- CliqueList[ii]
-BCParameters$ProbabilityThreshold <- ProbabilityList[jj]
-BCParameters$`Minute Threshold` <- MinutesThesholdList[kk]
+#BCParameters$TS_Likelihood_clique <- CliqueList[ii]
+#BCParameters$ProbabilityThreshold <- ProbabilityList[jj]
+#BCParameters$`Minute Threshold` <- MinutesThesholdList[kk]
 
 {
   
@@ -115,7 +115,6 @@ plot(Patient_Sen ,Patient_Spec , xlab = 'Patient Wise Sensitivity' , ylab = 'Pat
 title('Sensitivity against Specifictity')
 abline(0.99,0)
 abline( v = 0.99)
-abline(0.98,0 , , col = 'red')
 abline(v = 0.98 , col = 'red')
 
 plot(1.1*Beat_Sen , Beat_Spec , xlab = 'Beat Wise Sensitivity' , ylab = 'Beat Wise Specificity' , xlim = c(0,1))

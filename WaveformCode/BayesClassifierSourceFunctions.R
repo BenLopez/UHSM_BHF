@@ -893,7 +893,7 @@ BC_PlotPrevision <- function( Prevision ){
 }
 BC_PlotPWaveAnalysis <- function( ECG  , Beats , Beats2  , QSwidth  = 0){
   
-  ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[1000:min(1500 , dim(Beats)[1]),] , QSwidth  = QSwidth)
+  ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[500:min(1000 , dim(Beats)[1]),] , QSwidth  = QSwidth)
   ECGBeats2 <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats2[1000:min(1500 , dim(Beats2)[1]),] , QSwidth  = QSwidth)
   
   output = ggplot( )

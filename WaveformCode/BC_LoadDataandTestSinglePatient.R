@@ -70,10 +70,9 @@ logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 #iqr[is.na(iqr)] <- 0
 
 # Testing component
-logicaltimeseries <- rollmean(logicaltimeseries , k = 500) > 0.4
+logicaltimeseries <- rollmean(logicaltimeseries , k = 1000, align = c( "right") , na.pad = TRUE) > 0.5
 logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 AFLocations <- ASWF_GetStartEndAF(t = RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = BCParameters[[4]])
-
 AFLocations <- BC_CleanAFTimes(AFLocations , minutes = 20)
 
 

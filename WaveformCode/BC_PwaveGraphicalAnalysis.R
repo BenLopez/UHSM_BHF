@@ -3,14 +3,16 @@
 AFBeats <- RPeaksStruct$RRCombined[BC_CreateAnnotationFromInference(t = RPeaksStruct$RRCombined$t , AFLocations = AFLocations[ incidencedetected , ] )== 1,]
 NAFBeats <- RPeaksStruct$RRCombined[AnnotatedAFInference== 0 , ]
 
-AFNAFPlot1 <- BC_PlotPWaveAnalysis(ECG = ECGs$ECGI , Beats =  AFBeats , Beats2 =  NAFBeats, QSwidth  = 10 ) +
-             ggtitle('ECGI')
+AFNAFPlot1 <- BC_PlotPWaveAnalysis(ECG = ECGs$ECGI , Beats =  AFBeats , Beats2 =  NAFBeats , QSwidth  = 10 ) +
+             ggtitle('ECGI') + ylim(-40,40)
 
 AFNAFPlot2 <- BC_PlotPWaveAnalysis(ECG = ECGs$ECGII , Beats =  AFBeats , Beats2 =  NAFBeats, QSwidth  = 10 ) +
-  ggtitle('ECGII')
+           ggtitle('ECGII') + ylim(-40,40)
+
 
 AFNAFPlot3 <- BC_PlotPWaveAnalysis(ECG = ECGs$ECGIII , Beats =  AFBeats , Beats2 =  NAFBeats, QSwidth  = 10 ) +
-  ggtitle('ECGIII')
+  ggtitle('ECGIII') + ylim(-40,40)
+
 
 
 x11(15,12)

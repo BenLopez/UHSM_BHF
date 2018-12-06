@@ -246,7 +246,8 @@ AFD_ExtractAllSQ <- function(ECG , RPeaks , QSwidth = 8){
   for( index in 1:(length(RPeaks$t) -1) ){
     logicalvector <- ((ECG$Date >= (RPeaks$t[index] + (QSwidth*0.005))) )*(ECG$Date <= RPeaks$t[index + 1] - (QSwidth*0.005)) == 1
     Sum_LV <- sum(logicalvector)
-    if(Sum_LV> 600){next}
+    if(Sum_LV == 0){next}
+    if(Sum_LV > 600){next}
     Date[index ,1:Sum_LV ] <- ECG[logicalvector , 1]
     Date[index ,1:Sum_LV ] <- (Date[index ,1:Sum_LV ] - Date[index ,1 ])
     Value[index ,1:Sum_LV ] <- (ECG[logicalvector , 2])

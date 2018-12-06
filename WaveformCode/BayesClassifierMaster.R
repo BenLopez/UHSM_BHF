@@ -13,7 +13,8 @@
   listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
   set.seed(1)
 }
-  
+  precomputedfolderpath <- DP_SelectPrecomputedFolder()
+
   source('BC_ChooseParametersandOptions.R')
 
 }

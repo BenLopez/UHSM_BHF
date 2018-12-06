@@ -17,6 +17,7 @@ if(exists('BCOptions') == FALSE && exists('LocalDistributionStruct') == FALSE){
       listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
       set.seed(1)
     }
+    precomputedfolderpath <- DP_SelectPrecomputedFolder()
     
     # Run script to create parameters and options.
     source('BC_ChooseParametersandOptions.R')
@@ -41,7 +42,7 @@ lengthtoview <- BC_SelectTimesofECGtoview()
 source('BC_CreatePlots.R')
 
 if( nrow(AFLocations)>0 ){
-  
+dev.off()  
   incidencedetected <- 1
   UserResponse <- winDialog(type = c('yesno') , message = paste0('Heart rate analysis has detected ',nrow(AFLocations) , ' an Atrial Fibrillation episode. Would you like to view P-wave graphics.') )
   while( (incidencedetected <= nrow(AFLocations)) && (UserResponse == 'YES') ){
@@ -54,6 +55,8 @@ if( nrow(AFLocations)>0 ){
       }
       
     }
+  source('BC_CreatePlots.R')
+  
 }
   
 
