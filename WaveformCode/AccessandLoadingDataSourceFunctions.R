@@ -603,6 +603,10 @@ is.Date <- function( X ){
 isodd <- function( A ){
   return( (A %% 2) == 0)
 }
+disp <- function(A){
+  print(A)
+}
+
 DP_cummean <- function(X){
   return( cumsum(X)/cumsum(rep(1  , length(X))) )
 }

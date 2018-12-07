@@ -86,5 +86,6 @@ source( 'BayesClassifierSourceFunctions.R' )
 source( 'KernelDensityEstimationSourceFunctions.R' )
 source( 'CorrelationDiscrepancySourceFunctions.R' )
 source('BayesLinearUpdateSourceFunctions.R' )
+source('PWaveHistoryMatchingSourceFunctions.R' )
 print('Libraries, data options and source functions loaded.')
 

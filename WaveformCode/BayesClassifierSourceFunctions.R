@@ -828,7 +828,7 @@ BC_plotValidateDensityEstimationMarginalHistograms <- function(A , B , C , D ){
 }
 BC_PlotPairsFromTwoVariables <- function( X , Y , alpha = 0.01 ){
   x11(20 , 14)
-  pairs( rbind(X , Y) ,  col = rbind(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1]) , rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1])) , pch = 16) 
+  pairs( rbind(X , Y) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1]) )) , pch = 16) 
 }
 BC_PlotPairs<- function(X , alpha = 0.01 ){
   x11(20 , 14)
