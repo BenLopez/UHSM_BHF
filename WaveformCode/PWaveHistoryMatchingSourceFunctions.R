@@ -19,8 +19,8 @@ PWaveHM_PlotMatch <- function(t_observation , E_Z , z , v_me){
 }
 PWaveHM_CalculateImplausability <- function( t_observation , x ,  z ){
   H = PWaveHM_CreateDesignMatrix(t_observation , x , PsimulatorFunction)
-  Beta = PWaveHM_CalculateBetas(H , mQS)
-  MSE = PWaveHM_CalculateMSE(H , Beta , mQS)
+  Beta = PWaveHM_CalculateBetas(H , z)
+  MSE = PWaveHM_CalculateMSE(H , Beta , z)
   return( MSE )
 } 
 PWaveHM_CreateDefaultEmulationclass <- function(){ 
