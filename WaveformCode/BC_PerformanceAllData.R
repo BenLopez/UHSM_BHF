@@ -77,27 +77,27 @@ for( i in 1:length(Performancelist) ){
   
 }
 
-Beat_Sen[ii,jj,kk] <- TP/P
-Beat_Spec[ii,jj,kk] <- TN/N
+Beat_Sen <- TP/P
+Beat_Spec <- TN/N
 
 Patient_N   <-  sum( CorrectIdentifiction[, 2] == 0 )
 Patient_P   <-  sum( CorrectIdentifiction[, 2] == 1 )
 Patient_TN  <-  sum( CorrectIdentifiction[CorrectIdentifiction[, 2] == 0, 1] == 1 )
 Patient_TP  <-  sum( CorrectIdentifiction[CorrectIdentifiction[, 2] == 1, 1] == 1 )
 
-Patient_Sen[ii,jj,kk]  <- Patient_TP/Patient_P
-Patient_Spec[ii,jj,kk] <- Patient_TN/Patient_N
+Patient_Sen  <- Patient_TP/Patient_P
+Patient_Spec <- Patient_TN/Patient_N
 
-print(Patient_Sen[ii,jj,kk] )
-print(Patient_Spec[ii,jj,kk])
+print(Patient_Sen )
+print(Patient_Spec)
 
-#FalseNegatives <-  PatientNames[which( ((CorrectIdentifiction[, 2] == 1)*(CorrectIdentifiction[, 1] == 0))==1)]
-#FalsePostives  <-  PatientNames[which( ((CorrectIdentifiction[, 2] == 0)*(CorrectIdentifiction[, 1] == 0))==1)]
+FalseNegatives <-  PatientNames[which( ((CorrectIdentifiction[, 2] == 1)*(CorrectIdentifiction[, 1] == 0))==1)]
+FalsePostives  <-  PatientNames[which( ((CorrectIdentifiction[, 2] == 0)*(CorrectIdentifiction[, 1] == 0))==1)]
 
 #Postives <- PatientNames[which( CorrectIdentifiction[, 2] == 1 )]
 
-PPV[ii,jj,kk] <- ( Priorprobabilities$A*Patient_Sen[ii,jj,kk] ) / (Priorprobabilities$A*Patient_Sen[ii,jj,kk] + Priorprobabilities$`A^c`*(1-Patient_Spec[ii,jj,kk]))
-NPV[ii,jj,kk] <- ( Priorprobabilities$`A^c`*Patient_Spec[ii,jj,kk] ) / (Priorprobabilities$A*(1-Patient_Sen[ii,jj,kk]) + Priorprobabilities$`A^c`*Patient_Spec[ii,jj,kk])
+PPV <- ( Priorprobabilities$A*Patient_Sen ) / (Priorprobabilities$A*Patient_Sen + Priorprobabilities$`A^c`*(1-Patient_Spec))
+NPV <- ( Priorprobabilities$`A^c`*Patient_Spec ) / (Priorprobabilities$A*(1-Patient_Sen) + Priorprobabilities$`A^c`*Patient_Spec)
     }
   }
 }

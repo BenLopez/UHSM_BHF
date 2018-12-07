@@ -21,5 +21,5 @@ print(grid.arrange( AFNAFPlot1,
                     AFNAFPlot3,
                     nrow = 3 ,
                     ncol = 1  , 
-                    top = paste0('P-Wave Analysis. Red: suspected AFib. Blue: not AFib ') ))
+                    top = paste0('P-Wave Analysis. Red: suspected AFib. Blue: not AFib. Forecast Probability' , GlobalUpdatedProbabilities$A ) ))
 

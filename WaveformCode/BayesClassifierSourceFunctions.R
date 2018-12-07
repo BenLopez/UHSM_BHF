@@ -730,7 +730,7 @@ BC_PlotCreateECGPlots <- function(RPeaksStruct ,  ECGStruct  , timestart = ECGSt
   
   plotstruct <- ggplot(data.frame(t = t , f_t = f_t ) , aes(t , f_t))+
     geom_line(colour= color) + 
-    ylab('Hz') + 
+    ylab('V') + 
     xlab('t') +
     geom_point(data = data.frame(t = t1 , RA = RA1) , aes(t , RA) , colour = 'red' ) +  
     geom_point(data = data.frame(t = t2 , RA = RA2) , aes(t , RA) , colour = 'black'  )

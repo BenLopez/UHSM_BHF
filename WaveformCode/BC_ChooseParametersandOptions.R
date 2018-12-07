@@ -25,7 +25,7 @@ BCParameters <- setNames( list(1,1,1,1 , 1) , c( 'TS_Likelihood_clique' , 'Numbe
 BCParameters[[1]] <- 250
 BCParameters[[2]] <- 25
 BCParameters[[3]] <- 0.8
-BCParameters[[4]] <- 15
+BCParameters[[4]] <- 10
 BCParameters[[5]] <- 1
 
 # Prior probabilities of going into AF.

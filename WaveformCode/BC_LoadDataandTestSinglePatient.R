@@ -23,13 +23,15 @@ if( BCOptions$DataType == 'DistributionSummaries' ){
     }
     
     PosteriorProbabilities <- BC_BayesianBeliefUpdateGMM( W=AdjustedBeliefs$W , LocalDistributionStruct = LocalDistributionStruct , Probabilities = GlobalUpdatedProbabilities , n = BCParameters$TS_Likelihood_clique)
-    #PosteriorProbabilities[  Implausability[,2]< 0.3 , 1] <- 0
-    #PosteriorProbabilities[  Implausability[,2]< 0.3 , 2] <- 1
-    PosteriorProbabilities[ (Implausability[,1] > 3)*(Implausability[,2] > 3) ==1 , 1] <- GlobalUpdatedProbabilities$B
-    PosteriorProbabilities[ (Implausability[,1] > 3)*(Implausability[,2] > 3) ==1 , 2] <- GlobalUpdatedProbabilities$`B^c`
-    PosteriorProbabilities[ Implausability[,1] > 3 , 1] <- 0
-    PosteriorProbabilities[ Implausability[,1] > 3 , 2] <- 1
-  }
+    PosteriorProbabilities[ ((Implausability[,1] > 2)*(Implausability[,2] > 2)) ==1 , 1] <- GlobalUpdatedProbabilities$B
+    PosteriorProbabilities[ ((Implausability[,1] > 2)*(Implausability[,2] > 2)) ==1 , 2] <- GlobalUpdatedProbabilities$`B^c`
+    PosteriorProbabilities[ Implausability[,1] > 2 , 1] <- 0
+    PosteriorProbabilities[ Implausability[,1] > 2 , 2] <- 1
+    PosteriorProbabilities[ ((Implausability[,2] > 2)*((Implausability[,2]/Implausability[,1]) > 3)) == 1 , 1] <- 1
+    PosteriorProbabilities[ ((Implausability[,2] > 2)*((Implausability[,2]/Implausability[,1]) > 3)) == 1 , 2] <- 0
+    
+    
+    }
 }
 
 
@@ -70,7 +72,7 @@ logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 #iqr[is.na(iqr)] <- 0
 
 # Testing component
-logicaltimeseries <- rollmean(logicaltimeseries , k = 1000, align = c( "right") , na.pad = TRUE) > 0.5
+logicaltimeseries <- rollmean(logicaltimeseries , k = 500, align = c( "right") , na.pad = TRUE) > 0.5
 logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 AFLocations <- ASWF_GetStartEndAF(t = RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = BCParameters[[4]])
 AFLocations <- BC_CleanAFTimes(AFLocations , minutes = 20)

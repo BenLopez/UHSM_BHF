@@ -2,7 +2,7 @@
 source("LibrariesAndSettings.R" , print.eval  = TRUE )}
 
 pathtocopyfrom = choose.dir( caption = "Select folder to copy from")
-Listofiles <- select.list(list.files(pathtocopyfrom) , graphics = TRUE , multiple = T , caption = "Select patients to copy")
+Listofiles <- select.list(list.files(pathtocopyfrom) , graphics = TRUE , multiple = T , title = "Select patients to copy")
 pathtocopyto = choose.dir(caption = "Select folder to copy to")
 
 for(ii in 1:length(Listofiles)){
