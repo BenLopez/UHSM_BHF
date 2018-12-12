@@ -53,9 +53,12 @@ dev.off()
                                   message = paste0('Would you like to view the next incidence?') )
         
       }
-      
   }
-if(UserResponse == 'YES'){source('BC_CreatePlots.R')}
+
+UserResponse <- winDialog(type = c('yesnocancel') , message = 'Would you like to view another time period?')
+if(UserResponse == 'YES'){
+  graphics.off()
+  source('BC_CreatePlots.R')}
   
 }
   
@@ -67,8 +70,6 @@ if(UserResponse == 'YES'){source('BC_PairsAnalysis.R')}
 UserResponse <- winDialog(type = c('yesno') , message = 'Would you like to view another patient?')
 if(UserResponse == 'YES'){source('BC_TestingScript.R')}
 if(UserResponse == 'NO'){print('GUI has been exited. Run BC_TestingScript.R to continue viewing patient data.')}
-
-
 
 }
 

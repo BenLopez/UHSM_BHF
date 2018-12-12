@@ -76,7 +76,7 @@ PWaveHM_CalulateBetasTQSegment <- function(Xstar , z ,   PriorNonImplausibleSet)
   }
   return(Betas)
 }
-PWaveHM_EmulateEstimatePAmplitude <- function(QS_Struct , EmulatorParameters = PWaveHM_CreateDefaultEmulationclass() , Xstar , PriorNonImplausibleSet){
+PWaveHM_EmulateEstimatePAmplitude <- function(QS_Struct , EmulatorParameters = PWaveHM_CreateDefaultEmulationclass() , Xstar , PriorNonImplausibleSet , Graphics = 0){
   EmulatedQS <- PWaveHM_EmulateTQSegment( QS_Struct , EmulatorParameters = EmulatorParameters , Xstar )
   mQS <- apply(EmulatedQS , 2 , median) 
   mQS <- mQS - mean( mQS )
@@ -86,6 +86,18 @@ PWaveHM_EmulateEstimatePAmplitude <- function(QS_Struct , EmulatorParameters = P
   Beta = PWaveHM_CalculateBetas(H , mQS)
   E_Y = H%*%Beta
   P_Amplitude <- E_Y[ which.min(abs(Xstar - XminIm[1])) ]
+  
+  if(Graphics == 1){
+  x11()
+  plot(Xstar , mQS , type ='l', xlab = 'Normalised time' , ylab = 'V')
+  lines(Xstar , E_Y , type ='l' , col ='red')
+  abline(P_Amplitude , 0)
+  abline(v=Xstar[which.min(abs(Xstar - XminIm[1]))] )
+  title(paste0('Im = ' , min(Implausability) , ' P-Amp = ' , P_Amplitude ))
+  
+  BC_PlotPairsFromTwoVariables(X = PriorNonImplausibleSet[which(Implausability > 1) , ] , Y = PriorNonImplausibleSet[which(Implausability < 1) , ]  , alpha = 0.1)
+  
+  }
   
   return(P_Amplitude)
 }

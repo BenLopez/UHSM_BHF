@@ -11,7 +11,7 @@
     HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter()
   }
   listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
-  set.seed(1)
+  set.seed( 1 )
 }
   precomputedfolderpath <- DP_SelectPrecomputedFolder()
 
@@ -21,7 +21,8 @@
 
 # Database is a list where each element is a matrix with data for the training population. 
 # Rows are observations and columns are elements if an observation vector.
-# Training
+# Training.
+
 source( 'BC_TrainingScript.R' )
 
 if(BCOptions$ProbabilisticCalibration == 'Yes'){

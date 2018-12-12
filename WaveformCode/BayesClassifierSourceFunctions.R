@@ -893,11 +893,27 @@ BC_PlotPrevision <- function( Prevision ){
 }
 BC_PlotPWaveAnalysis <- function( ECG  , Beats , Beats2  , QSwidth  = 0){
   
-  ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[500:min(1000 , dim(Beats)[1]),] , QSwidth  = QSwidth)
-  ECGBeats2 <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats2[1000:min(1500 , dim(Beats2)[1]),] , QSwidth  = QSwidth)
+  regiontocheck <- 1000:min(1500 , dim(Beats)[1])
+  lengthcheck <- 0
+  while( lengthcheck < 400 ){
+    if(regiontocheck[length(regiontocheck)] > dim(Beats)[1]){break}
+    ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[regiontocheck,] , QSwidth  = 10)
+    lengthcheck <- length(ECGBeats$numvalues)
+    if(lengthcheck < 400 ){regiontocheck <- regiontocheck + 500}
+  }
   
+  regiontocheck <- 1000:min(1500 , dim(Beats2)[1])
+  lengthcheck <- 0
+  while(lengthcheck < 400){
+    if(regiontocheck[length(regiontocheck)] > dim(Beats2)[1]){break}
+    ECGBeats2 <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats2[regiontocheck,] , QSwidth  = 10)
+    lengthcheck <- length(ECGBeats2$numvalues)
+    if(lengthcheck < 400 ){regiontocheck <- regiontocheck + 500}
+  }
+  
+  options(expressions = 10000)
   output = ggplot( )
-  
+  if(length(ECGBeats$numvalues) > 100  ){
   for(i in 1:(dim(ECGBeats$Date)[1] -50)){
     if(ECGBeats$numvalues[i ] > as.numeric(quantile( ECGBeats$numvalues  , 0.95)) ){next}
     if(ECGBeats$numvalues[i ] < as.numeric(quantile( ECGBeats$numvalues  , 0.5)) ){next}
@@ -905,18 +921,18 @@ BC_PlotPWaveAnalysis <- function( ECG  , Beats , Beats2  , QSwidth  = 0){
     output <-   output + geom_line(data = data.frame(time = (1:length(ECGBeats$Date[i,tmp]))/length(ECGBeats$Date[i,tmp]),
                                                      V =  ECGBeats$Value[i,tmp] - mean(ECGBeats$Value[i,tmp])) ,
                                    aes(time , V) , color =  rgb(1 , 0 , 0 , alpha = 0.05) )
-  }  
-  
-  
+    }  
+  }
+  if(length(ECGBeats2$numvalues) > 100  ){
   for(i in 1:(dim(ECGBeats2$Date)[1] -50)){
-    if(ECGBeats2$numvalues[i ] > as.numeric(quantile( ECGBeats2$numvalues  , 0.95)) ){next}
-    if(ECGBeats2$numvalues[i ] < as.numeric(quantile( ECGBeats2$numvalues  , 0.5)) ){next}
+    if( ECGBeats2$numvalues[i ] > as.numeric(quantile( ECGBeats2$numvalues  , 0.95)) ){next}
+    if( ECGBeats2$numvalues[i ] < as.numeric(quantile( ECGBeats2$numvalues  , 0.5)) ){next}
     tmp = 1:(min(dim(ECGBeats2$Date)[2] , ECGBeats2$numvalues[i ]) -1)
     output <-   output + geom_line(data = data.frame(time = (1:length(ECGBeats2$Date[i,tmp]))/length(ECGBeats2$Date[i,tmp]),
                                                      V =  ECGBeats2$Value[i,tmp] - mean(ECGBeats2$Value[i,tmp])) ,
                                    aes(time , V) , color =  rgb(0 , 0 , 1 , alpha = 0.05) )
-  }  
-  
+    }  
+  }
   
   return(output)
 }
