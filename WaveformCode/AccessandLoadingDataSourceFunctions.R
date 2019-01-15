@@ -17,6 +17,21 @@ if(filetype == 'RData')
 }
   return(PatIndex2017)
 }
+DP_LoadPatientDendrite <- function(){
+  filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
+                         title = 'Choose File Type For Patient Index', graphics = TRUE )
+  if(filetype == 'csv')
+  {
+    DetIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 PatientIndex.csv file"), stringsAsFactors = FALSE)
+  }    
+  if(filetype == 'RData')
+  {
+    load(choose.files( caption = 'Select DendriteMaster.RData'))
+    DetIndex2017 <<- DetIndex2017
+  }
+  return(PatIndex2017)
+}
+
 DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 ){
   # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
   if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
@@ -622,4 +637,26 @@ DP_AddNugget <- function(X , nugget = 0.000000000001){
   if(is.matrix(nugget) == TRUE){
     return(X + nugget  )}
   
+}
+DP_CheckProprotionofNa <- function(X){
+  return( sum(is.na(X))/length(X) )
+}
+DP_SortMatrix <- function(X , column = 1){
+  # function to sort matrix by column i
+  X <- X[order(X[,column]) , ]
+}
+
+DP_ExtractMetaDataForMultiplePatinets<- function(PatIndex2017 , listAllPatients){
+  return(PatIndex2017[PatIndex2017[ , which(names(PatIndex2017) == 'PseudoId')] %in% listAllPatients , ])  
+}
+DP_ExtractRecordsFromDendrite <- function(DetIndex2017 , listAllPatients){
+  
+  LogicalVector <- matrix(0 , dim(DetIndex2017)[1] , 1)
+  for( i in 1:dim(LogicalVector)[1] ){
+    if( sum(apply(as.matrix(listAllPatients) ,1, function(X){ grepl( X , DetIndex2017$NewPseudoId[i]) })) >0 ){
+      LogicalVector[i] <- 1
+      DetIndex2017$NewPseudoId[i] <- listAllPatients[which(apply(as.matrix(listAllPatients) ,1, function(X){ grepl( X , DetIndex2017$NewPseudoId[i] , fixed = TRUE) }))][length(listAllPatients[which(apply(as.matrix(listAllPatients) ,1, function(X){ grepl( X , DetIndex2017$NewPseudoId[i] , fixed = TRUE) }))])]
+    }
+  }
+  return(DetIndex2017[which(LogicalVector == 1) , ])
 }

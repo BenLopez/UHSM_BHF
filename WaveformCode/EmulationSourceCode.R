@@ -2,7 +2,7 @@
 
 CF_ExponentialFamily <- function(x , xstar , l , p){
   # Expenential family correlation length family
-  
+  options(warn=-1)  
   # Turn into matrices
 x <- as.matrix(x)
 xstar <- as.matrix(xstar)
@@ -33,6 +33,7 @@ distmatrix <- rowSums(distmatrix , dims = 2)
 
 KXXstar <- exp( -0.5 * distmatrix )
 return(KXXstar)
+options(warn=0)
 }
 CF_NeuralNetworkSingle <- function(x , xstar , Sigma){
   tildex <- cbind( matrix( 1 , dim(x)[1] , 1) , x )

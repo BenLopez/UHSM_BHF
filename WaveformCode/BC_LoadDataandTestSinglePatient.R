@@ -65,27 +65,58 @@ if( BCOptions$DataType == 'CDFs' ){
 
 AnnotatedAFMetaData <- BC_CreateAFAnnotationFomMetaData(t = RPeaksStruct$RRCombined$t , MetaData = MetaData)
 
+if(DP_CheckIfAFPatient(MetaData = MetaData)){
+TrueAFLocations <- AFD_GetStartEndAF(t = RPeaksStruct$RRCombined$t , logicaltimeseries = AnnotatedAFMetaData , minutethreshold = BCParameters[[4]])
+TrueAFLocations <- BC_CheckForTimeGaps(AFLocations = TrueAFLocations , BadDataLocations = BadDataLocations , t = RPeaksStruct$RRCombined$t , ECGs = ECGs  )
+AnnotatedAFMetaData <- BC_CreateAnnotationFromInference(t = RPeaksStruct$RRCombined$t , TrueAFLocations)
+}
+
 logicaltimeseries <-  ( PosteriorProbabilities[ , 1] > BCParameters[[3]] )
 logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
-
-#iqr <- rollapply(RPeaksStruct$RRCombined$RR , width = 250 , na.pad = TRUE , FUN = function(X){IQR(X, na.rm= TRUE)} )
-#iqr[is.na(iqr)] <- 0
 
 # Testing component
 logicaltimeseries <- rollmean(logicaltimeseries , k = 500, align = c( "right") , na.pad = TRUE) > 0.5
 logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
-AFLocations <- ASWF_GetStartEndAF(t = RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = BCParameters[[4]])
-AFLocations <- BC_CleanAFTimes(AFLocations , minutes = 20)
+AFLocations <- AFD_GetStartEndAF(t = RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = BCParameters[[4]])
 
 
 logicaltimeseries <- (Implausability[,1] > 3)*(Implausability[,2] > 3) ==1
 logicaltimeseries[is.na(logicaltimeseries)] <- TRUE
-BadDataLocations <- ASWF_GetStartEndAF(RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = 0.1)
+BadDataLocations <- AFD_GetStartEndAF(RPeaksStruct$RRCombined$t , logicaltimeseries = logicaltimeseries , minutethreshold = 0.1)
+
 if(nrow(AFLocations) > 0){
 AFLocations <- BC_CheckForTimeGaps(AFLocations = AFLocations , BadDataLocations =BadDataLocations , t = RPeaksStruct$RRCombined$t , ECGs = ECGs  )
 }
 
 AnnotatedAFInference <- BC_CreateAnnotationFromInference(t =RPeaksStruct$RRCombined$t , AFLocations = AFLocations)
 
+
+if(BCOptions$PAmplitudeAnalysis == 'Yes'  ){
+ if( nrow(AFLocations) > 0 ){
+   AFbyPwavesLogical <- matrix(0 , nrow(AFLocations) , 1)
+   for(i in 1:nrow(AFLocations) ){
+   PAmplitudes <- BC_CalculatePAmplitudes(AFLocations = AFLocations[i,] ,RPeaksStruct =  RPeaksStruct ,ECGs =  ECGs , AnnotatedAFInference = AnnotatedAFInference)
+   if(is.na(PAmplitudes$AFPAmplitude)){
+     AFbyPwavesLogical[i,] <- 1
+     next
+   }
+   if(  abs(PAmplitudes$NAFPAmplitude - PAmplitudes$AFPAmplitude)/abs(PAmplitudes$NAFPAmplitude) > 0.45 ){
+     AFbyPwavesLogical[i,] <- 1  
+   if(PAmplitudes$AFPAmplitude > 0 && PAmplitudes$NAFPAmplitude > 0 && (PAmplitudes$AFPAmplitude > PAmplitudes$NAFPAmplitude) ){
+     AFbyPwavesLogical[i,] <- 0  
+   }
+   if(PAmplitudes$AFPAmplitude < 0 && PAmplitudes$NAFPAmplitude < 0 && (abs(PAmplitudes$AFPAmplitude) > abs(PAmplitudes$NAFPAmplitude) ) ){
+     AFbyPwavesLogical[i,] <- 0  
+   }
+   }
+   if( abs(PAmplitudes$NAFPAmplitude) < 2 && abs(PAmplitudes$AFPAmplitude) < 6 ){ AFbyPwavesLogical[i,] <- 1 }
+   }
+   AFLocations <- AFLocations[which(AFbyPwavesLogical == 1) , ]   
+   }
+}
+AFLocations <- BC_CleanAFTimes(AFLocations , minutes = 8)
+BadDataLocations <- BC_CleanAFTimes(DP_SortMatrix(BadDataLocations) , minutes = 20)
+
+AnnotatedAFInference <- BC_CreateAnnotationFromInference(t =RPeaksStruct$RRCombined$t , AFLocations = AFLocations)
 AnnotatedBadLocations <- BC_CreateAnnotationFromInference(t = RPeaksStruct$RRCombined$t , AFLocations = BadDataLocations)
-Performance <- BC_CalulatePerformance(AnnotatedAFMetaData ,  AnnotatedAFInference , AnnotatedBadLocations )
+Performance <- BC_CalulatePerformance(AnnotatedAFMetaData = AnnotatedAFMetaData , AnnotatedAFInference =  AnnotatedAFInference , BadDataLocations = AnnotatedBadLocations )

@@ -29,10 +29,10 @@ if(BCOptions[[2]] == 'AFClassifier' &  BCOptions$GlobalUpdate == 'Yes' & BCOptio
 x11(20,14)
 par(mfrow = c(2 , 5))
 for(variabletoview in c(1:10)){
-  
-  tmp <- hist(DataBase[[3]][ , variabletoview], col=rgb(0,0,1,alpha = 0.5) ,
-              main= paste0(AFD_CreateDistributionSummaryNames()[variabletoview] , ' Histogram') , xlab = AFD_CreateDistributionSummaryNames()[variabletoview] , freq = FALSE)
-  hist(DataBase[[4]][ , variabletoview], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = c(min(DataBase[[4]][!is.na(DataBase[[4]][ , variabletoview]) , variabletoview] ) , tmp$breaks, max(DataBase[[4]][!is.na(DataBase[[4]][ , variabletoview]) , variabletoview]) ))
+  tmp <- rbind(as.matrix(DataBase[[3]][,variabletoview]) , as.matrix(DataBase[[4]][,variabletoview]))
+  tmp <- hist(tmp  , plot = FALSE , breaks = 10)
+  hist(DataBase[[3]][ , variabletoview], col=rgb(0,0,1,alpha =0.5) , freq = FALSE ,  breaks = tmp$breaks , main= paste0(AFD_CreateDistributionSummaryNames()[variabletoview] , ' Histogram') , xlab = AFD_CreateDistributionSummaryNames()[variabletoview])
+  hist(DataBase[[4]][ , variabletoview], col=rgb(1,0,0,alpha =0.5), add=T , freq = FALSE ,  breaks = tmp$breaks )
 }
 title(' Global Histograms' , outer=TRUE)
 x11(30,20)

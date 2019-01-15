@@ -6,26 +6,28 @@
 # BCOptions[['Density Estimation local']] = 'MVN' , 'GMM'
 
 
-{BCOptions <- setNames( list(1 , 1 , 1 , 1 , 1 , 1) , c('DataType' ,
+{BCOptions <- setNames( list(1 , 1 , 1 , 1 , 1 , 1 , 1) , c('DataType' ,
                                                         'ClassifierType' , 
                                                         'DensityEstimationGlobal', 
                                                         'DensityEstimationlocal' , 
                                                         'GlobalUpdate' ,
-                                                        'ProbabilisticCalibration') )
+                                                        'ProbabilisticCalibration' , 
+                                                        'PAmplitudeAnalysis') )
 BCOptions[[1]] <- 'DistributionSummaries'
 BCOptions[[2]] <- 'AFClassifier' 
 BCOptions[[3]] <- 'GMM' 
 BCOptions[[4]] <- 'GMM'
 BCOptions[[5]] <- 'Yes'
 BCOptions[[6]] <- 'No'
+BCOptions[[7]] <- 'Yes'
 
 
 # Parameters for Priors
 BCParameters <- setNames( list(1,1,1,1 , 1) , c( 'TS_Likelihood_clique' , 'NumberComponentsforGMM' , 'ProbabilityThreshold' , 'Minute Threshold' ,'GlobalNumberComponentsforGMM' ) )
 BCParameters[[1]] <- 250
 BCParameters[[2]] <- 25
-BCParameters[[3]] <- 0.8
-BCParameters[[4]] <- 10
+BCParameters[[3]] <- 0.5
+BCParameters[[4]] <- 7
 BCParameters[[5]] <- 1
 
 # Prior probabilities of going into AF.

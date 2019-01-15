@@ -9,6 +9,12 @@ Beat_Spec <- array(0 , c(length(CliqueList) , length(ProbabilityList) , length(M
 Patient_Sen <- array(0 , c(length(CliqueList) , length(ProbabilityList) , length(MinutesThesholdList)))
 Patient_Spec <- array(0 , c(length(CliqueList) , length(ProbabilityList) , length(MinutesThesholdList)))
 
+if(!exists('Xstar')){
+  Xstar = seq(0.5 ,1 , 0.01)}
+if(!exists('PriorNonImplausibleSet')){
+  PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( 0.95, 0.001 ) ,b = c(0.6  , 0.05 ) , numbersamples = 10000)
+}
+
 for(ii in 1){
   for(jj in 1){  
     for(kk in 1){
@@ -117,7 +123,7 @@ abline(0.99,0)
 abline( v = 0.99)
 abline(v = 0.98 , col = 'red')
 
-plot(1.1*Beat_Sen , Beat_Spec , xlab = 'Beat Wise Sensitivity' , ylab = 'Beat Wise Specificity' , xlim = c(0,1))
+plot(Beat_Sen , Beat_Spec , xlab = 'Beat Wise Sensitivity' , ylab = 'Beat Wise Specificity' , xlim = c(0,1))
 title('Sensitivity against Specifictity')
 abline(0.99,0)
 abline( v = 0.99)

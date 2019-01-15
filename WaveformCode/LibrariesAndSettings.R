@@ -14,6 +14,7 @@ packages<-c("ggplot2",
             "peakPick", 
             "signal", 
             "smoother",
+            "pracma",
             "pdist",
             "abind",
             "wavelets",
@@ -33,7 +34,8 @@ packages<-c("ggplot2",
             "latex2exp",
             "ggpubr",
             "ks",
-            "plot3D")
+            "plot3D",
+            "entropy")
 check.packages(packages)
 
 library( ggplot2 )#
@@ -87,5 +89,6 @@ source( 'KernelDensityEstimationSourceFunctions.R' )
 source( 'CorrelationDiscrepancySourceFunctions.R' )
 source('BayesLinearUpdateSourceFunctions.R' )
 source('PWaveHistoryMatchingSourceFunctions.R' )
+source('BayesLinearBayesForecastingSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

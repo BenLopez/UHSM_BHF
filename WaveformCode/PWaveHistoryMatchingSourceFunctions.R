@@ -14,8 +14,8 @@ PWaveHM_PlotMatch <- function(t_observation , E_Z , z , v_me){
   x11()
   plot(  t_observation  ,  E_Z , col = 'blue'  ,  xlab = 'Normalised Time'  ,  ylab = 'Observed' , type = 'l'  , ylim = c(-40,40))
   points( t_observation  ,  z  ,  col = 'black' )
-  points( t_observation  ,  z + 2*sqrt(v_me)  ,  col = 'red' )
-  points( t_observation  ,  z - 2*sqrt(v_me)  ,  col = 'red' )
+  points( t_observation  ,  z + 3*sqrt(v_me)  ,  col = 'red' )
+  points( t_observation  ,  z - 3*sqrt(v_me)  ,  col = 'red' )
 }
 PWaveHM_CalculateImplausability <- function( t_observation , x ,  z ){
   H = PWaveHM_CreateDesignMatrix(t_observation , x , PsimulatorFunction)
@@ -78,14 +78,14 @@ PWaveHM_CalulateBetasTQSegment <- function(Xstar , z ,   PriorNonImplausibleSet)
 }
 PWaveHM_EmulateEstimatePAmplitude <- function(QS_Struct , EmulatorParameters = PWaveHM_CreateDefaultEmulationclass() , Xstar , PriorNonImplausibleSet , Graphics = 0){
   EmulatedQS <- PWaveHM_EmulateTQSegment( QS_Struct , EmulatorParameters = EmulatorParameters , Xstar )
-  mQS <- apply(EmulatedQS , 2 , median) 
+  mQS <- apply(EmulatedQS , 2 , function(X){median(X[!is.na(X)])} ) 
   mQS <- mQS - mean( mQS )
   Implausability <- PWaveHM_CalulateImplausabilityTQSegment(Xstar , mQS , PriorNonImplausibleSet)
   XminIm <- PriorNonImplausibleSet[which.min(Implausability),]
   H = PWaveHM_CreateDesignMatrix(Xstar , XminIm , PsimulatorFunction)
   Beta = PWaveHM_CalculateBetas(H , mQS)
   E_Y = H%*%Beta
-  P_Amplitude <- E_Y[ which.min(abs(Xstar - XminIm[1])) ]
+  P_Amplitude <- mQS[ which.min(abs(Xstar - XminIm[1])) ]
   
   if(Graphics == 1){
   x11()
@@ -99,5 +99,5 @@ PWaveHM_EmulateEstimatePAmplitude <- function(QS_Struct , EmulatorParameters = P
   
   }
   
-  return(P_Amplitude)
+  return(setNames(list(P_Amplitude , XminIm) ,  c('P_Amplitude' , 'XminIm')))
 }

@@ -241,7 +241,11 @@ AFD_ExtractAllSQ <- function(ECG , RPeaks , QSwidth = 8){
   Date <- matrix(NA , length(RPeaks$t) -1 , 600)
   Value <- matrix(NA , length(RPeaks$t) -1 , 600)
   numvalues <- matrix(NA,length(t_start),1)
-  ECG <- ECG[((ECG$Date <= RPeaks$t[length(RPeaks$t)])*(ECG$Date >= RPeaks$t[1])) ==1, ]
+  ECG <- ECG[((ECG$Date <= RPeaks$t[max(which(!is.na(RPeaks$t) ))])*(ECG$Date >= RPeaks$t[1])) ==1, ]
+  
+  if(nrow(ECG) == 0){
+    return(setNames(list(1, 1 , 1 , 1) , c('t_start' , 'Date' , 'Value' , 'numvalues')))
+  }
   
   for( index in 1:(length(RPeaks$t) -1) ){
     logicalvector <- ((ECG$Date >= (RPeaks$t[index] + (QSwidth*0.005))) )*(ECG$Date <= RPeaks$t[index + 1] - (QSwidth*0.005)) == 1

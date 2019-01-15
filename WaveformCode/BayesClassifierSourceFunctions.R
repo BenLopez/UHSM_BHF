@@ -428,7 +428,7 @@ BC_GlocalBayesianBeliefUpdateGMM <- function(M , GlobalDistributionStruct ,  Pri
 }
 BC_CreateAFAnnotationFomMetaData <- function(t , MetaData){
   output <- matrix(0 , length(t) , 1)
-  output[ (t>DP_StripTime(MetaData$ConfirmedFirstNewAF))*(t<DP_StripTime(MetaData$EndFirstNewAF)) == 1] <- 1
+  output[ (t>DP_StripTime(MetaData$ConfirmedFirstNewAF[1]))*(t<DP_StripTime(MetaData$EndFirstNewAF[1])) == 1] <- 1
   return(output)
 }
 BC_CreateAnnotationFromInference <- function(t , AFLocations){
@@ -438,7 +438,7 @@ BC_CreateAnnotationFromInference <- function(t , AFLocations){
   }
   return(output)
 }
-BC_CalulatePerformance <- function(AnnotatedAFMetaData ,  AnnotatedAFInference , BadDataLocations){
+BC_CalulatePerformance <- function(AnnotatedAFMetaData ,  AnnotatedAFInference , BadDataLocations   ){
   P <- sum((BadDataLocations == 0)*AnnotatedAFMetaData)
   N <- sum((BadDataLocations == 0)*(AnnotatedAFMetaData ==0))
   Total <- N+P - sum(BadDataLocations)
@@ -456,6 +456,7 @@ BC_CalulatePerformance <- function(AnnotatedAFMetaData ,  AnnotatedAFInference ,
 }
 BC_CheckForTimeGaps <- function(AFLocations , BadDataLocations , t , ECGs , beatlims = c(45 , 300) , readinglim = 0.65){
   output <- AFLocations
+  BaddataLogical <- matrix(0 , length(AFLocations[ , 1]) , 1)
   for(i in 1:length(AFLocations[ , 1])){
     timeinAF <- difftime( AFLocations$End[i] , AFLocations$Start[i] , units = 'secs' )
     
@@ -465,7 +466,7 @@ BC_CheckForTimeGaps <- function(AFLocations , BadDataLocations , t , ECGs , beat
     beats <- sum(((t > AFLocations$Start[i])*(t < AFLocations$End[i])) == 1 ) 
     
     if(beats < minbeats || beats > maxbeats){
-      output <- output[-i , ]
+      BaddataLogical[i] <- 1
       warning('Implausible Heart Rate')
       next
     }
@@ -477,15 +478,16 @@ BC_CheckForTimeGaps <- function(AFLocations , BadDataLocations , t , ECGs , beat
     numberofmeasurements[3] <- sum( ((ECGs$ECGIII$Date > AFLocations$Start[i])*(ECGs$ECGIII$Date < AFLocations$End[i])) == 1 )
     
     if(sum((numberofmeasurements / expectedmeasurments) < readinglim) > 1 ){
-      BadDataLocations <<- rbind( BadDataLocations , output[i , ])
-      output <- output[-i , ]
+      BaddataLogical[i] <- 1
       print('Missing Data AF Period Removed')
       next
     }
-    
-    
+      
   }
-  
+  if(sum(BaddataLogical) > 0 ){
+  BadDataLocations <<- rbind( BadDataLocations , output[which(BaddataLogical ==1) , ])
+  output <- output[-which(BaddataLogical ==1) , ]
+  }
   return(output)
 }
 BC_ExtractValidationPriors <- function(Priorprobabilities , DataBaseMaster , DataBase){
@@ -621,6 +623,43 @@ BC_CleanAFTimes <- function( Locations , minutes = 10 ){
   }
   return(Locations)
 }
+BC_CalculatePAmplitudes <- function(AFLocations , RPeaksStruct , ECGs , AnnotatedAFInference , Xstar= seq(0.5 ,1 , 0.01) , QSwidth =10 , Graphics = 0){
+    # Set up prior non-implausible set.
+    PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( 0.95, 0.001 ) ,b = c(0.6  , 0.05 ) , numbersamples = 10000)
+    
+    NAFBeats <<- RPeaksStruct$RRCombined[which( AnnotatedAFInference == 0 ) , ]
+    regiontocheck <- 1000:min(1500 , dim(NAFBeats)[1])
+    lengthcheck <- 0
+    while(lengthcheck < 250){
+      ECGBeats <- AFD_ExtractAllSQ(ECG = ECGs$ECGII , RPeaks = NAFBeats[regiontocheck,] , QSwidth  = QSwidth)
+      lengthcheck <- length(ECGBeats$numvalues)
+      if(lengthcheck < 250 ){regiontocheck <- regiontocheck + 500}
+    }
+    PwaveHMStruct <- PWaveHM_EmulateEstimatePAmplitude(QS_Struct = ECGBeats , EmulatorParameters = PWaveHM_CreateDefaultEmulationclass() , Xstar , PriorNonImplausibleSet , Graphics = Graphics)
+    PAmplitudeNAF <- PwaveHMStruct$P_Amplitude
+    
+    PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( min(1,PwaveHMStruct$XminIm[1] +0.075) , 0.001 ) ,b = c( max(0,PwaveHMStruct$XminIm[1] -0.075)  , 0.05 ) , numbersamples = 10000)
+    
+    AFBeats <<- RPeaksStruct$RRCombined[which(BC_CreateAnnotationFromInference(t = RPeaksStruct$RRCombined$t , AFLocations = AFLocations[ 1 , ] )== 1),]
+    regiontocheck <- max(1,min(dim(AFBeats)[1] - 500 , 1000)):min(1500 , dim(AFBeats)[1])
+    lengthcheck <- 0
+    while(lengthcheck < 250){
+      ECGBeats <- AFD_ExtractAllSQ(ECG = ECGs$ECGII , RPeaks = AFBeats[regiontocheck,] , QSwidth  = QSwidth)
+      lengthcheck <- length(ECGBeats$numvalues)
+      if(lengthcheck < 250 ){regiontocheck <- regiontocheck + 500}
+      if(regiontocheck[length(regiontocheck)] > dim(AFBeats)[1]){
+        warning('NO ECGII Data for AF period.')
+        return(setNames(list(PAmplitudeNAF , NA) ,c('NAFPAmplitude' , 'AFPAmplitude') ))
+        break
+      }
+      }
+    
+    PwaveHMStruct <-PWaveHM_EmulateEstimatePAmplitude(QS_Struct = ECGBeats , EmulatorParameters = PWaveHM_CreateDefaultEmulationclass() , Xstar = Xstar ,PriorNonImplausibleSet =  PriorNonImplausibleSet, Graphics = Graphics)
+    PAmplitudeAF <- PwaveHMStruct$P_Amplitude 
+    
+  return(setNames(list(PAmplitudeNAF , PAmplitudeAF) ,c('NAFPAmplitude' , 'AFPAmplitude') ))
+}
+
 ###### Plotting Functions ######
 
 BC_PlotCreateggImplausabilities <- function(TimeVector , RegIm){
@@ -840,13 +879,13 @@ BC_PlotCompareTwoHists <- function( X , Y ){
   
   for(variabletoview in 1:dim(X)[2]){
     
-    tmphist <- hist(rbind(X[ , variabletoview] , Y[ , variabletoview]) , breaks = 30 , plot = FALSE) 
+    tmphist <- hist(rbind(as.matrix(X[ , variabletoview]) , as.matrix(Y[ , variabletoview]) ) , breaks = 30 , plot = FALSE) 
     hist(X[ , variabletoview]
          , col=rgb(1,0,0,alpha =0.5) 
          , freq = FALSE 
          , breaks = tmphist$breaks
          , main = paste0('Variable ' , variabletoview)
-         , xlabel = paste0('Variable = ' , variabletoview))
+         , xlab = paste0('Variable = ' , variabletoview) , ylim = c(0 , 2*max(tmphist$density)))
     hist(Y[ , variabletoview]
          , col = rgb(0,0,1,alpha =0.5) 
          , freq = FALSE 
@@ -868,18 +907,20 @@ BC_CreateSecondOrderSpecificationHistImp <- function(Trainingset , Validationset
   output <- list( mu = apply(Immatrix , 2 , mean) , Sigma = cov(Immatrix) , Inv_Sigma = solve(cov(Immatrix)) )
   return(output)
 }
-BC_PlotCompareSingleHists <- function(X , Y, ...){
-  x11()
-  tmphist <- hist( rbind(as.matrix(X),as.matrix(Y)) , breaks = 30 , plot = FALSE ) 
+BC_PlotCompareSingleHists <- function(X , Y, breaks = 15, ...){
+  X <- X[!is.na(X)]
+  Y <- Y[!is.na(Y)]
+  tmphist <- hist( rbind(as.matrix(X),as.matrix(Y)) , breaks = breaks , plot = FALSE ) 
   hist(X
-       , col=rgb(1,0,0,alpha =0.5) 
+       , col=rgb(0,0,1,alpha =0.5) 
        , freq = FALSE 
-       , breaks = tmphist$breaks, ...)
+       , breaks = tmphist$breaks,ylim = c(0 , 2*max(tmphist$density) ) ,  ...)
   hist(Y
-       , col = rgb(0,0,1,alpha =0.5) 
+       , col = rgb(1,0,0,alpha =0.5) 
        , freq = FALSE 
        , breaks = tmphist$breaks
        , add = T)   
+  ImMean  <- return(abs( (mean(X) - mean(Y))/((var(X)/length(X)) + (var(Y)/length(Y))) ))
 }
 BC_PlotPrevision <- function( Prevision ){
   output <- ggplot( )+
@@ -893,22 +934,22 @@ BC_PlotPrevision <- function( Prevision ){
 }
 BC_PlotPWaveAnalysis <- function( ECG  , Beats , Beats2  , QSwidth  = 0){
   
-  regiontocheck <- 1000:min(1500 , dim(Beats)[1])
+  regiontocheck <- min(dim(Beats)[1] - 500 , 1000):min(1500 , dim(Beats)[1])
   lengthcheck <- 0
-  while( lengthcheck < 400 ){
+  while( lengthcheck < 250 ){
     if(regiontocheck[length(regiontocheck)] > dim(Beats)[1]){break}
-    ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[regiontocheck,] , QSwidth  = 10)
+    ECGBeats <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats[regiontocheck,] , QSwidth  = QSwidth)
     lengthcheck <- length(ECGBeats$numvalues)
-    if(lengthcheck < 400 ){regiontocheck <- regiontocheck + 500}
+    if(lengthcheck < 250 ){regiontocheck <- regiontocheck + 500}
   }
   
   regiontocheck <- 1000:min(1500 , dim(Beats2)[1])
   lengthcheck <- 0
-  while(lengthcheck < 400){
+  while(lengthcheck < 250){
     if(regiontocheck[length(regiontocheck)] > dim(Beats2)[1]){break}
-    ECGBeats2 <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats2[regiontocheck,] , QSwidth  = 10)
+    ECGBeats2 <- AFD_ExtractAllSQ(ECG = ECG , RPeaks = Beats2[regiontocheck,] , QSwidth  = QSwidth)
     lengthcheck <- length(ECGBeats2$numvalues)
-    if(lengthcheck < 400 ){regiontocheck <- regiontocheck + 500}
+    if(lengthcheck < 250 ){regiontocheck <- regiontocheck + 500}
   }
   
   options(expressions = 10000)
@@ -1004,3 +1045,30 @@ return(as.numeric(select.list(unique(as.character(c(1:100)))
                          , graphics = TRUE )))  
 }
 
+BC_PerformanceSweep <- function(GlobalProbCalibrationStruct , thresholds = seq(0 , 1 , 0.01)){
+  
+  output <- matrix(0 , length(thresholds) , 4)
+  colnames(output) <- c('Sensitivity' , 'Specificity' , 'PPV' , 'NPV')
+  
+  alpha <- c(sum(GlobalProbCalibrationStruct[,2])/dim(GlobalProbCalibrationStruct)[1] , 1-(sum(GlobalProbCalibrationStruct[,2])/dim(GlobalProbCalibrationStruct)[1]))
+  
+  for(ii in 1:length(thresholds)){
+    output[ii,1] <- sum(GlobalProbCalibrationStruct[GlobalProbCalibrationStruct[,1] > thresholds[ii] , 2])/sum(GlobalProbCalibrationStruct[,2] == 1)
+    output[ii,2] <- sum(GlobalProbCalibrationStruct[GlobalProbCalibrationStruct[,1] < thresholds[ii] , 2] ==0)/sum(GlobalProbCalibrationStruct[,2] == 0)
+    output[ii,3] <- (alpha[1]*output[ii,1])/(alpha[1]*output[ii,1] + alpha[2]*(1-output[ii,2]) )
+    output[ii,4] <- (alpha[2]*output[ii,2])/ (alpha[1]*(1-output[ii,1]) + alpha[2]*(output[ii,2]) )
+  }
+  return(output) 
+}
+
+BC_PlotsCreateROC <- function( output ){
+  p1<- ggplot(data.frame(Sensitivity = output[,1] , OneMinusSpecificity = (1-output[,2])  ) , aes(OneMinusSpecificity , Sensitivity)) +
+    geom_point(color = 'blue')
+  return(p1)
+}
+
+BC_PlotsCreateNPVPPV <- function( output ){
+  p1<- ggplot(data.frame(PPV = output[,3] , NPV = (output[,4])  ) , aes(NPV , PPV)) +
+    geom_point(color = 'blue')
+  return(p1)
+}
