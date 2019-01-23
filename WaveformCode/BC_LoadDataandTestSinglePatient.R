@@ -72,6 +72,7 @@ AnnotatedAFMetaData <- BC_CreateAnnotationFromInference(t = RPeaksStruct$RRCombi
 }
 
 logicaltimeseries <-  ( PosteriorProbabilities[ , 1] > BCParameters[[3]] )
+#logicaltimeseries <-  ( PosteriorProbabilities[ , 1] > 0.2 )
 logicaltimeseries[is.na(logicaltimeseries)] <- FALSE
 
 # Testing component

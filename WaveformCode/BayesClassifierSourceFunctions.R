@@ -837,7 +837,7 @@ BC_plotAddColouredRegions <- function(plotstruct , Locations  , fillcolor = 'pin
 BC_PlotCreateProbabilityCalibrationPlot <- function(Data){
   GlobalProbabilityCalibrationPlot <- ggplot(Data  , aes(x = x , y = y)) +
     geom_point( color = 'blue') +
-    geom_errorbar(aes(ymin =  y - 2*sd , ymax = y + 2*sd ) , width = .01 ) +
+    geom_errorbar(aes(ymin =  apply(as.matrix(y - 2*sd) , 1 , function(X){max(X , 0)})  , ymax = apply(as.matrix(y + 2*sd) , 1 , function(X){min(X , 1)})) , width = .01 ) +
     geom_line(aes(x = x , y = x))+
     xlab('Predicted Probability') +
     ylab('Estimated Probability')

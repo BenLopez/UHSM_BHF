@@ -1,6 +1,6 @@
 BLBF_CalculateDensities <- function(AFModel, NAFModel , ImMatrix , AFLogical){
-  
-  f_1 <- matrix(0 , length(AFLogical) , 2)
+  ImMatrix <- as.matrix(ImMatrix)
+  f_1 <- matrix(0 , dim(ImMatrix)[1] , 2)
   f_1[,1] <- predict(AFModel , x = ImMatrix)
   f_1[,2] <- predict(NAFModel , x = ImMatrix)
   return(f_1)
@@ -95,7 +95,7 @@ BLBF_CalculateForecastAdjustedVersion <- function(SOS , z , x){
 BLBF_Discrepancy <- function(SOS , x){
   return(log((mahalanobis(x , SOS$Expectation , SOS$Covariance))))
 }
-BLBF_CalculatePosteriorProbabilityNBLA <- function( DataStructure , AFLogical , VariablesToView ,  indextoview ){
+BLBF_CalculatePosteriorProbabilityNBLA <- function( DataStructure , AFLogical , VariablesToView ,  indextoview  , PriorProbability =  c(sum(AFLogical)/length(AFLogical)) ){
   
   mAF <- (apply(DataStructure[AFLogical == T , , indextoview]  , 2 , mean))
   CAF <- cov(DataStructure[AFLogical == T , , indextoview])
@@ -106,37 +106,166 @@ BLBF_CalculatePosteriorProbabilityNBLA <- function( DataStructure , AFLogical , 
   ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
   ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
   
-  AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
-  NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
+  #AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
+  #NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
   
-  PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical)
+  #PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical)
+  
+  PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PriorProbability)
+
   return(PosteriorProbability)
   
 }
 BLBF_CalculatePosteriorProbabilityBLA <- function(DataStructure , AFLogical , PriorProbability , StartIndex , NumberofPoints , VariablesToView){
+ 
+  test <- BLBF_DoubleCrossValidateInference(DataStructure ,AFLogical, StartIndex , NumberofPoints , VariablesToView  )
+  ImAF <- test[,1]
+  ImNAF <- test[
+    ,2]
+  PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PriorProbability)
+  return(PosteriorProbability)
+}
+
+BLBF_CalculatePosteriorProbabilityBLA2 <- function(DataStructure , AFLogical , PriorProbability , StartIndex , NumberofPoints , VariablesToView){
   LengthVector <- length(VariablesToView)
   tmpdata <- DataStructure[ , VariablesToView, c(StartIndex:(StartIndex+NumberofPoints) )]
-  AFSOS <- BLBF_CalculateSecondOrderStruct( tmpdata[which(AFLogical)[sort(sample(1:sum(AFLogical) , sum(AFLogical) -1))] , , ])
-  NAFSOS <- BLBF_CalculateSecondOrderStruct( tmpdata[which(AFLogical == F)[sort(sample(1:sum(AFLogical==F) , sum(AFLogical==F) -1))] , , ])
+  AFSOS <- BLBF_CalculateSecondOrderStruct( tmpdata[which(AFLogical == T) , , ])
+  NAFSOS <- BLBF_CalculateSecondOrderStruct( tmpdata[which(AFLogical == F) , , ])
   
-  AdjustedVersionsAF <- t(apply( tmpdata , 1 , function(X){BLBF_CalculateForecastAdjustedVersion(AFSOS , X[1:(LengthVector*(NumberofPoints))] , X[((LengthVector*(NumberofPoints)) +1):(LengthVector*(NumberofPoints + 1) )])}))
-  AdjustedVersionsNAF <- t(apply( tmpdata , 1 , function(X){BLBF_CalculateForecastAdjustedVersion(NAFSOS , X[1:(LengthVector*(NumberofPoints))] , X[((LengthVector*(NumberofPoints)) +1):(LengthVector*(NumberofPoints +1) )])}))
+  ImAF <- apply(tmpdata , 1 , function(X){BLBF_CrossValidateCalculateIm(tmpdata[AFLogical == T, ,  ] , X , LengthVector  , NumberofPoints )})
+  ImNAF <- apply(tmpdata , 1 , function(X){BLBF_CrossValidateCalculateIm(tmpdata[AFLogical == F, ,  ] , X , LengthVector  , NumberofPoints )})
+  ImAF[AFLogical == T ] <- BLBF_CrossValidateCalculateImAll(tmpdata[AFLogical == T, ,  ] , LengthVector , NumberofPoints )
+  ImNAF[AFLogical == F ] <- BLBF_CrossValidateCalculateImAll(tmpdata[AFLogical == F, ,  ] , LengthVector , NumberofPoints ) 
   
-  AdjustedVersionsAF[AFLogical == T] <- BLBF_CrossValidateAdjustedVersionAll(tmpdata[AFLogical == T , , ]  , LengthVector , NumberofPoints )
-  AdjustedVersionsNAF[AFLogical == F] <- BLBF_CrossValidateAdjustedVersionAll(tmpdata[AFLogical == F , , ]  , LengthVector , NumberofPoints )
+  #AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
+  #NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
+  #PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical , alpha = PriorProbability)
   
-  # Could be over fitting - check that it is not.
-  AdjustedVersionsSOSAF <- BLU_CreateSOS(mu = apply(AdjustedVersionsAF[AFLogical == T ,] , 2 , mean) , Sigma = cov(AdjustedVersionsAF[AFLogical == T ,]) )
-  AdjustedVersionsSOSNAF <- BLU_CreateSOS(mu = apply(AdjustedVersionsNAF[AFLogical == F ,]  , 2 , mean) , Sigma = cov(AdjustedVersionsNAF[AFLogical == F , ]) )
-  
-  ImAF <- apply(AdjustedVersionsAF , 1 , function(X){BLBF_Discrepancy(AdjustedVersionsSOSAF , X )})
-  ImNAF <- apply(AdjustedVersionsNAF , 1 , function(X){BLBF_Discrepancy(AdjustedVersionsSOSNAF, X)} ) 
-  ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
-  ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
+  PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PriorProbability)
+  return(PosteriorProbability)
+}
+BLBF_CrossValidateKDE <- function(ImAF , ImNAF , ImAF_test , ImNAF_test , AFLogical , PriorProbability = c(sum(AFLogical)/length(AFLogical))){
   
   AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
   NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
   
-  PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical , alpha = PriorProbability)
+  #AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
+  #NAFModel <- kde(cbind(ImAF[((AFLogical ==F)*(ImAF < 3))==1] , ImNAF[((AFLogical ==F)*(AFLogical ==F)*(ImAF < 3))==1]) )
+  
+  PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel = AFModel, NAFModel = NAFModel , ImMatrix = cbind(ImAF_test , ImNAF_test) , AFLogical = AFLogical , alpha = PriorProbability)
+  return( PosteriorProbability )
+}
+BLBF_CrossValidateKDEall <- function(ImAF , ImNAF , AFLogical , PriorProbability = c(sum(AFLogical)/length(AFLogical))){
+
+  PosteriorProbability <- matrix(0 , length(AFLogical) , 1)
+  NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
+  AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
+  if(length(PriorProbability)  == 1){ 
+  PosteriorProbability[AFLogical == F] <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF[AFLogical == F] , ImNAF[AFLogical == F]) , AFLogical[AFLogical == F] , alpha = PriorProbability)}else{
+  PosteriorProbability[AFLogical == F] <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF[AFLogical == F] , ImNAF[AFLogical == F]) , AFLogical[AFLogical == F] , alpha = PriorProbability[AFLogical == F])}
+  
+  for(kk in 1:length(AFLogical)){
+  if(AFLogical[kk] == 1){  
+    if(length(PriorProbability)  == 1){
+    PosteriorProbability[kk] <-  BLBF_CrossValidateKDE(ImAF[-kk] , ImNAF[-kk] , ImAF[kk] , ImNAF[kk]  , AFLogical[-kk] , PriorProbability)}
+    if(length(PriorProbability)  > 1){
+      PosteriorProbability[kk] <-  BLBF_CrossValidateKDE(ImAF = ImAF[-kk] , ImNAF = ImNAF[-kk] ,ImAF_test =  ImAF[kk] ,ImNAF_test =  ImNAF[kk]  , AFLogical = AFLogical[-kk] ,PriorProbability =  PriorProbability[kk])}
+    DP_WaitBar(kk/length(AFLogical))
+    }
+  }
   return(PosteriorProbability)
+}  
+
+BLBF_CrossValidateCalculateAdjustedVersionSOS <- function(AdjustedVersions ){
+  Discrepancy <- matrix(0 , dim(AdjustedVersions)[1] , 1)
+  
+  for(kk in 1:dim(Discrepancy)[1]){ 
+    AdjustedVersionsSOS <- BLU_CreateSOS(mu = apply(AdjustedVersions[-kk,] , 2 , mean) , Sigma = cov(AdjustedVersions[-kk ,]) )
+    Discrepancy[kk] <-  BLBF_Discrepancy(AdjustedVersionsSOS , AdjustedVersions[kk , ] )
+  }  
+  return(Discrepancy)
+}  
+
+BLBF_DoubleCrossValidateInference <- function(DataStructure ,AFLogical, StartIndex , NumberofPoints , VariablesToView  ){
+  LengthVector <- length(VariablesToView)
+  Data <- DataStructure[ , VariablesToView, c(StartIndex:(StartIndex+NumberofPoints) )]  
+  ImStruct <- matrix(0 , length(AFLogical) , 2)
+  
+  for(kk in 1:length(AFLogical)){
+    
+    tmpData <- Data[-kk , , ] 
+    tmpAFLogical <- AFLogical[-kk]
+    
+    AFSOS <-  BLBF_CalculateSecondOrderStruct( tmpData[tmpAFLogical , , ])
+    NAFSOS <- BLBF_CalculateSecondOrderStruct( tmpData[tmpAFLogical ==F , , ])
+    
+    AdjustedVersionsAF <- t(apply( Data , 1 , function(X){BLBF_CalculateForecastAdjustedVersion(AFSOS , X[1:(LengthVector*(NumberofPoints))] , X[((LengthVector*(NumberofPoints)) +1):(LengthVector*(NumberofPoints + 1) )])}))
+    AdjustedVersionsNAF <- t(apply( Data , 1 , function(X){BLBF_CalculateForecastAdjustedVersion(NAFSOS , X[1:(LengthVector*(NumberofPoints))] , X[((LengthVector*(NumberofPoints)) +1):(LengthVector*(NumberofPoints +1) )])}))
+    AdjustedVersionsAFtest <- AdjustedVersionsAF[kk , ]
+    AdjustedVersionsNAFtest <- AdjustedVersionsNAF[kk , ] 
+    
+    AdjustedVersionsAF <- AdjustedVersionsAF[-kk , ]
+    AdjustedVersionsNAF <- AdjustedVersionsNAF[-kk , ] 
+    
+    AdjustedVersionsAF[tmpAFLogical == T] <- BLBF_CrossValidateAdjustedVersionAll(tmpData[tmpAFLogical == T , , ]  , LengthVector , NumberofPoints )
+    AdjustedVersionsNAF[tmpAFLogical == F] <- BLBF_CrossValidateAdjustedVersionAll(tmpData[tmpAFLogical == F , , ]  , LengthVector , NumberofPoints )
+    
+    AdjustedVersionsSOSAF <- BLU_CreateSOS(mu = apply(AdjustedVersionsAF[tmpAFLogical,] , 2 , mean) , Sigma = cov(AdjustedVersionsNAF[tmpAFLogical == F,]) )
+    AdjustedVersionsSOSNAF <- BLU_CreateSOS(mu = apply(AdjustedVersionsNAF[tmpAFLogical == F,]  , 2 , mean) , Sigma = cov(AdjustedVersionsNAF[tmpAFLogical == F,]) )
+    
+    ImStruct[ kk , 1] <- BLBF_Discrepancy(AdjustedVersionsSOSAF , AdjustedVersionsAFtest )
+    ImStruct[ kk , 2] <- BLBF_Discrepancy(AdjustedVersionsSOSAF , AdjustedVersionsNAFtest )
+    DP_WaitBar(kk/length(AFLogical))
+  }
+  
+  return(ImStruct)
+  
+}
+
+
+##### Bayes linear Bayes classifier ######
+BLBC_FitBayesLinearBayesClassifier <- function(Data , Labels , PriorProbability =  sum(Labels)/length(Labels)){
+  
+  AFData <- Data[Labels == 1, ]
+  NAFData <- Data[Labels == 0, ]
+  
+  mAF <- apply(AFData , 2 , mean) 
+  vAF <- cov(AFData)
+  mNAF <- apply(NAFData , 2 , mean) 
+  vNAF <- cov(NAFData)
+  
+  ImAF  <- sqrt(apply(Data,   1 , function(X){(X - mAF)%*%(solve(vAF)%*%(X - mAF))}))
+  ImNAF <- sqrt(apply(Data,   1 , function(X){(X - mNAF)%*%(solve(vNAF)%*%(X - mNAF))}))
+  
+  x11()
+  par(mfrow = c(1 , 2))
+  print(BC_PlotCompareSingleHists((ImAF[AFLogical ==F]) , (ImAF[AFLogical ==T]) ))
+  print(BC_PlotCompareSingleHists((ImNAF[AFLogical ==F]) , (ImNAF[AFLogical ==T]) ))
+  
+  AFModel <- kde(cbind(ImAF[Labels == 1 ] , ImNAF[Labels == 1 ]) )
+  NAFModel <- kde(cbind(ImAF[Labels == 0 ] , ImNAF[Labels == 0 ]))   
+  
+  x11(20,14)
+  plot(NAFModel  , col ='blue' , xlab =c('Implausability AF') , ylab =c('Implausability NAF'))
+  plot(AFModel, col = 'red' , add = T)
+  points(ImAF[Labels == 0] , ImNAF[Labels == 0] , col = 'blue' , pch = 16)
+  points(ImAF[Labels == 1] , ImNAF[Labels == 1], col = 'red', pch = 16)
+  
+  
+  PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF ,ImNAF =  ImNAF  ,AFLogical =  (Labels == 1) , PriorProbability = PriorProbability  )
+  PosteriorProbability[is.na(PosteriorProbability)] <- PriorProbability
+  
+  PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability , Labels == 1))
+  ROCplot2 <- BC_PlotsCreateROC(PerformanceSweep) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
+  NPVPPVPlot2 <- BC_PlotsCreateNPVPPV(PerformanceSweep) + geom_vline(xintercept =( 1-PriorProbability)) + geom_hline(yintercept = PriorProbability)+  ggtitle('PPV vs NPV Curves')
+  
+  x11(20,14)
+  grid.arrange(ROCplot2 , NPVPPVPlot2 + xlim(( 1-PriorProbability) , 1) , nrow= 2)
+  
+  x11(20,14)
+  EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability , Labels == 1), BinWidth = 0.1))
+  print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Emperical Probabilities'))
+  
+  return(PosteriorProbability)
+  
 }

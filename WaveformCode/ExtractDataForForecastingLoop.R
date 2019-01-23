@@ -47,13 +47,13 @@ PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,2]
 PriorNonImplausibleSet <- PriorNonImplausibleSet[ PriorNonImplausibleSet[,1] < PriorNonImplausibleSet[,3] ,  ]
 QSwidth = 10 }
 
-for(PatientID in listAllPatients[104:length(listAllPatients)]){
+for(PatientID in listAllPatients[416:length(listAllPatients)]){
   
   MetaData <- DP_ExtractPatientRecordforIndex(PatIndex2017 = PatIndex2017 , PatientCode = PatientID)
+  if(DP_CheckIfAFPatient(MetaData)){next}
   if(!DP_CheckECGreducedfilesprocessed(path = path , PatientsId = PatientID , Filestoprocess = 'ECGI_reduced')){next}
   ECGs <- DP_LoadReducedECGs(path ,  PatientID , FilestoProcess = FilestoProcess  )
   RPeakData <- DP_LoadRpeaksfile(path , PatientID)
-  
   if(DP_CheckIfAFPatient(MetaData)){
     RPeakData$RRCombined <- RPeakData$RRCombined[RPeakData$RRCombined$t < DP_StripTime(MetaData$ConfirmedFirstNewAF[1]) , ]
   }
@@ -78,9 +78,9 @@ for(kk in 1:dim(RRDistributionSummariesOutput)[2]){
   if(length(QS_Struct$t_start) < 450){next}
   if(sum(!is.na(QS_Struct$Value[1,])) < 100 ){next}
   EmulatedQS <- PWaveHM_EmulateTQSegment( QS_Struct = QS_Struct , EmulatorParameters = EmulatorParameters ,Xstar =  Xstar )
-  mQS <- apply(EmulatedQS , 2 , median) 
+  mQS <- apply(DP_RemoveNaRows(EmulatedQS) , 2 , median) 
   mQS <- mQS - mean(mQS)
-  vQS <- apply(EmulatedQS , 2 , IQR)
+  vQS <- apply(DP_RemoveNaRows(EmulatedQS) , 2 , IQR)
   
   Implausability <- PWaveHM_CalulateImplausabilityTQSegment( Xstar , mQS ,   PriorNonImplausibleSet , ImplausabilityFunction = CalculateImplausability )
   Xmin <- PriorNonImplausibleSet[which.min(Implausability) , ] 

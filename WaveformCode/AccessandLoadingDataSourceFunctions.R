@@ -22,14 +22,43 @@ DP_LoadPatientDendrite <- function(){
                          title = 'Choose File Type For Patient Index', graphics = TRUE )
   if(filetype == 'csv')
   {
-    DetIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 PatientIndex.csv file"), stringsAsFactors = FALSE)
+    DetIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 DendriteMaster.csv file"), stringsAsFactors = FALSE)
   }    
   if(filetype == 'RData')
   {
     load(choose.files( caption = 'Select DendriteMaster.RData'))
     DetIndex2017 <<- DetIndex2017
   }
-  return(PatIndex2017)
+  return(DetIndex2017)
+}
+
+DP_LoadPatientBioChem <- function(){
+  filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
+                         title = 'Choose File Type For Patient Index', graphics = TRUE )
+  if(filetype == 'csv')
+  {
+    BioChemIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 BioChemistry.csv file"), stringsAsFactors = FALSE)
+  }    
+  if(filetype == 'RData')
+  {
+    load(choose.files( caption = 'Select BIOChemMaster.RData'))
+    BioChemIndex2017 <<- BioChemIndex2017
+  }
+  return(BioChemIndex2017)
+}
+
+DP_LoadPatientVent <- function(){
+  filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
+                         title = 'Choose File Type For Patient Index', graphics = TRUE )
+  if(filetype == 'csv')
+  {
+    VentIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 Ventilator.csv file"), stringsAsFactors = FALSE)
+  }    
+  if(filetype == 'RData'){
+    load(choose.files( caption = 'Select VentMaster.RData'))
+    VentIndex2017 <<- VentIndex2017
+  }
+  return(VentIndex2017)
 }
 
 DP_LoadECG <- function(path , subList , numberrep=1 , ECGNum = 1 ){
@@ -629,14 +658,11 @@ DP_cumvar <- function(X){
   cummu = DP_cummean(X)
   return( cumsum( (X - DP_cummean(X))^2)/(cumsum(rep(1  , length(X)) )- 1) )
 }
-
 DP_AddNugget <- function(X , nugget = 0.000000000001){
-  
   if(is.matrix(nugget) == FALSE){
     return(X + nugget*diag(dim(X)[1])  )}
   if(is.matrix(nugget) == TRUE){
     return(X + nugget  )}
-  
 }
 DP_CheckProprotionofNa <- function(X){
   return( sum(is.na(X))/length(X) )
@@ -659,4 +685,36 @@ DP_ExtractRecordsFromDendrite <- function(DetIndex2017 , listAllPatients){
     }
   }
   return(DetIndex2017[which(LogicalVector == 1) , ])
+}
+DP_RestructureBioChem <- function(BioChemIndex2017){
+  listoftsvariables <- names(BioChemIndex2017)[15:22]
+  
+  uniquenames <- unique(BioChemIndex2017$NewPseudoId)
+  uniquenames <- uniquenames[!is.na(uniquenames)]
+  
+  NewData <- list()
+  for( i in 1:length(uniquenames) ){
+    NewData[[i]] <- setNames(list(1 , 1) , c('TimeSeriesData' , 'MetaData'))
+    NewData[[i]]$TimeSeriesData <-  data.frame(time = as.POSIXct(DP_StripTime(BioChemIndex2017$PostOpUsandEsTime[grepl(uniquenames[i] , BioChemIndex2017$NewPseudoId) ]) ) , tsdata <- BioChemIndex2017[grepl(uniquenames[i] , BioChemIndex2017$NewPseudoId)  , 15:22] ) 
+    NewData[[i]]$MetaData <- data.frame(BioChemIndex2017[which(grepl(uniquenames[i] , BioChemIndex2017$NewPseudoId))[1]  , -c(15:22)])
+  }
+  NewData <- setNames(NewData , uniquenames)
+  return(NewData)
+}
+DP_RestructureVent <- function(VentIndex2017){
+  listoftsvariables <- names(VentIndex2017)[4:15]
+  
+  uniquenames <- unique(VentIndex2017$PseudoId)
+  uniquenames <- uniquenames[!is.na(uniquenames)]
+  
+  NewData <- list()
+  for( i in 1:length(uniquenames) ){
+    NewData[[i]] <- setNames(list(1 ) , c('TimeSeriesData'))
+    NewData[[i]]$TimeSeriesData <-  data.frame(time = as.POSIXct(DP_StripTime(VentIndex2017$Result.DT[grepl(uniquenames[i] , VentIndex2017$PseudoId) ]) ) , tsdata <- VentIndex2017[grepl(uniquenames[i] , VentIndex2017$PseudoId)  , 4:15] ) 
+  }
+  NewData <- setNames(NewData , uniquenames)
+  return(NewData)
+}
+DP_ExtractPatientIDFromNewPatinetID <- function( newpatientID ){
+  return(  substr(x = newpatientID , start = 1 , stop =  gregexpr( '-' , newpatientID )[[1]][1] -1 )  ) 
 }

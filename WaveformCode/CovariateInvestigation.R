@@ -20,7 +20,7 @@ DetIndex2017 <- DetIndex2017[!duplicated(DetIndex2017$NewPseudoId) , ]
 DetIndex2017 <- DetIndex2017[order(DetIndex2017$NewPseudoId) , ]
 
 SetofCovariatesDet <- c("LogisticEUROScore" ,
-                        "AdditiveEUROScore",
+                        "AdditiveEUROScore" ,
                         "SCTSLogisticEuroSCORE")
 
 ReducedDetIndex2017 <- DetIndex2017[ , which(names(DetIndex2017) %in% SetofCovariatesDet)]}

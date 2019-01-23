@@ -90,5 +90,6 @@ source( 'CorrelationDiscrepancySourceFunctions.R' )
 source('BayesLinearUpdateSourceFunctions.R' )
 source('PWaveHistoryMatchingSourceFunctions.R' )
 source('BayesLinearBayesForecastingSourceFunctions.R')
+source('PreOpModelSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 
