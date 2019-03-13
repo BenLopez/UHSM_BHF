@@ -58,7 +58,10 @@ POM_CreateDataStructure <- function(PatIndex2017 , DetIndex2017 , BioChemIndex20
     }
   }
   
-  MasterPreOpData <- data.frame(AFLogical = !is.na(MasterPreOpData$FirstNewAF) , MasterPreOpData)
+  MasterPreOpData <- MasterPreOpData[duplicated(MasterPreOpData$PseudoId) == 0 , ]
+  
+  MasterPreOpData$ConfirmedFirstNewAF[is.na(MasterPreOpData$ConfirmedFirstNewAF)] <- 'NA'
+  MasterPreOpData <- data.frame(AFLogical = ((!is.na(MasterPreOpData$FirstNewAF))*(MasterPreOpData$ConfirmedFirstNewAF != 'CNAF')) == 1 , MasterPreOpData)
   
   
   return(MasterPreOpData)
@@ -151,5 +154,7 @@ POM_CalculatePreOpProbability <- function(MasterPreOpData , BLBModelStruct,BLBCa
   PosteriorProbability <- POM_CalculateBLBProbability(MasterPreOpData = MasterPreOpData , BLBModelStruct = BLBModelStruct, listofcovariates = listofcovariates , patientID = patientID  , PriorProbability=PriorProbability)
   outut <- POM_CalculateCalibratedProbability(PosteriorProbability = PosteriorProbability , BLBCalibrationStruct  = BLBCalibrationStruct )
   outut$E_D_P[outut$E_D_P < 0] <- 0.001
+  outut$E_D_P[outut$E_D_P > 1] <- 0.999
+  
   return(outut)
 }

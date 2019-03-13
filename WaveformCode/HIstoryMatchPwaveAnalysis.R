@@ -91,7 +91,9 @@ vQS <- apply(EmulatedQS , 2 , IQR)
 
 Implausability <- PWaveHM_CalulateImplausabilityTQSegment( Xstar , mQS ,   PriorNonImplausibleSet , ImplausabilityFunction = CalculateImplausability )
 
-#BC_PlotPairsFromTwoVariables(PriorNonImplausibleSet[sample(1:dim(PriorNonImplausibleSet)[1] , 10000) , ] , PriorNonImplausibleSet[Implausability < 50 , ])
+colnames(PriorNonImplausibleSet) <- c('x1' , 'x2' , 'x3' , 'x4')
+
+BC_PlotPairsFromTwoVariables(PriorNonImplausibleSet[sample(1:dim(PriorNonImplausibleSet)[1] , 10000) , ] , PriorNonImplausibleSet[Implausability < 1, ] , alpha = 0.03)
 
 ImplausabilityStruct[k] <- min(Implausability)
 Xmin <- PriorNonImplausibleSet[which.min(Implausability) , ]  
@@ -145,6 +147,8 @@ tmp2 <- tmp2[tmp2[,1] >0 ,]
 BC_PlotPairsFromTwoVariables( tmp2 , tmp[sample(1:dim(tmp)[1] , 53),] , alpha = 0.2)
 
 
+EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
+QSWidth = 10
 
 for(PatientID in  listAllPatients[1]){
 #  PatientID <- NAFPatients[sample(1:length(NAFPatients) , 1)]
@@ -196,18 +200,39 @@ H <- PWaveHM_CreateDesignMatrix( Xstar , Xmin , PsimulatorFunction )
 Beta <- PWaveHM_CalculateBetas( H , mQS )
 E_Y <- H%*%Beta
 
-{patientnumber = 26
-plot(DP_NormaliseData(mQSStruct[,patientnumber]) , type ='l' , ylim = c(-3,3))
-points(DP_NormaliseData(vQSStruct[,patientnumber])  , type ='l' , col = 'red')
-listAllPatients[patientnumber]}
-
 PWaveHM_PlotMatch(Xstar , as.matrix(H[,dim(H)[2]])%*%Beta[dim(H)[2]] , mQS - (H[,1:(dim(H)[2] -1 )]%*%Beta[1:(dim(H)[2] -1 ),]) , ModelDiscrepancy(Xmin , Xstar, PsimulatorFunction))
-lines(Xstar ,  Beta[(dim(H)[2])]*ECGSim_Gaussian( x = Xstar , mu = Xmin[1]  , sigma = Xmin[2] ) , col = 'black')
-lines(Xstar ,  Beta[(dim(H)[2])]*ECGSim_Gaussian( x = Xstar , mu = Xmin[3] , sigma = Xmin[4] ) , col = 'black')
-abline(v = Xstar[which.max( PsimulatorFunction(Xmin , Xstar))])
+lines(Xstar ,  Beta[(dim(H)[2])]*ECGSim_Gaussian( x = Xstar , mu = Xmin[1]  , sigma = Xmin[2] ) , col = 'purple')
+lines(Xstar ,  Beta[(dim(H)[2])]*ECGSim_Gaussian( x = Xstar , mu = Xmin[3] , sigma = Xmin[4] ) , col = 'purple')
 
 title(paste0(PatientID , ' Non-ImplausibleMatch Im = ' , min(Implausability)))
 }
+
+x11()
+p1 <- ggplot(data.frame(t = Xstar , y = as.matrix(H[,dim(H)[2]])%*%Beta[dim(H)[2]])  , aes(t , y)) + geom_line(col = 'blue') +
+  geom_line(data = data.frame(t = Xstar , y = Beta[(dim(H)[2])]*ECGSim_Gaussian( x = Xstar , mu = Xmin[1]  , sigma = Xmin[2] )) , aes(t , y))+
+  geom_line(data = data.frame(t = Xstar , y = Beta[(dim(H)[2])]*ECGSim_Gaussian( x = Xstar , mu = Xmin[3]  , sigma = Xmin[4] )) , aes(t , y)) +
+  xlab('t') +
+  ylab('F[x]') + ggtitle(paste0('Forward Model for x = (', round(Beta[(dim(H)[2])] , 2) , ', ', round(Xmin , 2)[1] , ', ' , round(Xmin , 2)[2] , ', ' , round(Xmin , 2)[3] , ', ' , round(Xmin , 2)[4], ')'))
+p1
+
+
+x11()
+p2 <- ggplot(data.frame(t = Xstar , y = ModelDiscrepancy(Xmin , Xstar , PsimulatorFunction)) , aes(t , y)) + geom_line(col = 'blue') +  xlab('t') +
+               ylab('Variance Model Discrepancy') + ggtitle(paste0('Variance Model Discrepancy for x = (', round(Beta[(dim(H)[2])] , 2) , ', ', round(Xmin , 2)[1] , ', ' , round(Xmin , 2)[2] , ', ' , round(Xmin , 2)[3] , ', ' , round(Xmin , 2)[4], ')'))
+p2
+x11()
+p3 <- ggplot(data.frame(t = Xstar , y = mQS) , aes(t , y)) + geom_line(col = 'blue') +  xlab('t') +
+  ylab('V') + ggtitle(paste0('Average T-Q Segment'))
+p3
+
+x11()
+V_me = ModelDiscrepancy(Xmin , Xstar, PsimulatorFunction)
+p4  <-  ggplot(data.frame(t = Xstar , y = E_Y)  , aes(t , y)) + geom_line(col = 'blue') +
+        geom_line(data = data.frame(t = Xstar , y = mQS) , aes(t , y), col = 'purple' )  +
+        geom_line(data = data.frame(t = Xstar , y = mQS- 2*sqrt(V_me))  , aes(t , y), col = 'red' ) +  
+        geom_line(data = data.frame(t = Xstar , y = mQS+ 2*sqrt(V_me))  , aes(t , y), col = 'red' )+  xlab('t') +
+        ylab('V') + ggtitle(paste0('Acceptable Match x = (', round(Beta[(dim(H)[2])] , 2) , ', ', round(Xmin , 2)[1] , ', ' , round(Xmin , 2)[2] , ', ' , round(Xmin , 2)[3] , ', ' , round(Xmin , 2)[4], ')'))
+p4
 
 
 # Second order classification for 

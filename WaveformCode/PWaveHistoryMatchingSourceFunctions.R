@@ -13,9 +13,9 @@ PWaveHM_CalculateMSE <- function(H , Beta , z){
 PWaveHM_PlotMatch <- function(t_observation , E_Z , z , v_me){
   x11()
   plot(  t_observation  ,  E_Z , col = 'blue'  ,  xlab = 'Normalised Time'  ,  ylab = 'Observed' , type = 'l'  , ylim = c(-40,40))
-  points( t_observation  ,  z  ,  col = 'black' )
-  points( t_observation  ,  z + 3*sqrt(v_me)  ,  col = 'red' )
-  points( t_observation  ,  z - 3*sqrt(v_me)  ,  col = 'red' )
+  lines( t_observation  ,  z  ,  col = 'black'  , type ='l')
+  lines( t_observation  ,  z + 3*sqrt(v_me)  ,  col = 'red' , type ='l')
+  lines( t_observation  ,  z - 3*sqrt(v_me)  ,  col = 'red' , type ='l')
 }
 PWaveHM_CalculateImplausability <- function( t_observation , x ,  z ){
   H = PWaveHM_CreateDesignMatrix(t_observation , x , PsimulatorFunction)
@@ -39,7 +39,8 @@ PWaveHM_EmulateTQSegment <- function( QS_Struct , EmulatorParameters = PWaveHM_C
   EmulatorParameters$X <- (1:length(QS_Struct$Date[1,tmp]))/length(QS_Struct$Date[1,tmp])
   EmulatorParameters$Y <- QS_Struct$Value[1,tmp] - mean(QS_Struct$Value[1,tmp])
   
-  EmulatedQS <- matrix( 0 , dim(QS_Struct$Date)[1] , length(Xstar) )
+  #EmulatedQS <- matrix( 0 , dim(QS_Struct$Date)[1] , length(Xstar) )
+  EmulatedQS <- matrix( 0 , 100 , length(Xstar) )
   counter <- 1
   print( 'Emulating TQ Segments.' )
   for(i in 1:dim(QS_Struct$Date)[1]){
@@ -48,9 +49,11 @@ PWaveHM_EmulateTQSegment <- function( QS_Struct , EmulatorParameters = PWaveHM_C
     tmp = 1:(min(dim(QS_Struct$Date)[2] , QS_Struct$numvalues[i ]) -1)
     EmulatorParameters$X <- (1:length(QS_Struct$Date[i,tmp]))/length(QS_Struct$Date[i,tmp])
     EmulatorParameters$Y <- QS_Struct$Value[i,tmp] - mean(QS_Struct$Value[i,tmp])
-    EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(Xstar , EmulatorParameters)
+    if(length(  EmulatorParameters$X ) < 10){next}
+    EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(Xstar , EmulatorParameters  , meanonly = 1)
     EmulatedQS[counter,] <- EmulatorOutput$E_D_fX
     counter <- counter +1
+    if(counter > 100){break}
   }  
   print('TQ Segments Emulated.' )
   EmulatedQS <- EmulatedQS[-(counter:dim(EmulatedQS)[1] ), ]
@@ -100,4 +103,66 @@ PWaveHM_EmulateEstimatePAmplitude <- function(QS_Struct , EmulatorParameters = P
   }
   
   return(setNames(list(P_Amplitude , XminIm) ,  c('P_Amplitude' , 'XminIm')))
+}
+PWaveHM_HistoryMatchGroupofPwaves <- function(z , QS_Struct , PriorNonImplausibleSet , ModelDiscrepancyMatrix, Hinvstruct , Hstruct){
+  # Precalculations
+  
+  if(!exists('Hinvstruct')){
+    Hinvstruct <- apply(PriorNonImplausibleSet , 1 , function(X){
+      H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction)
+      return(solve(t(H)%*%H)%*%t(H))
+    })}
+  if(!exists('Hinvstruct')){
+    Hstruct <- apply(PriorNonImplausibleSet , 1 , function(X){
+      return(  H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction))
+    })  
+  }
+  if(!exists('ModelDiscrepancyMatrix')){
+    ModelDiscrepancyMatrix <- apply(PriorNonImplausibleSet , 1 , function(X){sqrt(ModelDiscrepancy(X , Xstar , PsimulatorFunction))} )
+  }
+  
+  # History Match    
+  Implausability <- matrix(0 , dim(PriorNonImplausibleSet)[1] , dim(z)[1])
+  for(i in 1:dim(PriorNonImplausibleSet)[1]){
+    Betas = matrix(Hinvstruct[ , i] , 4  , 51)%*%t(z)
+    
+    Implausability[i , ] <- colMeans2( abs(t(z) - matrix(Hstruct[ , i] , 51  , 4)%*%Betas) / ModelDiscrepancyMatrix[,i])
+    #apply(apply(abs(t(z) - H%*%Betas) , 2 ,  function(X){X / ModelDiscrepancyMatrix[,i]} ) , 2 , mean)
+    #DP_WaitBar(i / dim(PriorNonImplausibleSet)[1])
+  }
+  
+  # Extract Useful Data
+  
+  XminStruct <- PriorNonImplausibleSet[apply(Implausability , 2 , which.min) , ]
+  XminStruct <-XminStruct[apply(Implausability  , 2 , min) < 2, ]
+
+  if(length(XminStruct) < 25){
+    return(rep(0,8))
+  }else{
+  T_start <- apply(XminStruct , 1 , function(X){Xstar[which(abs(c(0, diff(PsimulatorFunction(X , Xstar)> 0.075))  )==1 )[1]]} )
+  T_end <- apply(XminStruct , 1 , function(X){Xstar[which(abs(c(0, diff(PsimulatorFunction(X , Xstar)> 0.075))  )==1 )[2]]} )
+  T_end[is.na(T_end)] <- 1
+  T_start[is.na(T_start)]<- mean(T_start , na.rm = T)
+  PWaveDurations <- as.numeric((T_end - T_start)*(median(diff(QS_Struct$t_start) , na.rm = T) - (20*0.005) ))*1000
+  PAmplitudes <- apply(XminStruct , 1 ,function(X){which.max( PsimulatorFunction(X , Xstar) ) } )
+  for(i in 1:length(PAmplitudes)){
+    PAmplitudes[i] <- z[i , PAmplitudes[i]]
+  }
+  PLocations <- apply(XminStruct , 1 ,function(X){which.max( PsimulatorFunction(X , Xstar) ) } )
+  for(i in 1:length(PAmplitudes)){
+    PLocations[i] <- Xstar[PLocations[i]]
+  }
+  
+  output <- rep(0 , 8)
+  output[1] <-  as.numeric(quantile(PWaveDurations , 0.98) - quantile(PWaveDurations , 0.02))
+  output[2] <-  as.numeric(quantile(PWaveDurations , 0.98))
+  output[3] <-  as.numeric(quantile(PWaveDurations , 0.02))
+  output[4] <-  mean( PWaveDurations , na.rm = T)
+  output[5] <-  var( PWaveDurations , na.rm = T) 
+  output[6] <-  as.numeric((quantile(T_end , 0.99) - quantile(T_start , 0.01))*(median(diff(QS_Struct$t_start) , na.rm = T) - (20*0.005) )*1000)
+  output[7] <-  mean(PAmplitudes, na.rm = T)
+  output[8] <-  var(PAmplitudes , na.rm = T)
+  
+  return(output)
+  }
 }

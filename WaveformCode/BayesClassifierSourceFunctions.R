@@ -1,4 +1,3 @@
-
 ###### Inference Functions ######
 BC_LoadInAllDistributionSummaries <- function(path , listAllPatients , PatIndex2017 ){
   counter <- 1
@@ -771,8 +770,8 @@ BC_PlotCreateECGPlots <- function(RPeaksStruct ,  ECGStruct  , timestart = ECGSt
     geom_line(colour= color) + 
     ylab('V') + 
     xlab('t') +
-    geom_point(data = data.frame(t = t1 , RA = RA1) , aes(t , RA) , colour = 'red' ) +  
-    geom_point(data = data.frame(t = t2 , RA = RA2) , aes(t , RA) , colour = 'black'  )
+    geom_point(data = data.frame(t = t2 , RA = RA2) , aes(t , RA) , colour = 'black'  )+
+    geom_point(data = data.frame(t = t1 , RA = RA1) , aes(t , RA) , colour = 'red' )
   return(plotstruct)  
 }
 BC_PlotECGAlignAxis <- function(plotstruct , timerange){

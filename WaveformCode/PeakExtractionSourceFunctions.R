@@ -37,21 +37,21 @@ PE_ReformulateUniqueTimeDataFrame <- function(TableofUniqueTimes){
   names(SecsStruct) <- UniqueSeconds
   MinsStruct <- list()
   for(i in 1:length(UniqueMinutes)){
-  MinsStruct[[i]]  <- SecsStruct
+    MinsStruct[[i]]  <- SecsStruct
   }
   names(MinsStruct) <- UniqueMinutes
   HoursStruct <- list()
   for(i in 1:length(UniqueHours)){
-  HoursStruct[[i]] <- MinsStruct
+    HoursStruct[[i]] <- MinsStruct
   }
   names(HoursStruct) <- UniqueHours
   daysstruct <- list()
   for(i in 1:length(UniqueDays)){
-  NewStruct[[i]] <- HoursStruct
+    NewStruct[[i]] <- HoursStruct
   }
   names(NewStruct) <- UniqueDays
-
-for (i in 1:length( UniqueDays ) ){
+  
+  for (i in 1:length( UniqueDays ) ){
     days <- TableofUniqueTimes[ round.POSIXt(TableofUniqueTimes$Var1 , units = 'days') == UniqueDays[i], ]
     #NewStruct[[i]][[j]]
     for(j in 1:length( UniqueHours )){
@@ -61,52 +61,52 @@ for (i in 1:length( UniqueDays ) ){
         #NewStruct[[i]][[j]][[k]]
         minutes <- hours[ format(hours$Var1 , format = '%M') == UniqueMinutes[k], ]
         for(l in 1:length(UniqueSeconds)){
-        if(nrow(minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]) > 0){
-          NewStruct[[i]][[j]][[k]][[l]] <- minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]}
-        if(nrow(minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]) == 0){
-          NewStruct[[i]][[j]][[k]][[l]] <- data.frame(Var1=NA , Freq= NA)  
+          if(nrow(minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]) > 0){
+            NewStruct[[i]][[j]][[k]][[l]] <- minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]}
+          if(nrow(minutes[ format(minutes$Var1 , format = '%S') == UniqueSeconds[l], ]) == 0){
+            NewStruct[[i]][[j]][[k]][[l]] <- data.frame(Var1=NA , Freq= NA)  
           }
         }
       }
     }
   }
-
-return(NewStruct)
+  
+  return(NewStruct)
 }
 PE_ReformulateUniqueTimeDataFrame2 <- function(TableofUniqueTimes){
-UnClassed <- unclass(TableofUniqueTimes$Var1)
-uniquemonths <- unique(UnClassed$mon)
-uniquedays <- unique(UnClassed$mday)
-uniquehours <- unique(UnClassed$hour)
-uniqueminutes <- unique(UnClassed$min)
-uniqueseconds <- unique(UnClassed$sec)
-
-NewStruct <- list()
-for(ii in 1:length(uniquemonths)){
-  NewStruct[[ii]] <- list()
-  for(jj in 1:length(uniquedays)){
-    NewStruct[[ii]][[jj]]<-list()
-    for(kk in 1:length(uniquehours)){
-      NewStruct[[ii]][[jj]][[kk]]<-list()
-      for(ll in 1:length(uniqueminutes) ){
-        NewStruct[[ii]][[jj]][[kk]][[ll]] <- TableofUniqueTimes[
-          (UnClassed$mon ==    uniquemonths[ii])*
-          (UnClassed$mday ==   uniquedays[jj])*
-          (UnClassed$hour ==   uniquehours[kk])*
-          (UnClassed$min ==    uniqueminutes[ll]) == 1 ,]
+  UnClassed <- unclass(TableofUniqueTimes$Var1)
+  uniquemonths <- unique(UnClassed$mon)
+  uniquedays <- unique(UnClassed$mday)
+  uniquehours <- unique(UnClassed$hour)
+  uniqueminutes <- unique(UnClassed$min)
+  uniqueseconds <- unique(UnClassed$sec)
+  
+  NewStruct <- list()
+  for(ii in 1:length(uniquemonths)){
+    NewStruct[[ii]] <- list()
+    for(jj in 1:length(uniquedays)){
+      NewStruct[[ii]][[jj]]<-list()
+      for(kk in 1:length(uniquehours)){
+        NewStruct[[ii]][[jj]][[kk]]<-list()
+        for(ll in 1:length(uniqueminutes) ){
+          NewStruct[[ii]][[jj]][[kk]][[ll]] <- TableofUniqueTimes[
+            (UnClassed$mon ==    uniquemonths[ii])*
+              (UnClassed$mday ==   uniquedays[jj])*
+              (UnClassed$hour ==   uniquehours[kk])*
+              (UnClassed$min ==    uniqueminutes[ll]) == 1 ,]
         }
-      names(NewStruct[[ii]][[jj]][[kk]]) <- uniqueminutes
+        names(NewStruct[[ii]][[jj]][[kk]]) <- uniqueminutes
+      }
+      names(NewStruct[[ii]][[jj]]) <- uniquehours
     }
-    names(NewStruct[[ii]][[jj]]) <- uniquehours
+    names(NewStruct[[ii]]) <- uniquedays
   }
-  names(NewStruct[[ii]]) <- uniquedays
-}
-
-names(NewStruct) <- uniquemonths
-
-
-return(NewStruct)
-
+  
+  names(NewStruct) <- uniquemonths
+  
+  
+  return(NewStruct)
+  
 }
 PE_ExractECGActiveLogical <- function(RpeaksFile , ECG1 , ECG2){
   output <- matrix(0 , length(RpeaksFile$t) , 2)
@@ -118,7 +118,7 @@ PE_ReturnWaveformwithPositiveOrientation <- function(WaveData){
   mm <- rollmedian(WaveData$Value ,  k = 21 , na.pad = TRUE)
   mm[is.na(mm)] <- 0
   qus <- abs(quantile(WaveData$Value - mm, probs = c(0.01 , 0.99) , na.rm = TRUE ))
-if( as.numeric(qus[1]) > as.numeric(qus[2]) )
+  if( as.numeric(qus[1]) > as.numeric(qus[2]) )
   {
     Date   <-   WaveData$Date 
     Value  <-  -WaveData$Value
@@ -159,7 +159,7 @@ PE_RPeakExtractionWavelet <- function(WaveData , Filter = wt.filter(filter = "d6
   vv[vv == 0] <- mean(vv[!is.na(vv)])
   
   stdresid = imodoutput/sqrt(vv)
-
+  
   
   Orientationlogical <- PE_ExtractOrientationLogical(WaveData = WaveData )
   
@@ -182,55 +182,34 @@ PE_RPeakExtractionWavelet <- function(WaveData , Filter = wt.filter(filter = "d6
   return(output)
 }
 PE_MultipleECGRPeaks <- function( outputdata , ECGs ,  thresh = 0.02  ){
-  # Calulate distance to closest peak
-  mindistancesI <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
-  mindistancesII <- apply( as.matrix( as.numeric(outputdata$ECGIII$t) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
   
-  # Find good peaks
-  ActiveMatrix <- apply(PE_ExractECGActiveLogical(outputdata$ECGIII , ECGs$ECGI$Date, ECGs$ECGII$Date) , 1 , sum)
-  Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
-  Goodlogical[ActiveMatrix < 2] <- 1
-    
-  # Extract good peaks
-  tt_good <- outputdata$ECGIII$t[Goodlogical > 0]
-  tt_notgood <- outputdata$ECGIII$t[Goodlogical == 0]
+  ActiveMatrix <- rbind(1 + as.matrix(apply(PE_ExractECGActiveLogical(outputdata$ECGI , ECGs$ECGII$Date, ECGs$ECGIII$Date) , 1 , sum)) ,
+                        1 + as.matrix(apply(PE_ExractECGActiveLogical(outputdata$ECGII , ECGs$ECGI$Date, ECGs$ECGIII$Date) , 1 , sum)) ,
+                        1 + as.matrix(apply(PE_ExractECGActiveLogical(outputdata$ECGIII , ECGs$ECGII$Date, ECGs$ECGI$Date) , 1 , sum)))
+  PeakMatrix <- c(outputdata$ECGI$t , outputdata$ECGII$t , outputdata$ECGIII$t )
   
-  # Set of beats in ECGII which are classified as good.
-  goodlogical_2 <- apply( as.matrix(as.numeric(outputdata$ECGII$t)) , 1 , function(X){min(abs(X - as.numeric(tt_good))) <= thresh} )
-
-  # Remove good points
-  ttmp <- outputdata$ECGII$t[ goodlogical_2 == 0 ]
+  ActiveMatrix <- ActiveMatrix[order(PeakMatrix)]
+  PeakMatrix <- sort(PeakMatrix)
   
-  mindistancesI <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)))} )
-  mindistancesII <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)))} )
+  MinDIsMatrix <- cbind( as.matrix(apply(as.matrix(PeakMatrix) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGI$t)) )} )) ,
+                         as.matrix(apply(as.matrix(PeakMatrix) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)) )} )) ,
+                         as.matrix(apply(as.matrix(PeakMatrix) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)) )} ))  )
   
-  ActiveMatrix <- apply(PE_ExractECGActiveLogical(outputdata$ECGII , ECGs$ECGI$Date, ECGs$ECGIII$Date) , 1 , sum)
-  Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
-  Goodlogical[ActiveMatrix < 2] <- 1
+  NumberofECGsPeaksAppearin <- apply( MinDIsMatrix <= thresh , 1 , sum  )
   
-  tt_good <- c( tt_good , outputdata$ECGII$t[Goodlogical > 0]  )
-  tt_notgood <- c( tt_notgood , outputdata$ECGII$t[Goodlogical == 0] )
+  # deal with active matrix
+  NumberofECGsPeaksAppearin[ActiveMatrix == 1] = 3 
+  Goodlogical = (NumberofECGsPeaksAppearin >= 2)
+  Goodlogical[duplicated(PeakMatrix) ] = F
+  Goodlogical[c(0,diff(PeakMatrix) ) <= thresh] = F
   
-  goodlogical_1 <- apply( as.matrix(as.numeric(outputdata$ECGI$t)) , 1 , function(X){min(abs(X - as.numeric(tt_good))) <= thresh} )
-  ttmp <- outputdata$ECGI$t[goodlogical_1 == 0 ]
-  
-  mindistancesI <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGII$t)))} )
-  mindistancesII <- apply( as.matrix( as.numeric(ttmp) ) , 1 , function(X){min(abs(X - as.numeric(outputdata$ECGIII$t)))} )
-  
-  ActiveMatrix <- apply(PE_ExractECGActiveLogical(outputdata$ECGI , ECGs$ECGII$Date, ECGs$ECGIII$Date) , 1 , sum)
-  Goodlogical <- (mindistancesI <= thresh) + (mindistancesII <= thresh)
-  Goodlogical[ActiveMatrix < 2] <- 1
-  
-  tt_good <- sort(c(tt_good , outputdata$ECGI$t[Goodlogical > 0] ))
-  tt_notgood <- c(tt_notgood , outputdata$ECGI$t[Goodlogical == 0] )
-  
-  RR <- c(0 , diff(tt_good))
-  tt_good <- tt_good[((RR > 0.1)*(RR < 4)) == 1]
+  t <- PeakMatrix[Goodlogical]
+  RR <- c( 0 , diff(PeakMatrix[Goodlogical]))
+  t <- t[((RR > 0.1)*(RR < 4)) == 1]
   RR <- RR[((RR > 0.1)*(RR < 4)) == 1]
-  
-  ECG <- data.frame(t = tt_good , RA = 150 + 0*RR , RR = RR)
-  return(ECG)
-  
+          
+          return( data.frame(t = t , RA = 150 + 0*RR , RR = RR) )        
+          
 }
 PE_CleanRpeaks <- function( RWaveExtractedData , threshold = 2 ){
   

@@ -20,32 +20,22 @@
   BLBModelStruct <- POM_CreateBLBModellingStructure(MasterPreOpData =  ReducedMasterPreOpData  , listofcovariates = POM_CreateDefaultSetofCov() )
   PosteriorProbability <- POM_CalculateBLBProbability(MasterPreOpData = ReducedMasterPreOpData , BLBModelStruct, listofcovariates = POM_CreateDefaultSetofCov() , ReducedMasterPreOpData$PseudoId )
   BLBCalibrationStruct <- POM_CreateBLBCalibrationStructure(PosteriorProbability , ReducedMasterPreOpData$AFLogical )
-
-  }
-
-
+  #POM_CalculatePreOpProbability()
+}
 
 MasterPreOpData <- POM_CreateDataStructure(PatIndex2017 , DetIndex2017 , BioChemIndex2017)
 
-# Remove patients with preoperative flutter
-ReducedMasterPreOpData <- MasterPreOpData[MasterPreOpData$Pre_OperativeHeartRhythm != 'Atrial fibrillation/flutter' , ]
-ReducedMasterPreOpData <- data.frame(AFLogical = !is.na(ReducedMasterPreOpData$FirstNewAF) , ReducedMasterPreOpData)
-
-for(ii in 1:dim(ReducedMasterPreOpData)[2]){
-if(is.numeric(ReducedMasterPreOpData[, ii]) ){
-     ReducedMasterPreOpData[is.na(ReducedMasterPreOpData[, ii]), ii] <- mean(ReducedMasterPreOpData[!is.na(ReducedMasterPreOpData[, ii]), ii])
-  }
-}
 
 summary(glm(formula = AFLogical ~ Age  + Gender + Weight + CPB + AdditiveEUROScore +LogisticEUROScore + SCTSLogisticEuroSCORE+ PreOpNa+PreOpK+PreopUrea+PreopCreat+PreOpCRP+PreOpAlb+PreopBili+PreopMg,family=binomial(link='logit') , data=ReducedMasterPreOpData))
 
-model <- (glm(formula = AFLogical ~ Age  + CPB + AdditiveEUROScore  + PreOpNa+PreopUrea+PreOpCRP+PreOpAlb,family=binomial(link='logit') , data=ReducedMasterPreOpData))
+model <- (glm(formula = AFLogical ~ Age  + CPB + AdditiveEUROScore  + PreOpNa +PreopUrea + log(PreOpAlb) + PreopBili + PreopCreat ,family=binomial(link='logit') , data=ReducedMasterPreOpData))
 summary(model)
 
 AFLogical <- ReducedMasterPreOpData$AFLogical
 BC_PlotCompareSingleHists(model$fitted.values[AFLogical == F] , model$fitted.values[AFLogical == T])
 
-listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' ,'PreOpCRP', 'PreOpAlb' , 'PreopBili' , 'PreopCreat')
+listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' , 'PreOpAlb' , 'PreopBili' , 'PreopCreat')
+#listofcovariates <- c('Age'  , 'weight' ,   'CPB' ,  'AdditiveEUROScore' , 'LogisticEUROScore ' , 'SCTSLogisticEuroSCORE' , 'PreOpNa','PreOpK', 'PreopUrea' , 'PreOpAlb' , 'PreopBili' , 'PreopCreat' , 'PreopMg')
 indexesofcovariates <-  which(names(ReducedMasterPreOpData) %in%listofcovariates )
 
 DataMatrix <- ReducedMasterPreOpData[ , indexesofcovariates]
@@ -55,8 +45,8 @@ BC_PlotPairsFromTwoVariables(DataMatrix[AFLogical == 1 ,] ,DataMatrix[which(AFLo
 
 PosteriorProbability <- BLBC_FitBayesLinearBayesClassifier(Data =  DataMatrix , Labels = AFLogical )
 
-
 {
+  Labels = AFLogical
   EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability , Labels == 1), BinWidth = 0.1))
 
   CovariateEmulationClass = BE_CreateDefaultEmulationClass()
@@ -92,9 +82,10 @@ PosteriorProbability <- BLBC_FitBayesLinearBayesClassifier(Data =  DataMatrix , 
   BC_PlotCreateProbabilityCalibrationPlot(CalibratedProbabilityStructure) + ggtitle('Calibrated Covariate Emperical Probabilities')
 }
 
+PriorProbability <- sum(AFLogical)/length(AFLogical)
 PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(E_D_Prevision , Labels == 1))
 ROCplot <- BC_PlotsCreateROC(PerformanceSweep) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
 NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep) + geom_vline(xintercept =( 1-PriorProbability)) + geom_hline(yintercept = PriorProbability)+  ggtitle('PPV vs NPV Curves')
 x11()
-
+grid.arrange(ROCplot , NPVPPVPlot + xlim(( 1-PriorProbability) , 1) , nrow= 2)
 

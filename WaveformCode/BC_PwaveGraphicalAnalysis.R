@@ -13,7 +13,6 @@ AFNAFPlot3 <- BC_PlotPWaveAnalysis(ECG = ECGs$ECGIII , Beats =  AFBeats , Beats2
   ggtitle('ECGIII') + ylim(-40,40)
 
 
-
 x11(15,12)
 print(grid.arrange( AFNAFPlot1,
                     AFNAFPlot2,

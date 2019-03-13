@@ -26,7 +26,7 @@ BCOptions[[7]] <- 'Yes'
 BCParameters <- setNames( list(1,1,1,1 , 1) , c( 'TS_Likelihood_clique' , 'NumberComponentsforGMM' , 'ProbabilityThreshold' , 'Minute Threshold' ,'GlobalNumberComponentsforGMM' ) )
 BCParameters[[1]] <- 250
 BCParameters[[2]] <- 25
-BCParameters[[3]] <- 0.5
+BCParameters[[3]] <- 0.1
 BCParameters[[4]] <- 7
 BCParameters[[5]] <- 1
 

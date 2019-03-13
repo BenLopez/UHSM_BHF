@@ -41,11 +41,11 @@ if( length(outputdata$RRCombined$t) < 1000){
   next}
   
 if(DP_CheckFieldExists(outputdata , 'RRCombined')){
-  print('Calulating Distribution Summaries')
+  print('Calculating Distribution Summaries')
   DistributionSummaries <- AFD_ExtractDistributionSummaries(RRStruct = outputdata$RRCombined , MetaData = outputdata$Meta_Data)  
   print('Distribution Summaries calculated')
   
-  print('Saving Distribution Summari}es')
+  print('Saving Distribution Summaries')
   DP_SaveFile(DistributionSummaries , path , listAllPatients[[ii]] , Name = paste0(listAllPatients[[ii]] , '_DistributionSummaries' ) )
   print('Distribution Summaries Saved')
   

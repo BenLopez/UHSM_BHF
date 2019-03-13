@@ -35,7 +35,10 @@ packages<-c("ggplot2",
             "ggpubr",
             "ks",
             "plot3D",
-            "entropy")
+            "entropy",
+            "dplyr",
+            'miscTools',
+            'rmutil')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -64,6 +67,8 @@ library( latex2exp )#
 library( ggpubr )#
 library( ks )#
 library( plot3D )#
+library( miscTools )
+
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
@@ -91,5 +96,6 @@ source('BayesLinearUpdateSourceFunctions.R' )
 source('PWaveHistoryMatchingSourceFunctions.R' )
 source('BayesLinearBayesForecastingSourceFunctions.R')
 source('PreOpModelSourceFunctions.R')
+source('ForwardModellingSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

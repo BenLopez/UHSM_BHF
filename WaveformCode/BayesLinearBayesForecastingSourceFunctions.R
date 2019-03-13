@@ -18,7 +18,8 @@ BLBF_ReshapetoMatrix <- function(X){
   return(matrix(X , dim(X)[1] , dim(X)[2]*dim(X)[3]))
 }
 BLBF_CalculateSecondOrderStruct <- function(X){
-  X <- BLBF_ReshapetoMatrix(X)
+  if(length(dim(X))>2){
+  X <- BLBF_ReshapetoMatrix(X)}
   output <- BLU_CreateSOS(mu = apply(X , 2 , mean) , Sigma =  cov(X))
   return(output)
 }
@@ -93,36 +94,38 @@ BLBF_CalculateForecastAdjustedVersion <- function(SOS , z , x){
   return(E_z_X - x)
 }
 BLBF_Discrepancy <- function(SOS , x){
-  return(log((mahalanobis(x , SOS$Expectation , SOS$Covariance))))
+  return(sqrt((mahalanobis(x , SOS$Expectation , SOS$Covariance))))
 }
-BLBF_CalculatePosteriorProbabilityNBLA <- function( DataStructure , AFLogical , VariablesToView ,  indextoview  , PriorProbability =  c(sum(AFLogical)/length(AFLogical)) ){
+#BLBF_CalculatePosteriorProbabilityNBLA <- function( DataStructure , AFLogical , VariablesToView = -c( 13) ,  indextoview = 371  , PriorProbability =  c(sum(AFLogical)/length(AFLogical)) ){
   
-  mAF <- (apply(DataStructure[AFLogical == T , , indextoview]  , 2 , mean))
-  CAF <- cov(DataStructure[AFLogical == T , , indextoview])
-  mNAF <- (apply(DataStructure[AFLogical == F , , indextoview]  , 2 , mean))
-  CNAF <- cov(DataStructure[AFLogical == F , , indextoview])
-  ImAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[, , indextoview] , mAF , CAF)
-  ImNAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[, , indextoview] , mNAF , CNAF)
-  ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
-  ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
+ # Im <- BLBL_CrossValidateImplausabilitiesALL(TrainingData = DataStructure[, VariablesToView, indextoview] , AFLogical)
+#  ImAF <- Im[,1]
+#  ImNAF <- Im[,2]
   
   #AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
   #NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
   
   #PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical)
   
-  PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PriorProbability)
+ # PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PriorProbability)
 
-  return(PosteriorProbability)
+#  return(PosteriorProbability)
   
-}
+#}
 BLBF_CalculatePosteriorProbabilityBLA <- function(DataStructure , AFLogical , PriorProbability , StartIndex , NumberofPoints , VariablesToView){
  
   test <- BLBF_DoubleCrossValidateInference(DataStructure ,AFLogical, StartIndex , NumberofPoints , VariablesToView  )
-  ImAF <- test[,1]
-  ImNAF <- test[
-    ,2]
-  PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PriorProbability)
+  test[,1]= (test[,1] - mean(test[AFLogical,1]))/sqrt(var(test[AFLogical,1]))
+  test[,2]= (test[,2] - mean(test[AFLogical ==0,2]))/sqrt(var(test[AFLogical==0,2]))
+  ImAF   <-  test[,1]
+  ImNAF  <-  test[,2]
+  
+  
+  ImplausibleForBoth <- ((test[,1] > 2)*(test[,2] > 2)) == 0
+  PosteriorProbability <- 0*ImAF
+  PosteriorProbability[ImplausibleForBoth] <- BLBF_CrossValidateKDEall(ImAF = ImAF[ImplausibleForBoth] , ImNAF = ImNAF[ImplausibleForBoth] , AFLogical = AFLogical[ImplausibleForBoth]  , PriorProbability = PriorProbability[ImplausibleForBoth])
+  PosteriorProbability[ImplausibleForBoth] <- PriorProbability[ImplausibleForBoth == 0]
+    
   return(PosteriorProbability)
 }
 
@@ -225,22 +228,19 @@ BLBF_DoubleCrossValidateInference <- function(DataStructure ,AFLogical, StartInd
 
 ##### Bayes linear Bayes classifier ######
 BLBC_FitBayesLinearBayesClassifier <- function(Data , Labels , PriorProbability =  sum(Labels)/length(Labels)){
+
+  Im <- BLBL_CrossValidateImplausabilitiesALL(TrainingData = Data , Labels)
+  ImAF <- Im[,1]
+  ImNAF <- Im[,2]
   
-  AFData <- Data[Labels == 1, ]
-  NAFData <- Data[Labels == 0, ]
+  ImAF <- (ImAF - mean(ImAF[Labels == 1]) ) / sqrt(var(ImAF[Labels == 1]))
+  ImNAF <- (ImNAF - mean(ImNAF[Labels == 0])) / sqrt(var(ImNAF[Labels == 0]))
   
-  mAF <- apply(AFData , 2 , mean) 
-  vAF <- cov(AFData)
-  mNAF <- apply(NAFData , 2 , mean) 
-  vNAF <- cov(NAFData)
-  
-  ImAF  <- sqrt(apply(Data,   1 , function(X){(X - mAF)%*%(solve(vAF)%*%(X - mAF))}))
-  ImNAF <- sqrt(apply(Data,   1 , function(X){(X - mNAF)%*%(solve(vNAF)%*%(X - mNAF))}))
   
   x11()
   par(mfrow = c(1 , 2))
-  print(BC_PlotCompareSingleHists((ImAF[AFLogical ==F]) , (ImAF[AFLogical ==T]) ))
-  print(BC_PlotCompareSingleHists((ImNAF[AFLogical ==F]) , (ImNAF[AFLogical ==T]) ))
+  print(BC_PlotCompareSingleHists((ImAF[Labels ==F]) , (ImAF[Labels ==T]) ))
+  print(BC_PlotCompareSingleHists((ImNAF[Labels ==F]) , (ImNAF[Labels ==T]) ))
   
   AFModel <- kde(cbind(ImAF[Labels == 1 ] , ImNAF[Labels == 1 ]) )
   NAFModel <- kde(cbind(ImAF[Labels == 0 ] , ImNAF[Labels == 0 ]))   
@@ -248,8 +248,10 @@ BLBC_FitBayesLinearBayesClassifier <- function(Data , Labels , PriorProbability 
   x11(20,14)
   plot(NAFModel  , col ='blue' , xlab =c('Implausability AF') , ylab =c('Implausability NAF'))
   plot(AFModel, col = 'red' , add = T)
-  points(ImAF[Labels == 0] , ImNAF[Labels == 0] , col = 'blue' , pch = 16)
-  points(ImAF[Labels == 1] , ImNAF[Labels == 1], col = 'red', pch = 16)
+  points(ImAF[Labels == 0] , ImNAF[Labels == 0] , col = rgb(0 , 0 , 1 , alpha = 0.2) , pch = 16 )
+  points(ImAF[Labels == 1] , ImNAF[Labels == 1], col = rgb(1 , 0 , 0 , alpha = 0.3), pch = 16)
+  abline(v = 3)
+  abline(h = 3)
   
   
   PosteriorProbability <- BLBF_CrossValidateKDEall(ImAF = ImAF ,ImNAF =  ImNAF  ,AFLogical =  (Labels == 1) , PriorProbability = PriorProbability  )
@@ -266,6 +268,99 @@ BLBC_FitBayesLinearBayesClassifier <- function(Data , Labels , PriorProbability 
   EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability , Labels == 1), BinWidth = 0.1))
   print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Emperical Probabilities'))
   
+  return(PosteriorProbability)
+  
+}
+BLBL_CrossValidateImplausabilitiesALL <- function(TrainingData , AFLogical){
+  
+  Implausabilities <- matrix(0 , dim(TrainingData)[1] , 2)
+ 
+  for(ii in 1:dim(Implausabilities)[1]){
+    Implausabilities[ii , ] <- BLBL_CrossValidateImplausabilitiesSingle(TrainingData[-ii , ] , TrainingData[ii , ],AFLogical[-ii])
+  }
+   return(Implausabilities)
+}
+BLBL_CrossValidateImplausabilitiesSingle <- function(TrainingData , TestData ,AFLogical ){
+  
+  mAF <- (apply(TrainingData[AFLogical == T , ]  , 2 , mean))
+  CAF <- DP_AddNugget(cov(TrainingData[AFLogical == T , ]) , 1e-6*diag(diag(cov(TrainingData[AFLogical == T , ]))))
+  mNAF <- (apply(TrainingData[AFLogical == F , ]  , 2 , mean))
+  CNAF <- DP_AddNugget(cov(TrainingData[AFLogical == F , ]) , 1e-6*diag(diag(cov(TrainingData[AFLogical == F , ]))))
+  
+  return(cbind(log(mahalanobis(TestData , mAF , CAF)) , log(mahalanobis(TestData , mNAF , CNAF))) )
+}
+BLBF_PlotSenSpecPerformanceSweep <- function(ProbabilityUpdateStruct , AFLogical){
+  
+  PerformanceSweepStruct <- array(0 , c(dim(ProbabilityUpdateStruct)[2],  101 , 4) )
+  
+  if(exists('alpha')){
+  ProbabilityUpdateStruct[is.na(ProbabilityUpdateStruct)] <- alpha[1]
+  }else{
+    ProbabilityUpdateStruct[is.na(ProbabilityUpdateStruct)] <- 0
+  }
+  for(i in 1:dim(ProbabilityUpdateStruct)[2]){
+    PerformanceSweepStruct[i , , ] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(ProbabilityUpdateStruct[, i] , AFLogical == T))
+  }
+  
+  x11()
+  plot(0*PerformanceSweepStruct[1 ,  , 1] , ylim = c(0,1) , xlim = c(0,1) , col = rgb(1,1,1), xlab ='1 - Specificity' , ylab ='Sensitivity')
+  for(i in 1:dim(ProbabilityUpdateStruct)[2]){
+    lines(1-PerformanceSweepStruct[i ,  , 2] ,PerformanceSweepStruct[i ,  , 1]  , col = rgb(0 , 0 , 1 , alpha = 1/i))
+  }
+  abline(0,1)
+  grid(nx = NULL, ny = NULL, col = "lightgray", lty = "dotted")
+  
+}
+
+BLBF_PlotProbabilityTrajectories <- function(ProbabilityUpdateStruct , AFLogical){
+  
+  x11()
+  plot(0*ProbabilityUpdateStruct[1 , ] , ylim = c(0,1) , xlim = c(0,30) , col = rgb(1,1,1) , xlab ='Time Before AF' , ylab ='P')
+  for(i in 1:dim(ProbabilityUpdateStruct)[1]){
+    if(AFLogical[i] == 1){
+      lines(ProbabilityUpdateStruct[i , ] , col = rgb(1,0,0 , alpha = 0.4))
+    }
+    if(AFLogical[i] == 0){
+      lines(ProbabilityUpdateStruct[i , ] ,col = rgb(0,0,1 , alpha = 0.1))
+    }
+  }
+  
+}
+
+BLBF_CreateNamesPWaveVariables <- function(){
+  return(c('PAmp' , 
+           'PAMpLocation',
+           'Pstart',
+           'PEnd',
+           'PWidth',
+           'DiffBetweenAtria',
+           'PRLevel',
+           'max_dp',
+           'min_dp',
+           'E_V',
+           'max_V'))
+}
+BLBF_CalculatePosteriorProbabilityNBLA<- function( DataStructure , AFLogical , VariablesToView = -c( 13) ,  indextoview = 371  , PriorProbability =  c(sum(AFLogical)/length(AFLogical)) ){
+  
+  Im <- BLBL_CrossValidateImplausabilitiesALL(TrainingData = DataStructure[, VariablesToView, indextoview] , AFLogical)
+  
+  
+  #AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
+  #NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
+  
+  #PosteriorProbability <- BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical)
+  PosteriorProbability <- matrix(0 , dim(Im)[1] , 1)
+  if(length(PriorProbability) == 1){
+  PosteriorProbability[ ((Im[,1] > 3)*(Im[,2] > 3)) == 1 ] <- PriorProbability
+  }else{
+    PosteriorProbability[ ((Im[,1] > 3)*(Im[,2] > 3)) == 1 ] <- PriorProbability[ ((Im[,1] > 3)*(Im[,2] > 3)) == 1 ]
+  }
+  
+  if(length(PriorProbability) == 1){
+  PosteriorProbability[((Im[,1] > 3)*(Im[,2] > 3)) == 0] <- BLBF_CrossValidateKDEall(ImAF = Im[((Im[,1] > 3)*(Im[,2] > 3)) == 0,1] , ImNAF = Im[((Im[,1] > 3)*(Im[,2] > 3)) == 0,2] , AFLogical = AFLogical[((Im[,1] > 3)*(Im[,2] > 3)) == 0]  , PriorProbability = PriorProbability)
+  }else{
+    PosteriorProbability[((Im[,1] > 3)*(Im[,2] > 3)) == 0] <- BLBF_CrossValidateKDEall(ImAF = Im[((Im[,1] > 3)*(Im[,2] > 3)) == 0,1] , ImNAF = Im[((Im[,1] > 3)*(Im[,2] > 3)) == 0,2] , AFLogical = AFLogical[((Im[,1] > 3)*(Im[,2] > 3)) == 0]  , PriorProbability = PriorProbability[((Im[,1] > 3)*(Im[,2] > 3)) == 0])  
+  }
   return(PosteriorProbability)
   
 }

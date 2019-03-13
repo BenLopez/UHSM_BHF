@@ -152,7 +152,7 @@ for( ii in  1:length(listAllPatients) ){
     ECGs <- DP_LoadReducedECGs(path , listAllPatients[[ii]] , numberrep , FilestoProcess)
     outputdata[[4]] <- sub_pat 
     outputdata <- setNames( outputdata , c(FilestoProcess , 'Meta_Data') )
-    outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata , ECGs = ECGs)
+    outputdata[[5]] <- PE_MultipleECGRPeaks(outputdata = outputdata , ECGs = ECGs)
     outputdata <- setNames( outputdata , c(FilestoProcess , 'Meta_Data' , 'RRCombined') )
     print('Saving output.')
     save( outputdata , file = paste0(path , '\\' , listAllPatients[ii] , '\\Zip_out\\' ,  listAllPatients[ii]  , '_RPeaks.RData' ) )

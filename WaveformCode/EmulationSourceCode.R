@@ -87,13 +87,14 @@ BE_EmulationClassAddData <- function(y , x , EmulatorSettings = BE_CreateDefault
   EmulatorSettings$Y <- y}
   return(EmulatorSettings)
 }
+
 BE_BayesLinearEmulatorGLSEstimates <- function( xstar , EmulatorSettings = BE_CreateDefaultEmulationClass() ){
   
   x <- as.matrix(EmulatorSettings$X)
   y <- as.matrix(EmulatorSettings$Y)
-  n <- dim(X)[1]
+  n <- dim(x)[1]
   l <- EmulatorSettings$CorrelationLength( x , 1 )
-  w <- EmulatorSettings$w(X)
+  w <- EmulatorSettings$w(x)
   
   KXX <- EmulatorSettings$CorrFunction(x , x , l )
   KXstarX <-  EmulatorSettings$CorrFunction( xstar , x , l )
@@ -131,7 +132,7 @@ BE_BayesLinearEmulatorGLSEstimates <- function( xstar , EmulatorSettings = BE_Cr
   return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))
 
 }
-BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass()){
+BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass() , meanonly = 0 ){
   
   x <- as.matrix(EmulatorSettings$X)
   y <- as.matrix(EmulatorSettings$Y)
@@ -141,7 +142,8 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   
   KXX <- EmulatorSettings$CorrFunction(x , x , l )
   KXstarX <-  EmulatorSettings$CorrFunction( xstar , x , l )
-  KXstarXstar <-  EmulatorSettings$CorrFunction(xstar , xstar , l )
+  if(meanonly == 0){
+  KXstarXstar <-  EmulatorSettings$CorrFunction(xstar , xstar , l )}
   H <- EmulatorSettings$MeanFunction(x)
   sizeh = dim(H)
   Hstar <- EmulatorSettings$MeanFunction(xstar)
@@ -149,14 +151,21 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   
   BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
   epsilon <- y - H%*%BetaHat
+  
   SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
   SigmaHat <- as.numeric(SigmaHat - median(EmulatorSettings$w(x)[EmulatorSettings$w(x) !=0]))
-  
+
   Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)%*%diag(sizeh[1]))
   Cov_XstarD <- SigmaHat*KXstarX
 
   E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
+  
+  if(meanonly == 0){
   V_z_y <- SigmaHat*KXstarXstar - (Cov_XstarD%*%Var_D%*%t(Cov_XstarD))
+  }
+  if(meanonly == 1){
+  V_z_y <- 0  
+  }
   
   return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
 }

@@ -33,93 +33,76 @@ alpha = c(sum(AFLogical)/length(AFLogical) , (1-(sum(AFLogical)/length(AFLogical
 DataStructure <- DataStructure[-which(apply(DataStructure[, 1 , ] , 1 , function(X){sum(X!=0)} ) < 30 ) ,  , ]
 rownames(DataStructure) <- PatientsInStudy
 
-DataStructure[, 3, ]  <-  log(DataStructure[, 3, ])
-DataStructure[ , 4, ] <-  sqrt(DataStructure[ , 4, ])
-DataStructure[ , 7, ] <-  log(DataStructure[ , 7, ])
-DataStructure[ , 10, ] <- sqrt(DataStructure[ , 10, ])
-DataStructure[ , 11, ] <- sqrt(DataStructure[ , 11, ])
-DataStructure[ , 12, ] <- sqrt(DataStructure[ , 12, ])
+DataStructure[ , 3 , ]   <-  log(DataStructure[, 3, ])
+DataStructure[ , 4 , ]  <-  sqrt(DataStructure[ , 4, ])
+DataStructure[ , 7 , ]  <-  log(DataStructure[ , 7, ])
+DataStructure[ , 10 , ] <-  sqrt(DataStructure[ , 10, ])
+DataStructure[ , 11 , ] <-  sqrt(DataStructure[ , 11, ])
+DataStructure[ , 12 , ] <-  sqrt(DataStructure[ , 12, ])
 
 
-#indextoview <- (dim(DataStructure)[3] - 29) : (dim(DataStructure)[3])
-indextoview <- (dim(DataStructure)[3] - 29 ) 
-
+# Train Pre Op model
 {
-  x11(20,14)
-  par(mfrow = c(2,6))
-  BC_PlotCompareSingleHists(X = DataStructure[AFLogical ==F , 1, indextoview] , Y = DataStructure[AFLogical == T , 1, indextoview] , main = 'Mean')
-  BC_PlotCompareSingleHists(X = DataStructure[AFLogical ==F , 2, indextoview] , Y = DataStructure[AFLogical == T , 2, indextoview], main = 'Median')
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 3, indextoview]) , Y = (DataStructure[AFLogical == T , 3, indextoview]), main = 'Variance' )
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 4, indextoview]) , Y = (DataStructure[AFLogical == T , 4, indextoview]), main = 'IQR' )
-  BC_PlotCompareSingleHists(X = DataStructure[AFLogical ==F , 5, indextoview] , Y = DataStructure[AFLogical == T , 5, indextoview], main = 'Skewness')
-  BC_PlotCompareSingleHists(X = DataStructure[AFLogical ==F , 6, indextoview] , Y = DataStructure[AFLogical == T , 6, indextoview], main = 'Kurtosis' )
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 7, indextoview]) , Y = (DataStructure[AFLogical == T , 7, indextoview]), main = 'max Denisty' )
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 8, indextoview]) , Y = (DataStructure[AFLogical == T , 8, indextoview]), main = 'Variance Denisty' )
-  BC_PlotCompareSingleHists(X = DataStructure[AFLogical ==F , 9, indextoview] , Y = DataStructure[AFLogical == T , 9, indextoview] , main = 'Number of Modes')
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 10, indextoview]) , Y = (DataStructure[AFLogical == T , 10, indextoview]), main = 'Variance in Mode Denisty' )
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 11, indextoview]) , Y = (DataStructure[AFLogical == T , 11, indextoview]), main = 'Variance in Mode Location' )
-  BC_PlotCompareSingleHists(X = (DataStructure[AFLogical ==F , 12, indextoview]) , Y = (DataStructure[AFLogical == T , 12, indextoview]), main = 'Approximate Entropy' )
+  MasterPreOpData <- POM_CreateDataStructure(PatIndex2017 , DetIndex2017 , BioChemIndex2017)
+  ReducedMasterPreOpData <- MasterPreOpData[MasterPreOpData$Pre_OperativeHeartRhythm != 'Atrial fibrillation/flutter' , ]
+  #ReducedMasterPreOpData <- ReducedMasterPreOpData[ReducedMasterPreOpData$PseudoId %in% PatientsInStudy , ]
+  BLBModelStruct <- POM_CreateBLBModellingStructure(MasterPreOpData =  ReducedMasterPreOpData  , listofcovariates = POM_CreateDefaultSetofCov() )
+  PosteriorProbability <- POM_CalculateBLBProbability(MasterPreOpData = ReducedMasterPreOpData , BLBModelStruct, listofcovariates = POM_CreateDefaultSetofCov() , ReducedMasterPreOpData$PseudoId )
+  BLBCalibrationStruct <- POM_CreateBLBCalibrationStructure(PosteriorProbability , ReducedMasterPreOpData$AFLogical )
+  PreOpProbs <- POM_CalculatePreOpProbability(MasterPreOpData = ReducedMasterPreOpData , BLBModelStruct = BLBModelStruct , BLBCalibrationStruct = BLBCalibrationStruct , patientID = ReducedMasterPreOpData$PseudoId)
+  PreOpProbs <- POM_CalculatePreOpProbability(MasterPreOpData = ReducedMasterPreOpData , BLBModelStruct = BLBModelStruct , BLBCalibrationStruct = BLBCalibrationStruct , patientID = PatientsInStudy , PriorProbability = sum(AFLogical)/length(AFLogical))
+  PreOpProbs[is.na(PreOpProbs)] <- sum(AFLogical)/length(AFLogical)
+  PreOpProbs$E_D_P <-POM_CalculateBLBProbability(MasterPreOpData = ReducedMasterPreOpData , BLBModelStruct, listofcovariates = POM_CreateDefaultSetofCov() , PatientsInStudy  , PriorProbability = sum(AFLogical)/length(AFLogical))
+}
+
+
+#indextoview <- ((dim(DataStructure)[3] - 29) : (dim(DataStructure)[3]))
+indextoview <- (dim(DataStructure)[3] - 29  ) 
+{
+  Im <- BLBL_CrossValidateImplausabilitiesALL(TrainingData = DataStructure[, -c( 13), indextoview] , AFLogical)
+  ImAF <- Im[,1]
+  ImNAF <- Im[,2]
+ 
+  ImAF <- (ImAF - mean(ImAF[AFLogical] , na.rm = T))/sqrt(var(ImAF[AFLogical]))
+  ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==0] , na.rm = T))/sqrt(var(ImNAF[AFLogical==0], na.rm = T))
   
-  BC_PlotPairsFromTwoVariables(DataStructure[which(AFLogical ==F)[sample(1:sum(AFLogical  == 0) , sum(AFLogical == 1))] , -c( 13) , indextoview] ,DataStructure[AFLogical == T , -c( 13), indextoview]  , alpha = 0.1)
-  
-  
-  mAF <- (apply(DataStructure[AFLogical == T , -c( 13), indextoview]  , 2 , mean))
-  CAF <- cov(DataStructure[AFLogical == T , -c( 13), indextoview])
-  
-  mNAF <- (apply(DataStructure[AFLogical == F , -c( 13), indextoview]  , 2 , mean))
-  CNAF <- cov(DataStructure[AFLogical == F , -c( 13), indextoview])
-  
-  ImAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[, -c( 13), indextoview] , mAF , CAF)
-  ImNAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[, -c( 13), indextoview] , mNAF , CNAF)
-  
-  ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
-  ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
-  
+   
   x11()
   par(mfrow =c(1,2))
   print(BC_PlotCompareSingleHists((ImAF[AFLogical ==F]) , (ImAF[AFLogical ==T])  ,breaks = 15 ,  main = 'Implausabilty of Going into AF', xlab = 'Im'))
   print(BC_PlotCompareSingleHists((ImNAF[AFLogical ==F]) , (ImNAF[AFLogical ==T]) ,breaks = 15 , main = 'Implausabilty of Not Going into AF' , xlab = 'Im'))
   
-  AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
-  NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
-
+  x11()
+  plot(ImAF , ImNAF, col = 'blue' , pch = 16)
+  points(ImAF[AFLogical == T] , ImNAF[AFLogical == T], col = 'red', pch = 16)
+  abline(h = 3)
+  abline(v = 3)
+  
   PosteriorProbability <- BLBF_CrossValidateKDEall( ImAF , ImNAF , AFLogical  )
   PosteriorProbability[is.na(PosteriorProbability)] = c(sum(AFLogical)/length(AFLogical))
 
   x11(20,14)
   EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability , AFLogical == T), BinWidth = 0.1))
   print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Forecasting Emperical Probabilities'))
-  
+  PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability , AFLogical == T))
   PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability , AFLogical == T))
   ROCplot <- BC_PlotsCreateROC(PerformanceSweep) + ggtitle('Forecasting ROC Curves') + geom_abline(intercept = 0 , slope = 1)
   NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep) + geom_vline(xintercept = alpha[2]) + geom_hline(yintercept = alpha[1])+  ggtitle('Forecasting PPV vs NPV Curves')
   x11(20,14)
   grid.arrange(ROCplot , NPVPPVPlot , nrow= 2)
-  
-  AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
-  NAFModel <- kde(cbind(ImAF[((AFLogical ==F)*((ImAF) <2)) ==1 ] , ImNAF[ ((AFLogical ==F)*((ImAF) <2)) ==1 ]) )
-
-  x11(20,14)
-  plot(NAFModel  , col ='blue', xlab = 'Implausabilty of Going into AF' , ylab = 'Implausabilty of Not Going into AF' , main = 'KDE Implausabilities' , xlim = c(-4,4) , ylim = c(-4,4))
-  plot(AFModel, add = T, col ='red')
-  
-  points(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F] , col = rgb(0,0, 1 ) , pch = 16 )
-  points(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T], col = rgb(1,0,0) ,pch = 16 )
-  abline( v = 2 )
-  abline( h = 2 )
 }
 
-AFLogical <- apply(as.matrix(PatientsInStudy) , 1 , function(X){DP_CheckIfAFPatient(DP_ExtractPatientRecordforIndex(PatIndex2017  , X))})
-AFLogical <- sample(AFLogical , length(AFLogical) )
-AFLogical <- sample(c(T,F) , length(AFLogical) , T )
 
-
-
-StartIndex <- 371
-NumberofPoints <- 2
-VariablesToView <- c(1:12)[c(-1 , -3 )]
+StartIndex <- 382
+NumberofPoints <- 1
+VariablesToView <- c(1:12)
 test <- BLBF_DoubleCrossValidateInference(DataStructure ,AFLogical, StartIndex , NumberofPoints , VariablesToView  )
  
+
+test[,1]= (test[,1] - mean(test[AFLogical,1]))/sqrt(var(test[AFLogical,1]))
+test[,2]= (test[,2] - mean(test[AFLogical ==0,2]))/sqrt(var(test[AFLogical==0,2]))
+
+
 x11(20,14)
 par(mfrow = c(1 , 2))
 print(BC_PlotCompareSingleHists((test[AFLogical ==F , 1]) , (test[AFLogical ==T , 1]) ))
@@ -128,279 +111,73 @@ print(BC_PlotCompareSingleHists((test[AFLogical ==F , 2]) , (test[AFLogical ==T 
 AFModel <- kde( cbind( test[AFLogical ==T , 1] , test[AFLogical ==T , 2] )  )
 NAFModel <- kde( cbind( test[AFLogical ==F , 1] , test[AFLogical ==F , 2] )  )
 
-
 x11(20,14)
 plot(NAFModel  , col ='blue' , xlab =c('Implausability AF') , ylab =c('Implausability NAF'))
 plot(AFModel, col = 'red' , add = T)
 
 points(test[AFLogical == F , 1] , test[AFLogical == F ,2] , col = 'blue' , pch = 16)
 points(test[AFLogical == T , 1] , test[AFLogical == T , 2], col = 'red', pch = 16)
+abline(3 , 0)
+abline(v = 3)
 
-
-
-{
-  StartIndex <- 371
-  NumberofPoints <- 1
-  VariablesToView <- c(1:12)[c(-1 , -3 )]
-  LengthVector <- length(VariablesToView)
-  
-  tmpdata <- DataStructure[ , VariablesToView, c(StartIndex:(StartIndex+NumberofPoints) )]
-  tmp <- sort(sample(1:sum(AFLogical) , sum(AFLogical) -1))
-  tmp2 <- sort(sample(1:sum(AFLogical==F) , sum(AFLogical==F) -1))
-  AFSOS <-  BLBF_CalculateSecondOrderStruct( tmpdata[which(AFLogical)[tmp] , , ])
-  NAFSOS <- BLBF_CalculateSecondOrderStruct( tmpdata[which(AFLogical == F)[tmp2] , , ])
-  
-  AdjustedVersionsAF <- t(apply( tmpdata , 1 , function(X){BLBF_CalculateForecastAdjustedVersion(AFSOS , X[1:(LengthVector*(NumberofPoints))] , X[((LengthVector*(NumberofPoints)) +1):(LengthVector*(NumberofPoints + 1) )])}))
-  AdjustedVersionsNAF <- t(apply( tmpdata , 1 , function(X){BLBF_CalculateForecastAdjustedVersion(NAFSOS , X[1:(LengthVector*(NumberofPoints))] , X[((LengthVector*(NumberofPoints)) +1):(LengthVector*(NumberofPoints +1) )])}))
-  
-  AdjustedVersionsAF[AFLogical == T] <- BLBF_CrossValidateAdjustedVersionAll(tmpdata[AFLogical == T , , ]  , LengthVector , NumberofPoints )
-  AdjustedVersionsNAF[AFLogical == F] <- BLBF_CrossValidateAdjustedVersionAll(tmpdata[AFLogical == F , , ]  , LengthVector , NumberofPoints )
-
-  # Could be over fitting.
-  AdjustedVersionsSOSAF <- BLU_CreateSOS(mu = apply(AdjustedVersionsAF[which(AFLogical)[tmp],] , 2 , mean) , Sigma = cov(AdjustedVersionsAF[which(AFLogical)[tmp],]) )
-  AdjustedVersionsSOSNAF <- BLU_CreateSOS(mu = apply(AdjustedVersionsNAF[which(AFLogical == F)[tmp2] ,]  , 2 , mean) , Sigma = cov(AdjustedVersionsNAF[which(AFLogical == F)[tmp2] , ]) )
- 
-  ImAF <- apply(AdjustedVersionsAF , 1 , function(X){BLBF_Discrepancy(AdjustedVersionsSOSAF , X )})
-  ImAF[AFLogical == T] <- BLBF_CrossValidateCalculateAdjustedVersionSOS(AdjustedVersionsAF[AFLogical == T,] )
-  ImNAF <- apply(AdjustedVersionsNAF , 1 , function(X){BLBF_Discrepancy(AdjustedVersionsSOSNAF, X)} ) 
-  ImNAF[AFLogical == F] <- BLBF_CrossValidateCalculateAdjustedVersionSOS(AdjustedVersionsNAF[AFLogical == F,] )
-    
-  #ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
-  #ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
-  
-  #ImAF <- apply(tmpdata , 1 , function(X){BLBF_CrossValidateCalculateIm(tmpdata[AFLogical == T, ,  ] , X , LengthVector  , NumberofPoints )})
-  #ImNAF <- apply(tmpdata , 1 , function(X){BLBF_CrossValidateCalculateIm(tmpdata[AFLogical == F, ,  ] , X , LengthVector  , NumberofPoints )})
-  #ImAF[AFLogical == T ] <- BLBF_CrossValidateCalculateImAll(tmpdata[AFLogical == T, ,  ] , LengthVector , NumberofPoints )
-  #ImNAF[AFLogical == F ] <- BLBF_CrossValidateCalculateImAll(tmpdata[AFLogical == F, ,  ] , LengthVector , NumberofPoints ) 
-
-  x11()
-  par(mfrow = c(1 , 2))
-  print(BC_PlotCompareSingleHists((ImAF[AFLogical ==F]) , (ImAF[AFLogical ==T]) ))
-  print(BC_PlotCompareSingleHists((ImNAF[AFLogical ==F]) , (ImNAF[AFLogical ==T]) ))
-  
-  AFModel <- kde(cbind(ImAF[AFLogical ==T] , ImNAF[AFLogical ==T]) )
-  NAFModel <- kde(cbind(ImAF[AFLogical ==F] , ImNAF[AFLogical ==F]) )
-  
-  
-  x11(20,14)
-  plot(NAFModel  , col ='blue' , xlab =c('Implausability AF') , ylab =c('Implausability NAF'))
-  plot(AFModel, col = 'red' , add = T)
-  
-  points(ImAF[AFLogical == F] , ImNAF[AFLogical == F] , col = 'blue' , pch = 16)
-  points(ImAF[AFLogical == T] , ImNAF[AFLogical == T], col = 'red', pch = 16)
-  
-  
-  #PosteriorProbability2 <- BLBF_CrossValidateKDEall(ImAF = ImAF , ImNAF = ImNAF , AFLogical = AFLogical  , PriorProbability = PosteriorProbability)
-  #PosteriorProbability2[is.na(PosteriorProbability2)] = c(sum(AFLogical)/length(AFLogical))
-
-#   BLBF_CalculatePosteriorProbabilities(AFModel, NAFModel , cbind(ImAF , ImNAF) , AFLogical , alpha = PosteriorProbability)
-  
-  #PerformanceSweep2 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability2 , AFLogical == T))
-  #ROCplot2 <- BC_PlotsCreateROC(PerformanceSweep2) + ggtitle('Forecasting ROC Curves') + geom_abline(intercept = 0 , slope = 1)
-  #NPVPPVPlot2 <- BC_PlotsCreateNPVPPV(PerformanceSweep2) + geom_vline(xintercept = alpha[2]) + geom_hline(yintercept = alpha[1])+  ggtitle('Forecasting PPV vs NPV Curves')
-  
-  #x11(20,14)
-  #grid.arrange(ROCplot2 , NPVPPVPlot2 , nrow= 2)
-  
-  #x11(20,14)
-  #EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability2 , AFLogical == T), BinWidth = 0.1))
-  #print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Forecasting Emperical Probabilities'))
-  #x11(20,14)
-  #plot(1-PerformanceSweep[,2] , PerformanceSweep[,1] , col = 'red' , type ='l' , xlab = '1 = Specificity' , ylab = 'Sensitivity')
-  #lines(1-PerformanceSweep2[,2] , PerformanceSweep2[,1]  , col = 'blue' , type ='l')
-disp(paste0(ImAF[setdiff(which(AFLogical) ,which(AFLogical)[ tmp] )] , ' ' , ImNAF[setdiff(which(AFLogical) ,which(AFLogical)[ tmp] )] ))
-disp(paste0(ImAF[setdiff(which(AFLogical==F) ,which(AFLogical==F)[ tmp2] )] , ' ' , ImNAF[setdiff(which(AFLogical==F) ,which(AFLogical==F)[ tmp2] )]))
-}
-
-PosteriorProbability1 <- BLBF_CalculatePosteriorProbabilityNBLA( DataStructure[ ,VariablesToView <- c(1:12)[c(-1 , -3 )] , ] , AFLogical , VariablesToView ,  indextoview )
-PosteriorProbability2 <- BLBF_CalculatePosteriorProbabilityBLA2(DataStructure = DataStructure , AFLogical = AFLogical , PriorProbability = PosteriorProbability1 , StartIndex = 371 , NumberofPoints = 1 , VariablesToView = c(1:12)[c(-1 , -3 )])
-PosteriorProbability3 <- BLBF_CalculatePosteriorProbabilityBLA2(DataStructure = DataStructure , AFLogical = AFLogical , PriorProbability = PosteriorProbability2 , StartIndex = 371 , NumberofPoints = 2 , VariablesToView = c(1:12)[c(-1 , -3 )])
-PosteriorProbability3[is.na(PosteriorProbability3)] <- PosteriorProbability2[is.na(PosteriorProbability3)]
-
-PerformanceSweep1 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability1 , AFLogical == T))
-PerformanceSweep2 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability2 , AFLogical == T))
-PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability3 , AFLogical == T))
-
-x11()
-plot( 1-PerformanceSweep1[ , 2] , PerformanceSweep1[ , 1] ,  col = rgb(0,0,1 , alpha = 0.5) , type='l' , ylim = c(0,1)  , xlab = c('1 - Specificity') , ylab = c('Sensitivity'))
-lines( 1-PerformanceSweep2[ , 2] , PerformanceSweep2[ , 1] , col = rgb(1,0,0 , alpha = 0.5) ,  type ='l')
-lines( 1-PerformanceSweep3[ , 2] , PerformanceSweep3[ , 1] , col = rgb(0,1,0 , alpha = 0.5) ,  type ='l')
-abline(0,1)
-title('Blue: ROC curve Using One Time Point. Red: ROC Curve Using Two Time Points ')
-
-
-PosteriorProbabilityStruct4 <- matrix(0  , length(AFLogical) , length((dim(DataStructure)[3] - 29) : (dim(DataStructure)[3])))
-PerformanceSweepStruct4 <- array(0 , c(29 , dim(PerformanceSweep1)) )
-
-PosteriorProbabilityStruct4[,1] <- BLBF_CalculatePosteriorProbabilityNBLA( DataStructure[ ,VariablesToView <- c(1:12)[c(-1 , -3 )] , ] , AFLogical , VariablesToView ,  indextoview )
-for( i in 21:29 ){
-  PosteriorProbabilityStruct4[,i] <- BLBF_CalculatePosteriorProbabilityBLA(DataStructure , AFLogical , PriorProbability = PosteriorProbabilityStruct4[,i -1] , StartIndex = 371 , NumberofPoints = (i-1) , VariablesToView = c(1:12)[c(-1 , -3 )])
-  PosteriorProbabilityStruct4[is.na(PosteriorProbabilityStruct4[ , i]) , i] <- PosteriorProbabilityStruct4[is.na(PosteriorProbabilityStruct4[ , i]) , i-1]
-  DP_WaitBar(i/29)
-}
-PerformanceSweepStruct4[1 , ,] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbabilityStruct4[,1] , AFLogical == T))
-for(i in 2:29){
-  PerformanceSweepStruct4[i , ,] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbabilityStruct4[,i] , AFLogical == T))
-}
-
-x11(20,14)
-XX <- flipud(as.matrix(seq(1,29,1))*-500 )
-plot(XX , PosteriorProbabilityStruct4[ 1, 1:29] ,  col = rgb(1,0,0 , alpha = 0.5) , type='l' , ylim = c(0,1) , xlim = c(XX[1] , XX[21]), ylab = 'P' , xlab = c('Beats Before AF') )
-for(i in 1:length(AFLogical)){
-if(AFLogical[i] == T){
-lines(XX , PosteriorProbabilityStruct4[ i, 1:29] ,  col = rgb(0,0,1 , alpha = 0.5) , type='l')} 
-if(AFLogical[i] == F){
-    lines(XX , PosteriorProbabilityStruct4[ i, 1:29] ,  col = rgb(1,0,0 , alpha = 0.1) , type='l')} 
-}
-title('Probability Trajectories')
-
-x11(20,14)
-plot(1-PerformanceSweepStruct[1 ,  , 2] , PerformanceSweepStruct[1 ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1), xlab = '1 -Specificity' , ylab = 'Sensitivity')
-for(i in 2:29){
-lines(1-PerformanceSweepStruct[i ,  , 2] , PerformanceSweepStruct[i ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1/(i)))
-}
-abline(0,1)  
-title('ROC Curves over Time')
-
+PosteriorProbability2 <- 0*ImAF
+PosteriorProbability2[((ImAF > 3)*(ImAF>3))==1] <- sum(AFLogical)/length(AFLogical)
+PosteriorProbability2[((ImAF > 3)*(ImAF>3))==0] <- BLBF_CrossValidateKDEall( test[((ImAF > 3)*(ImAF>3))==0,1] , test[((ImAF > 3)*(ImAF>3))==0,2] , AFLogical[((ImAF > 3)*(ImAF>3))==0]  , PriorProbability = PosteriorProbability[((ImAF > 3)*(ImAF>3))==0 , ])
 
 
 x11(20,14)
-plot(1-PerformanceSweepStruct4[1 ,  , 2] , PerformanceSweepStruct4[1 ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1), xlab = '1 -Specificity' , ylab = 'Sensitivity')
-for(i in 2:29){
-  lines(1-PerformanceSweepStruct4[i ,  , 2] , PerformanceSweepStruct4[i ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1/(i)))
-}
-abline(0,1)  
-title('ROC Curves over Time')
-lines(1-PerformanceSweep[ , 2] , PerformanceSweep[ , 1] , type ='l' , col = rgb(1,0,0, alpha = 1))
+EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability2 , AFLogical == T), BinWidth = 0.1))
+print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Forecasting Emperical Probabilities'))
+PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability2 , AFLogical == T))
+ROCplot <- BC_PlotsCreateROC(PerformanceSweep3) + ggtitle('Forecasting ROC Curves') + geom_abline(intercept = 0 , slope = 1)
+NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep3) + geom_vline(xintercept = alpha[2]) + geom_hline(yintercept = alpha[1])+  ggtitle('Forecasting PPV vs NPV Curves')
 
 x11(20,14)
-plot(1-PerformanceSweep1[,2] , PerformanceSweep1[,1] , col = 'red' , type ='l' , xlab = '1 -Specificity' , ylab = 'Sensitvity')
-lines(1-PerformanceSweep2[,2] , PerformanceSweep2[,1]  , col = 'blue' , type ='l')
-lines(1-PerformanceSweep3[,2] , PerformanceSweep3[,1]  , col = 'green' , type ='l')
-abline(0,1)
-title('ROC Curves over Time')
+grid.arrange(ROCplot , NPVPPVPlot , nrow= 2)
 
-PosteriorProbabilityStruct2 <- matrix(0  , length(AFLogical) , length((dim(DataStructure)[3] - 29) : (dim(DataStructure)[3])))
-counter <- 1
-for(indextoview in (dim(DataStructure)[3] - 29) : (dim(DataStructure)[3])){
-  
-  mAF <- (apply(DataStructure[AFLogical == T , -c( 13), indextoview]  , 2 , mean))
-  CAF <- cov(DataStructure[AFLogical == T , -c( 13), indextoview])
-  mNAF <- (apply(DataStructure[AFLogical == F , -c( 13), indextoview]  , 2 , mean))
-  CNAF <- cov(DataStructure[AFLogical == F , -c( 13), indextoview])
-  
-  ImAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[ , -c( 13), indextoview] , mAF , CAF)
-  ImNAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[ , -c( 13), indextoview] , mNAF , CNAF)
-  
-  ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
-  ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
-  
-  if(counter == 1){
-    PosteriorProbabilityStruct2[ , counter ] <- BLBF_CrossValidateKDEall( ImAF , ImNAF , AFLogical  )}else{
-    PosteriorProbabilityStruct2[ , counter ] <- BLBF_CrossValidateKDEall( ImAF , ImNAF , AFLogical, PriorProbability =  PosteriorProbabilityStruct2[ , counter - 1] )
-  }
-  counter <- counter + 1
+IndividualProbabilityUpdateStruct <- matrix(0 , length(AFLogical) , 30)
+for(i in c(0:29)){
+  IndividualProbabilityUpdateStruct[,i+1] <- BLBF_CalculatePosteriorProbabilityNBLA(DataStructure = DataStructure , AFLogical = AFLogical   , indextoview = 371 + i )
 }
 
-x11(20,14)
-XX <- flipud(as.matrix(seq(1,29,1))*-500 )
-plot(XX , PosteriorProbabilityStruct2[ 1, 1:29] ,  col = rgb(1,0,0 , alpha = 0.5) , type='l' , ylim = c(0,1) , ylab = 'P' , xlab = c('Beats Before AF') )
-for(i in 1:length(AFLogical)){
-  if(AFLogical[i] == T){
-    lines(XX , PosteriorProbabilityStruct2[ i, 1:29] ,  col = rgb(0,0,1 , alpha = 0.5) , type='l')} 
-  if(AFLogical[i] == F){
-    lines(XX , PosteriorProbabilityStruct2[ i, 1:29] ,  col = rgb(1,0,0 , alpha = 0.1) , type='l')} 
-}
-title('Probability Trajectories')
-
-
-PerformanceSweepStruct2 <- array(0 , c(29 , dim(PerformanceSweep1)) )
-PerformanceSweepStruct2[1 , ,] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbabilityStruct2[,1] , AFLogical == T))
-for(i in 2:29){
-  PosteriorProbabilityStruct2[ is.na(PosteriorProbabilityStruct2[ , i ]), i ] <- 0 
-  PerformanceSweepStruct2[i , ,] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbabilityStruct2[,i] , AFLogical == T))
+IndependentProbabilityUpdateStruct <- matrix(0 , length(AFLogical) , 30)
+for(i in c(0:29)){
+  if(i == 0){
+    IndependentProbabilityUpdateStruct[,i+1] <- BLBF_CalculatePosteriorProbabilityNBLA(DataStructure = DataStructure , AFLogical = AFLogical  , indextoview = 371 + i )}
+  if(i > 0){
+    IndependentProbabilityUpdateStruct[,i+1] <- BLBF_CalculatePosteriorProbabilityNBLA(DataStructure = DataStructure , AFLogical = AFLogical  , indextoview = 371 + i , PriorProbability = IndependentProbabilityUpdateStruct[,i])}
 }
 
-x11(20,14)
-plot(1-PerformanceSweepStruct2[1 ,  , 2] , PerformanceSweepStruct2[1 ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1), xlab = '1 -Specificity' , ylab = 'Sensitivity')
-for(i in 2:28){
-  lines(1-PerformanceSweepStruct2[i ,  , 2] , PerformanceSweepStruct2[i ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1/(i)))
-}
-lines(1-PerformanceSweep[ , 2] , PerformanceSweep[ , 1] , type ='l' , col = rgb(1,0,0, alpha = 1))
-abline(0,1)  
-title('ROC Curves over Time')
-
-PosteriorProbabilityStruct3 <- matrix(0  , length(AFLogical) , length((dim(DataStructure)[3] - 29) : (dim(DataStructure)[3])))
-counter <- 1
-for(indextoview in (dim(DataStructure)[3] - 29) : (dim(DataStructure)[3])){
-    
-  mAF <- (apply(DataStructure[AFLogical == T , -c( 13), indextoview]  , 2 , mean))
-  CAF <- cov(DataStructure[AFLogical == T , -c( 13), indextoview])
-  mNAF <- (apply(DataStructure[AFLogical == F , -c( 13), indextoview]  , 2 , mean))
-  CNAF <- cov(DataStructure[AFLogical == F , -c( 13), indextoview])
-  
-  ImAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[ , -c( 13), indextoview] , mAF , CAF)
-  ImNAF <- BLBF_ForecastingCalculateImplausabilities(DataStructure[ , -c( 13), indextoview] , mNAF , CNAF)
-  
-  ImAF <- (ImAF - mean(ImAF[AFLogical ==T])) / sqrt(var(ImAF[AFLogical ==T])) 
-  ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==F])) / sqrt(var(ImNAF[AFLogical == F])) 
-  
-  PosteriorProbabilityStruct3[ , counter ] <- BLBF_CrossValidateKDEall( ImAF , ImNAF , AFLogical  )
-  counter <- counter + 1
+BLAProbabilityUpdateStruct <- matrix(0 , length(AFLogical) , 30)
+BLAProbabilityUpdateStruct[ , 1] <-  IndividualProbabilityUpdateStruct[ , 1]
+for(i in c(1:29)){
+  BLAProbabilityUpdateStruct[,i+1] <- BLBF_CalculatePosteriorProbabilityBLA(DataStructure = DataStructure , AFLogical = AFLogical  , StartIndex = max(371 , 371 + (i-2)) , NumberofPoints = min(2 , i) , PriorProbability = BLAProbabilityUpdateStruct[,i] , VariablesToView = c(1:12))
 }
 
-PerformanceSweepStruct3 <- array(0 , c(29 , dim(PerformanceSweep1)) )
-PerformanceSweepStruct3[1 , ,] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbabilityStruct3[,1] , AFLogical == T))
-for(i in 2:29){
-  PosteriorProbabilityStruct3[ is.na(PosteriorProbabilityStruct2[ , i ]), i ] <- 0 
-  PerformanceSweepStruct3[i , ,] <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbabilityStruct3[,i] , AFLogical == T))
+BLAProbabilityUpdateStruct <- matrix(0 , length(AFLogical) , 30)
+BLAProbabilityUpdateStruct[ , 1] <-  IndividualProbabilityUpdateStruct[ , 1]
+for(i in c(1)){
+  BLAProbabilityUpdateStruct[,i+1] <- BLBF_CalculatePosteriorProbabilityBLA(DataStructure = DataStructure , AFLogical = AFLogical  , StartIndex = max(371 , 371 + (i-1)) , NumberofPoints =  1, PriorProbability = BLAProbabilityUpdateStruct[,i] , VariablesToView = c(1:12))
 }
 
-x11(20,14)
-plot(1-PerformanceSweepStruct3[1 ,  , 2] , PerformanceSweepStruct3[1 ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1), xlab = '1 -Specificity' , ylab = 'Sensitivity')
-for(i in 2:28){
-  lines(1-PerformanceSweepStruct3[i ,  , 2] , PerformanceSweepStruct3[i ,  , 1] , type ='l' , col = rgb(0,0,1, alpha = 1/(i)))
-}
-abline(0,1)  
-title('ROC Curves over Time')
 
-x11(20,14)
-XX <- flipud(as.matrix(seq(1,29,1))*-500 )
-plot(XX , PosteriorProbabilityStruct3[ 1, 1:29] ,  col = rgb(1,0,0 , alpha = 0.5) , type='l' , ylim = c(0,1) , ylab = 'P' , xlab = c('Beats Before AF') )
-for(i in 1:length(AFLogical)){
-  if(AFLogical[i] == T){
-    lines(XX , [ i, 1:29] ,  col = rgb(0,0,1 , alpha = 0.5) , type='l')} 
-  if(AFLogical[i] == F){
-    lines(XX , PosteriorProbabilityStruct3[ i, 1:29] ,  col = rgb(1,0,0 , alpha = 0.1) , type='l')} 
-}
-title('Probability Trajectories')
+BLBF_PlotProbabilityTrajectories( IndividualProbabilityUpdateStruct  , AFLogical )
+title('RR-Times Probability Trajectory')
+BLBF_PlotSenSpecPerformanceSweep( IndividualProbabilityUpdateStruct , AFLogical )
+title('ROC Curves Over Time')
+BLBF_PlotProbabilityTrajectories( t(apply(IndividualProbabilityUpdateStruct ,1 ,DP_cummean)) , AFLogical )
+title('Mean RR-Times Probability Trajectory')
+BLBF_PlotSenSpecPerformanceSweep( t(apply(IndividualProbabilityUpdateStruct ,1 ,DP_cummean)) , AFLogical )
+title('ROC Curves Over Time')
 
+BLBF_PlotProbabilityTrajectories(IndependentProbabilityUpdateStruct  , AFLogical )
+BLBF_PlotProbabilityTrajectories(t(apply(IndependentProbabilityUpdateStruct ,1 ,DP_cummean)) , AFLogical )
+BLBF_PlotSenSpecPerformanceSweep(IndependentProbabilityUpdateStruct , AFLogical )
+BLBF_PlotSenSpecPerformanceSweep(t(apply(IndependentProbabilityUpdateStruct ,1 ,DP_cummean)) , AFLogical)
 
-
-{plot(0, xlim = c(0,30) , ylim = c(0,1))
-  for(i in 1:dim(PosteriorProbabilityStruct)[1]){
-    if(AFLogical[i] == T){lines(DP_cummean(PosteriorProbabilityStruct[i,]) , col =  rgb(0,0,1,alpha = 0.5))}
-    if(AFLogical[i] == F){lines(DP_cummean(PosteriorProbabilityStruct[i,])  , col = rgb(1,0,0,alpha = 0.05) )}  
-  }
-  
-  
-  tmp <- apply(PosteriorProbabilityStruct , 1 , function(X){DP_cummean(X)})
-  lines(apply(tmp[ , AFLogical == F] , 1 , function(X){quantile(X , 0.90)}))
-  
-  requiredspecificity <- 0.9
-  Threshold <- apply(tmp[ , AFLogical == F] , 1 , function(X){quantile(X , requiredspecificity)})
-  
-  senstruct <- matrix(0,30,1)
-  Specstruct <- matrix(0,30,1)
-  
-  for(i in 1:30){
-    senstruct[i] <- sum(tmp[i,AFLogical == T] > Threshold[i])/sum(AFLogical == T)
-    Specstruct[i] <- sum(tmp[i,AFLogical == F] < Threshold[i])/sum(AFLogical == F)
-  }
-  
-  plot(flipud(as.matrix(seq(1,30,1))*-500 ),senstruct , type = 'l' , ylim = c(0,1) , ylab=c('Sensitivity and Specificity') , xlab = c('Number of Beats Before AF') )
-  lines(flipud(as.matrix(seq(1,30,1))*-500 ),Specstruct , type = 'l' , col ='red')
-  title('Sensitivity and Specifictity Over Time')
-}
+BLBF_PlotProbabilityTrajectories(BLAProbabilityUpdateStruct  , AFLogical )
+BLBF_PlotSenSpecPerformanceSweep(BLAProbabilityUpdateStruct , AFLogical )
+BLBF_PlotProbabilityTrajectories(t(apply(BLAProbabilityUpdateStruct ,1 ,DP_cummean)) , AFLogical )
+BLBF_PlotSenSpecPerformanceSweep(t(apply(BLAProbabilityUpdateStruct ,1 ,DP_cummean)) , AFLogical)
 
 
