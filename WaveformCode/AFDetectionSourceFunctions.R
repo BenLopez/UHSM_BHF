@@ -259,7 +259,7 @@ AFD_ExtractAllSQ <- function(ECG , RPeaks , QSwidth = 8){
   }  
   
   Log_1 <- apply(Date , 1 , function(X){sum(!is.na(X))}) != 0
-  Log_2 <- ((apply(Date , 2 , function(X){sum(!is.na(X))})/(length(RPeaks$t) -1) )*100) > 20
+  Log_2 <- ((apply(Date , 2 , function(X){sum(!is.na(X))})/(length(RPeaks$t) -1) )*100) > 5
   
   Date <- as.matrix(Date[ , Log_2])
   Value <- as.matrix( Value[ , Log_2])

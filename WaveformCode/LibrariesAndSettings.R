@@ -38,7 +38,9 @@ packages<-c("ggplot2",
             "entropy",
             "dplyr",
             'miscTools',
-            'rmutil')
+            'rmutil',
+            'matrixStats',
+            'gridExtra')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -68,7 +70,8 @@ library( ggpubr )#
 library( ks )#
 library( plot3D )#
 library( miscTools )
-
+library( matrixStats )
+library(gridExtra)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)

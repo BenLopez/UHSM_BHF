@@ -39,8 +39,8 @@ PWaveHM_EmulateTQSegment <- function( QS_Struct , EmulatorParameters = PWaveHM_C
   EmulatorParameters$X <- (1:length(QS_Struct$Date[1,tmp]))/length(QS_Struct$Date[1,tmp])
   EmulatorParameters$Y <- QS_Struct$Value[1,tmp] - mean(QS_Struct$Value[1,tmp])
   
-  #EmulatedQS <- matrix( 0 , dim(QS_Struct$Date)[1] , length(Xstar) )
-  EmulatedQS <- matrix( 0 , 100 , length(Xstar) )
+  EmulatedQS <- matrix( 0 , dim(QS_Struct$Date)[1] , length(Xstar) )
+  #EmulatedQS <- matrix( 0 , 100 , length(Xstar) )
   counter <- 1
   print( 'Emulating TQ Segments.' )
   for(i in 1:dim(QS_Struct$Date)[1]){
@@ -53,7 +53,7 @@ PWaveHM_EmulateTQSegment <- function( QS_Struct , EmulatorParameters = PWaveHM_C
     EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(Xstar , EmulatorParameters  , meanonly = 1)
     EmulatedQS[counter,] <- EmulatorOutput$E_D_fX
     counter <- counter +1
-    if(counter > 100){break}
+    #if(counter > 100){break}
   }  
   print('TQ Segments Emulated.' )
   EmulatedQS <- EmulatedQS[-(counter:dim(EmulatedQS)[1] ), ]
@@ -112,7 +112,7 @@ PWaveHM_HistoryMatchGroupofPwaves <- function(z , QS_Struct , PriorNonImplausibl
       H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction)
       return(solve(t(H)%*%H)%*%t(H))
     })}
-  if(!exists('Hinvstruct')){
+  if(!exists('Hstruct')){
     Hstruct <- apply(PriorNonImplausibleSet , 1 , function(X){
       return(  H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction))
     })  
@@ -134,7 +134,7 @@ PWaveHM_HistoryMatchGroupofPwaves <- function(z , QS_Struct , PriorNonImplausibl
   # Extract Useful Data
   
   XminStruct <- PriorNonImplausibleSet[apply(Implausability , 2 , which.min) , ]
-  XminStruct <-XminStruct[apply(Implausability  , 2 , min) < 2, ]
+  XminStruct <- XminStruct[apply(Implausability  , 2 , min) < 2, ]
 
   if(length(XminStruct) < 25){
     return(rep(0,8))
