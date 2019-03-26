@@ -57,11 +57,12 @@ source('FM_CreateRhythumPriors.R')
 for(samplenum in 1:100){
 
 x11()
-print(plot(  x   ,   f_x_ReIre[ samplenum , ]/max(f_x_ReIre[ samplenum , ]) , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )) 
+print(plot(  x  ,  F_x_ReIre[ samplenum , ] , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )) 
 #print(lines( x  ,  F_x_ReIre[ samplenum , ] + 2*(MD_ReIre[ samplenum , ])  , col ='red' , lty=2 ) )
 #print(lines( x  ,  F_x_ReIre[ samplenum , ] - 2*(MD_ReIre[ samplenum , ])  , col ='red' , lty=2 ) )
-print(abline(0.2 , 0))
+print(abline(0.6 , 0))
 Sys.sleep(0)
+PriorNonImplausibleSetRegularyIreRegular[samplenum, ]
 
 UserResponse <- winDialog(type = c("yesnocancel") , message = 'Is this sample non-implausible?')
 
@@ -79,8 +80,8 @@ dev.off()
 }
 
 
-BC_PlotCompareTwoHists(PriorNonImplausibleSetRegularyIreRegular[1:1000 , 1:10] , PriorNonImplausibleSetRegular[1:1000 , 1:10])
-BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000 , 1:10] , PriorNonImplausibleSetRegular[1:1000 , 1:10] , alpha = 0.1)
+BC_PlotCompareTwoHists(PriorNonImplausibleSetRegularyIreRegular[1:1000 , 1:9] , PriorNonImplausibleSetRegular[1:1000 , 1:9])
+BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000 , 1:9] , PriorNonImplausibleSetRegular[1:1000 , 1:9] , alpha = 0.1)
 
 PatientID <- DP_choosepatient(listAllPatients)
 
@@ -90,8 +91,8 @@ RPeakData <- DP_LoadRpeaksfile(path , PatientID)
 
 {
 #rangeofbeats <- 1:500
-#rangeofbeats <- 11501:(11501 + 500)
-rangeofbeats <- 26500:27000
+rangeofbeats <- 11501:(11501 + 500)
+#rangeofbeats <- 25000:25500
   
 RRtimes <- PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats,3]
 tmp <- RRtimes + rnorm(length(RRtimes) , 0 , 0.0025) - rollmedian(RRtimes , k = 21 , na.pad = T) + median(RRtimes)
@@ -192,8 +193,8 @@ RRtimes <- FM_SampleGMM(X = PriorNonImplausibleSetRegularyIreRegular[1 , ] ,  N 
 ReHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegular, x = x , F_x = F_xreg ,f_x = f_xreg ,  MD = MD_Reg , RRtimes = RRtimes , imthreshold = 3 )
 ReIreHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegularyIreRegular,x = x ,F_x =  F_x_ReIre, f_x = f_x_ReIre, MD = MD_ReIre, RRtimes = RRtimes, imthreshold = 3 )
 
-if(length(ReHmOutput$Implausability) > 3){
-  samplenum <- which.min(ReHmOutput$Implausability[,1])
+if(length(ReHmOutput$Implausability) > 4){
+  samplenum <- which.min(ReHmOutput$Implausability[,4])
   plot(  x , ReHmOutput$f_x[samplenum, ] , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )
   lines( x , ReHmOutput$y , type ='l' , col = 'black' )
   lines( x , ReHmOutput$f_x[samplenum , ] + 2*(MDFunction(ReHmOutput$f_x[ samplenum , ] ,ReHmOutput$NonImplausibleSets[samplenum , ] ))  , col ='red' , lty=2 )
@@ -205,9 +206,9 @@ if(length(ReHmOutput$Implausability) > 3){
   lines( x , ReHmOutput$f_x - 2*(MDFunction(ReHmOutput$f_x  ,ReHmOutput$NonImplausibleSets  ))  , col ='red' , lty=2 )
 }
 
-if( length( ReIreHmOutput$Implausability ) > 3 ){
+if( length( ReIreHmOutput$Implausability[,1] ) > 3 ){
   
-  samplenum <- which.min(ReIreHmOutput$Implausability[,1])
+  samplenum <- which.max(ReIreHmOutput$Implausability[,4])
   plot(  x , ReIreHmOutput$f_x[samplenum, ] , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )
   lines( x , ReIreHmOutput$y , type ='l' , col = 'black' )
   lines( x , ReIreHmOutput$f_x[samplenum , ] + 3*(MDFunction(ReIreHmOutput$f_x[ samplenum , ] , ReIreHmOutput$NonImplausibleSets[samplenum , ] ))  , col ='red' , lty=2 )
@@ -241,3 +242,9 @@ if( length( ReIreHmOutput$Implausability ) > 3 ){
 #lines( x , ReIreHmOutput$f_x[samplenum , ] + 3*(MDFunction2(ReIreHmOutput$f_x[ samplenum , ] , ReIreHmOutput$NonImplausibleSets[samplenum , ] ))  , col ='red' , lty=2 )
 #lines( x , ReIreHmOutput$f_x[samplenum , ] - 3*(MDFunction2(ReIreHmOutput$f_x[ samplenum , ] , ReIreHmOutput$NonImplausibleSets[samplenum , ]  ))  , col ='red' , lty=2 )
 
+#X <- PriorNonImplausibleSetRegularyIreRegular[1:2000,]
+#Z <- ReIreHmOutput$NonImplausibleSets[ReIreHmOutput$Implausability[,2]<ImThreshold1[1] , ]
+#Y <- PriorNonImplausibleSetRegular[1:1000,]
+
+#x11(20 , 14)
+#pairs( rbind(X ,  Y , Z) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = 0.05) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = 0.05) , size(Y)[1]) ) ,  as.matrix(rep(rgb(0,1,0 , alpha = 0.15) , size(Z)[1]) )  ) , pch = 16) 

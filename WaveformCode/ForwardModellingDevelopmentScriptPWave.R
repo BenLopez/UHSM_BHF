@@ -24,9 +24,10 @@ MetaData <- DP_ExtractPatientRecordforIndex(PatIndex2017 = PatIndex2017 , Patien
 ECGs <- DP_LoadReducedECGs(path ,  PatientID , FilestoProcess = FilestoProcess  )
 RPeakData <- DP_LoadRpeaksfile(path , PatientID)
 
+
 {
   #rangeofbeats <- 1:500
-  rangeofbeats <- 10500:(10500 + 500)
+  rangeofbeats <- 9500:(9500 + 500)
 
   RRtimes <- PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats,3]
   tmp <- RRtimes + rnorm(length(RRtimes) , 0 , 0.0025) - rollmedian(RRtimes , k = 21 , na.pad = T) + median(RRtimes)
@@ -63,11 +64,10 @@ RPeakData <- DP_LoadRpeaksfile(path , PatientID)
   
   source('FM_HistoryMatchPWaves.R')
   
-  
   d <- FM_CreateDefaultFeatureTable( )
   
-  RegularLogical <- sum((ReHmOutput$Implausability[ , 1] < ImThreshold2[2])* (ReHmOutput$Implausability[ , 2] < ImThreshold2[1])*(ReHmOutput$Implausability[ , 3] < ImThreshold2[3]))>0
-  IregularIrregularlogical <- sum((ReIreHmOutput$Implausability[ , 1] < ImThreshold1[2])* (ReIreHmOutput$Implausability[ , 2] < ImThreshold1[1])*(ReIreHmOutput$Implausability[ , 3] < ImThreshold1[3]))>0
+  RegularLogical <- sum(ReHmOutput$Implausability[ , 1] < ImThreshold2[2])* sum(ReHmOutput$Implausability[ , 2] < ImThreshold2[1])*sum(ReHmOutput$Implausability[ , 3] < ImThreshold2[3])>0
+  IregularIrregularlogical <- sum((ReIreHmOutput$Implausability[ , 1] < ImThreshold1[2])*sum(ReIreHmOutput$Implausability[ , 2] < ImThreshold1[1])*sum(ReIreHmOutput$Implausability[ , 3] < ImThreshold1[3]))>0
   
   d[1 , 4] <- signif(mean(60/tmp , na.rm =T) , 2)
   d[1 , 5] <- signif(var(60/tmp, na.rm =T) , 2)
@@ -79,8 +79,9 @@ RPeakData <- DP_LoadRpeaksfile(path , PatientID)
   d[4 , 5] <- signif(V_PRInterval, 2)
   
   if(abs(E_PA) < 4){
-    d[2 , 2] <- 'Anormal (abscent)'
+    d[2 , 2] <- 'Abnormal (abscent)'
   }
+  d[2 , 3] <- paste0( signif((sum(apply(Implausability , 2 , min) <0.6)/500)*100 , 3) , '%')
   
   if(RegularLogical){
     d[1 , 2] <- 'Regular'
@@ -126,34 +127,10 @@ VQS <- apply( EmulatedQS , 2 , var )
 
 HMOutput <- PWaveHM_EmulateEstimatePAmplitude(QS_Struct , EmulatorParameters, Xstar , PriorNonImplausibleSet , Graphics = 0)
 
-E_Beta = matrix(c(0 , 0 , 0 , 14) , 4 , 1)
-V_Beta = diag(diag(matrix(0 , 4 , 4)))
-V_Beta[1 , 1] <- 1000
-V_Beta[2 , 2] <- 1000
-V_Beta[3 , 3] <- 1000
-V_Beta[4 , 4] <- 450
-V_me = VQS
+{z <- EmulatedQS[22,] 
+Implausability2 <- PWaveHM_CalulateImplausabilityTQSegment(Xstar , z , PriorNonImplausibleSet)
 
-C = diag(4)
-C[1 , 2] <- -0.95
-C[2 , 1] <- C[1 , 2]
-C[1 , 3] <- 0.95
-C[3 , 1] <- C[1 , 3]
-C[1 , 4] <- -0.8
-C[4 , 1] <- C[1 , 4]
-C[3 , 2] <- -0.7
-C[2 , 3] <- C[3 , 2] 
-C[4 , 2] <- 0.8
-C[2 , 4] <- C[4 , 2]
-C[4 , 3] <- -0.8
-C[3 , 4] <- C[4 , 3]
-
-V_Beta <- ((diag(sqrt(V_Beta) ))%*%t(diag(sqrt(V_Beta) )) )*C
-
-{z <- EmulatedQS[401,] 
-Implausability <- PWaveHM_CalulateImplausabilityTQSegment(Xstar , z , PriorNonImplausibleSet)
-
-H = PWaveHM_CreateDesignMatrix(Xstar , PriorNonImplausibleSet[which.min(Implausability) , ] , PsimulatorFunction)
+H = PWaveHM_CreateDesignMatrix(Xstar , PriorNonImplausibleSet[which.min(Implausability2) , ] , PsimulatorFunction)
 
 alpha <- t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + diag(V_me))
 AdjustedBeta <- FMPWaveHM_BLUBetas( H , z = z  , E_Beta , V_Beta  , V_me  , alpha = 0)
@@ -171,11 +148,17 @@ V_md <- ModelDiscrepancy(Xstar , x = samplex , PsimulatorFunction )
 C_md <- CF_ExponentialFamily(Xstar , Xstar , 0.2 , 2)
 
 mdSample <- t(rmvnorm(1 , 0*V_md , (sqrt(V_md)%*%t(sqrt(V_md)))*C_md  ))
-plot(mdSample )
+plot(mdSample  , type ='l')
 
-samplex <- PriorNonImplausibleSet[sample(1:dim(PriorNonImplausibleSet)[1] , 1) , ]
-H = PWaveHM_CreateDesignMatrix(Xstar , samplex , PsimulatorFunction)
-BetaSample <- t(rmvnorm(1 , E_Beta , V_Beta ))
-plot(Xstar , H[ , 1:4]%*%BetaSample[1:4] +  t(rmvnorm(1 , 0*V_md , (sqrt(V_md)%*%t(sqrt(V_md)))*C_md  ))  + rnorm(length(Xstar) , 0 , 1 ), type ='l' , ylim =c(-40,40))
+samplex <- PriorNonImplausibleSet[which.min(Implausability) , ] 
 
-
+Samplesofz <- matrix(0, dim(PriorNonImplausibleSet)[1] , dim(H )[1]  )
+SamplesofIm <- matrix(0, dim(PriorNonImplausibleSet)[1] , 1  )
+for( i in 1:dim(PriorNonImplausibleSet)[1]){
+  samplex <- PriorNonImplausibleSet[i,]
+  H = PWaveHM_CreateDesignMatrix(Xstar , samplex , PsimulatorFunction)
+  BetaSample <- t(rmvnorm(1 , E_Beta , V_Beta ))
+  V_md <- ModelDiscrepancy(Xstar , x = samplex , PsimulatorFunction )
+  samplesofz[i,] <- H[ , 1:4]%*%BetaSample[1:4] +  t(rmvnorm(1 , 0*V_md , (sqrt(4*V_md)%*%t(sqrt(4*V_md)))*C_md  ))  + rnorm(length(Xstar) , 0 , 1 )
+  SamplesofIm[i,] <- CalculateImplausability(Xstar , samplex ,  samplesofz[i,])
+}

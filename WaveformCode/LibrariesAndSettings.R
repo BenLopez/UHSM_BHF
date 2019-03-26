@@ -72,6 +72,7 @@ library( plot3D )#
 library( miscTools )
 library( matrixStats )
 library(gridExtra)
+library(rmutil)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)

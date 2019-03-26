@@ -91,23 +91,27 @@ FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x 
   
   LogicalVector <- (Im < imthreshold)
   Im3 <- matrix(0 , sum(LogicalVector) , 1)
+  Im4 <- matrix(0 , sum(LogicalVector) , 1)
   
   for(i in 1:dim(Im3)[1]){
     #covMattmp <- DP_AddNugget( ((MD[which(LogicalVector)[i] , NonZeroLogical] + 0.0045) %*% t(MD[which(LogicalVector)[i] , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[which(LogicalVector)[i] , NonZeroLogical]+ 0.0045) )
-    Im3[i, ] <- (abs((z[NonZeroLogical] - f_x[which(LogicalVector)[i] , NonZeroLogical])/f_x[which(LogicalVector)[i] , NonZeroLogical]  ))[which.max(z[NonZeroLogical]) ]
+    Im3[i , ] <- (abs((z[NonZeroLogical] - f_x[which(LogicalVector)[i] , NonZeroLogical])/f_x[which(LogicalVector)[i] , NonZeroLogical]  ))[which.max(z[NonZeroLogical]) ]
+    Im4[i , ] <- sum(log(FM_EvaluateDenistyEstimate(RRtimes , PriorNonImplausibleSet[which(LogicalVector)[i] , ])   ))
     #Im3[i, ] <- mahalanobis(x = y[NonZeroLogical] , center = F_x[which(LogicalVector)[i] , NonZeroLogical] , cov = covMattmp  ) 
   }
   }
   if(sum(Im <= imthreshold) <= 1){
     Im3<- (abs( (z[NonZeroLogical] - f_x[which.min(Im) , NonZeroLogical])/f_x[which.min(Im) , NonZeroLogical] ) )[which.max(z[NonZeroLogical])]
+    Im4<- sum(log(FM_EvaluateDenistyEstimate(RRtimes , PriorNonImplausibleSet[which.min(Im) , ])   ))
+    
     #covMattmp <- DP_AddNugget( ((MD[which.min(Im) , NonZeroLogical] + 0.0045) %*% t(MD[which.min(Im) , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[which.min(Im)  , NonZeroLogical]+ 0.0045) )
     #Im3 <- mahalanobis(x = y[NonZeroLogical] , center = F_x[which.min(Im) , NonZeroLogical] , cov = covMattmp  ) 
   }
   
   if(sum(Im <= imthreshold) > 1){
-    return( setNames(list( PriorNonImplausibleSet[Im < imthreshold,] , cbind(Im[Im < imthreshold] , Im2[Im < imthreshold] , Im3) , F_x[Im < imthreshold ,  ] , y  ) , c('NonImplausibleSets' , 'Implausability' , 'f_x' , 'y'  )  ) )
+    return( setNames(list( PriorNonImplausibleSet[Im < imthreshold,] , cbind(Im[Im < imthreshold] , Im2[Im < imthreshold] , Im3 , Im4) , F_x[Im < imthreshold ,  ] , y  ) , c('NonImplausibleSets' , 'Implausability' , 'f_x' , 'y'  )  ) )
   }else{
-    return( setNames(list( PriorNonImplausibleSet[which.min(Im),] , cbind(min(Im ) , Im2[which.min(Im)] , Im3) , F_x[which.min(Im) ,  ] , y  ) , c('MinImplausiblePoint' , 'Implausability' , 'f_x' , 'y'  ) ) )
+    return( setNames(list( PriorNonImplausibleSet[which.min(Im),] , cbind(min(Im ) , Im2[which.min(Im)] , Im3 , Im4) , F_x[which.min(Im) ,  ] , y  ) , c('MinImplausiblePoint' , 'Implausability' , 'f_x' , 'y'  ) ) )
   }
 }
 FM_SampleRealisationsSet <- function( PriorNonImplausibleSet , N , x ){
@@ -120,7 +124,7 @@ FM_SampleRealisationsSet <- function( PriorNonImplausibleSet , N , x ){
 }
 FM_CalulateImForGroundTruth <- function(x , F_x , f_x , PriorNonImplausibleSet , MD , Corr_sdhat , N = 231  ){
   
-  ImplausabilityMatrix <- matrix(0 , dim(PriorNonImplausibleSet)[1] , 3)
+  ImplausabilityMatrix <- matrix(0 , dim(PriorNonImplausibleSet)[1] , 4)
   
   for( ii in 1:dim(PriorNonImplausibleSet)[1] ){
     
@@ -143,6 +147,7 @@ FM_CalulateImForGroundTruth <- function(x , F_x , f_x , PriorNonImplausibleSet ,
     
     ImplausabilityMatrix[ii , 1] <- mean( abs(y[NonZeroLogical] - F_x[ii , NonZeroLogical]) / (MD[ii , NonZeroLogical] + 0.0045) , na.rm = T)
     ImplausabilityMatrix[ii , 2] <- max( abs(y[NonZeroLogical] - F_x[ii , NonZeroLogical]) / (MD[ii , NonZeroLogical]+ 0.0045) , na.rm = T)
+    ImplausabilityMatrix[ii , 4] <- sum(log(FM_EvaluateDenistyEstimate(RRtimes ,PriorNonImplausibleSet[ii,] )))
     #covMattmp <- DP_AddNugget( ((MD[ii , NonZeroLogical] + 0.0045) %*% t(MD[ii , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[ii , NonZeroLogical]+ 0.0045) )
     #ImplausabilityMatrix[ii , 3] <- mahalanobis(x = y[NonZeroLogical] , center = F_x[ii , NonZeroLogical] , cov = covMattmp  ) 
     
@@ -268,4 +273,16 @@ FMPWaveHM_BLUBetas <- function( H , z  , E_Beta , V_Beta  , V_me , alpha = 0 ){
   V_z_Beta <- V_Beta - alpha%*%H*V_Beta
   
   return( setNames( list( E_z_Beta ,  V_z_Beta ) , c('E_z_Beta' , 'V_z_Beta') )  )
+}
+FM_SampleDP <- function(c , l , n , G_0){
+  
+  b <- rbeta(n, 1, c)
+  p <- numeric(n)
+  p[1] <- b[1]
+  p[2:n] <- sapply(2:n, function(i) b[i] * prod(1 - b[1:(i-1)]))
+  y <- G_0(n)
+  theta <- sample(y, prob = p, replace = TRUE) 
+  A <- sqrt(var(theta)/(var(theta) + l^2))
+  theta <- A*(theta + rnorm(n = n  , mean = 0 , l )) + (1 - A)*mean(theta)
+  return(theta)
 }

@@ -17,7 +17,7 @@ RPeakData <- DP_LoadRpeaksfile( path , PatientID )
   meanImRegIre <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
   MulImReg <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
   MulImRegIre <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
-  
+  rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
   timemat <- rep(mean(PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats,1]) , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) )
   
   for(i in 1:ceil(dim(RPeakData$RRCombined)[1]/numberofBeats)){

@@ -110,3 +110,10 @@
   }
   
 }
+
+
+x11()
+p1 <- ggplot(data = data.frame(x ,  y = f_xreg[1,]), aes(x , y) ) + geom_line(col = 'blue')+
+      geom_line(data =data.frame(x ,  y = f_x_ReIre[1,]) , aes(x , y), col = 'red') + xlab(TeX('RR') ) + ylab(TeX('F_{(RR)} (x)') ) + 
+  ggtitle('Regular and Irregularly-irregular Heart-rhythm Distributions')
+p1
