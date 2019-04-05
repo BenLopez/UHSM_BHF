@@ -127,7 +127,7 @@ VQS <- apply( EmulatedQS , 2 , var )
 
 HMOutput <- PWaveHM_EmulateEstimatePAmplitude(QS_Struct , EmulatorParameters, Xstar , PriorNonImplausibleSet , Graphics = 0)
 
-{z <- EmulatedQS[22,] 
+{z <- EmulatedQS[25,] 
 Implausability2 <- PWaveHM_CalulateImplausabilityTQSegment(Xstar , z , PriorNonImplausibleSet)
 
 H = PWaveHM_CreateDesignMatrix(Xstar , PriorNonImplausibleSet[which.min(Implausability2) , ] , PsimulatorFunction)
@@ -162,3 +162,8 @@ for( i in 1:dim(PriorNonImplausibleSet)[1]){
   samplesofz[i,] <- H[ , 1:4]%*%BetaSample[1:4] +  t(rmvnorm(1 , 0*V_md , (sqrt(4*V_md)%*%t(sqrt(4*V_md)))*C_md  ))  + rnorm(length(Xstar) , 0 , 1 )
   SamplesofIm[i,] <- CalculateImplausability(Xstar , samplex ,  samplesofz[i,])
 }
+
+
+x11()
+plot( samplesofz[2,] , type ='l' , col ='blue' , xlab = 't' , ylab = 'z')
+title('Sample of z')

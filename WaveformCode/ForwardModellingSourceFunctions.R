@@ -128,7 +128,10 @@ FM_CalulateImForGroundTruth <- function(x , F_x , f_x , PriorNonImplausibleSet ,
   
   for( ii in 1:dim(PriorNonImplausibleSet)[1] ){
     
-    RRtimes <- FM_SampleGMM(X = PriorNonImplausibleSet[ii , ] ,  N)
+    #RRtimes <- FM_SampleGMM(X = PriorNonImplausibleSet[ii , ] ,  N)
+    G_0 <- function(N){ FM_SampleGMM( X = PriorNonImplausibleSet[ii,] , N) }
+    RRtimes <- FM_SampleDP(c , l , N , G_0)
+    
     y <- FM_CalculateCDFS( RRtimes = RRtimes , xx = x )
     NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
     
@@ -147,13 +150,12 @@ FM_CalulateImForGroundTruth <- function(x , F_x , f_x , PriorNonImplausibleSet ,
     
     ImplausabilityMatrix[ii , 1] <- mean( abs(y[NonZeroLogical] - F_x[ii , NonZeroLogical]) / (MD[ii , NonZeroLogical] + 0.0045) , na.rm = T)
     ImplausabilityMatrix[ii , 2] <- max( abs(y[NonZeroLogical] - F_x[ii , NonZeroLogical]) / (MD[ii , NonZeroLogical]+ 0.0045) , na.rm = T)
-    ImplausabilityMatrix[ii , 4] <- sum(log(FM_EvaluateDenistyEstimate(RRtimes ,PriorNonImplausibleSet[ii,] )))
+    #ImplausabilityMatrix[ii , 4] <- sum(log(FM_EvaluateDenistyEstimate(RRtimes ,PriorNonImplausibleSet[ii,] )))
     #covMattmp <- DP_AddNugget( ((MD[ii , NonZeroLogical] + 0.0045) %*% t(MD[ii , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[ii , NonZeroLogical]+ 0.0045) )
     #ImplausabilityMatrix[ii , 3] <- mahalanobis(x = y[NonZeroLogical] , center = F_x[ii , NonZeroLogical] , cov = covMattmp  ) 
     
     RPeakKDEEstmate <- kde( RRtimes )
     z <- predict(RPeakKDEEstmate , x = x - 0.005)
-    
     
     ImplausabilityMatrix[ii , 3] <- (abs( (z[NonZeroLogical] - f_x[ii , NonZeroLogical])/f_x[ii , NonZeroLogical] ) )[which.max(z[NonZeroLogical])]
     

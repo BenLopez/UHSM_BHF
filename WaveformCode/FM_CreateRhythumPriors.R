@@ -1,4 +1,8 @@
 {
+  c <- 10000
+  l <- 0.005
+  n <- 500 - 19
+  
   {
     numberofsamples <- 100000
     PriorNonImplausibleSetRegular <- matrix(0 , numberofsamples , 10)
@@ -18,8 +22,7 @@
     PriorNonImplausibleSetRegular[, 10]<- runif(numberofsamples , 0 , 1)
     
     MDFunction <- function(F_x , X){
-      output <- sqrt( (F_x*(1-F_x))/481 + 0.000000001 )
-      output[output <= 0.0001] <- quantile(output[output > 0] , 0.05, na.rm = T)
+      output <- sqrt((F_x*(1-F_x))/c + (F_x*(1-F_x))/n + 0.005^2 )
       return(output)
     }
     
@@ -99,12 +102,12 @@
   }
   
   { 
-    ImplausabilityMatrix <- FM_CalulateImForGroundTruth(x = x  , F_x = F_x_ReIre , f_x = f_x_ReIre ,  PriorNonImplausibleSet= PriorNonImplausibleSetRegularyIreRegular , MD = MD_ReIre , Corr_sdhat1 , N = (500 - 19)  )
+    ImplausabilityMatrix <-  FM_CalulateImForGroundTruth(x = x  , F_x = F_x_ReIre , f_x = f_x_ReIre ,  PriorNonImplausibleSet= PriorNonImplausibleSetRegularyIreRegular , MD = MD_ReIre , Corr_sdhat1 , N = (500 - 19)  )
     ImplausabilityMatrix1 <- FM_CalulateImForGroundTruth(x = x  , F_x = F_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] , f_x = f_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] , PriorNonImplausibleSet= PriorNonImplausibleSetRegular[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] , MD = MD_Reg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],], Corr_sdhat2 , N = (500 - 19)  )
     
     { 
-      ImThreshold1 <- 1.05*apply( ImplausabilityMatrix  , 2 , function(X){ quantile(X , 0.99) } )  # 1.05 for 5% model discrepancy
-      ImThreshold2 <- 1.05*apply( ImplausabilityMatrix1  , 2 , function( X ){ quantile(X , 0.99) } ) 
+      ImThreshold1 <- apply( ImplausabilityMatrix  , 2 , function(X){ quantile(X , 0.99) } )  # 1.05 for 5% model discrepancy
+      ImThreshold2 <- apply( ImplausabilityMatrix1  , 2 , function( X ){ quantile(X , 0.99) } ) 
     }
     
   }
@@ -116,4 +119,4 @@ x11()
 p1 <- ggplot(data = data.frame(x ,  y = f_xreg[1,]), aes(x , y) ) + geom_line(col = 'blue')+
       geom_line(data =data.frame(x ,  y = f_x_ReIre[1,]) , aes(x , y), col = 'red') + xlab(TeX('RR') ) + ylab(TeX('F_{(RR)} (x)') ) + 
   ggtitle('Regular and Irregularly-irregular Heart-rhythm Distributions')
-p1
+print(p1)

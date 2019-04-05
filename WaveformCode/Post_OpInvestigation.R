@@ -12,6 +12,7 @@
   #listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
   set.seed(1)
 }
+
 {
   MasterPreOpData <- POM_CreateDataStructure(PatIndex2017 , DetIndex2017 , BioChemIndex2017)
   ReducedMasterPreOpData <- MasterPreOpData[MasterPreOpData$Pre_OperativeHeartRhythm != 'Atrial fibrillation/flutter' , ]
@@ -60,6 +61,9 @@ PostOpBioChem <- data.frame(PostOpBioChem)
 PostOpBioChem$AFLogical <- as.factor(PostOpBioChem$AFLogical)
 
 model <- (glm(formula = AFLogical ~ Na +K +Urea +Creatinine + CRP +Albumin + Bilirubin + Mg  ,family=binomial(link='logit') , data=PostOpBioChem ))
+summary(model)
+
+model <- (glm(formula = AFLogical ~  CRP  ,family=binomial(link='logit') , data=PostOpBioChem ))
 summary(model)
 
 AFLogical <- PostOpBioChem$AFLogical == 1
