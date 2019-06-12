@@ -428,7 +428,7 @@ BE_PlotStdResiduals <- function(zstar , emulatoroutput , e=0){
   
   StdResids = (zstar - emulatoroutput$E_D_fX)/sqrt(diag(emulatoroutput$V_D_fX) + e)
   
-  output <- ggplot( data.frame(index = c(1:length(StdResids)) , StdResids = StdResids) , aes(index , StdResids) ) +
+  output <- ggplot( data.frame(Im_Crit = emulatoroutput$E_D_fX , StdResids = StdResids) , aes(Im_Crit , StdResids) ) +
     geom_point( color = 'blue') + ggtitle('Standardised Residuals') + geom_hline( yintercept  = 3)+ geom_hline( yintercept  = -3)
   
   x11()
@@ -496,4 +496,41 @@ BE_SampleLHSinab <- function(a , b, numbersamples = 1000 ){
 BE_SampleTP <- function(KXX , df = 5,mean = 0 ){
 output <-t(rmvt(n = 1 , sigma = ((df - 2)/(df))*(KXX + 0.0000000000001 * diag(dim(KXX)[1])) , df = df , delta = as.matrix(rep(mean , dim(KXX)[1]))))
 return(output)
+}
+BE_BayesLinearEmulatorLSEstimatesMO <- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass() , meanonly = 0 ){
+  
+  x <- as.matrix(EmulatorSettings$X)
+  y <- as.matrix(EmulatorSettings$Y)
+  n <- dim(x)[1]
+  l <- EmulatorSettings$CorrelationLength( x , 1 )
+  w <- EmulatorSettings$w(x)
+  
+  KXX <- EmulatorSettings$CorrFunction(x , x , l )
+  KXstarX <-  EmulatorSettings$CorrFunction( xstar , x , l )
+  if(meanonly == 0){
+  KXstarXstar <-  EmulatorSettings$CorrFunction(xstar , xstar , l )}
+  
+  H <- EmulatorSettings$MeanFunction(x)
+  sizeh = dim(H)
+  Hstar <- EmulatorSettings$MeanFunction(xstar)
+  sizex <- dim(x)[1]
+  
+  BetaHat <- solve(t(H)%*%H)%*%t(H)%*%y
+  epsilon <- y - H%*%BetaHat
+  
+  SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
+  
+  Var_D <- solve(KXX + EmulatorSettings$w(x)%*%diag(sizeh[1]))
+  Cov_XstarD <- KXstarX
+  
+  E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
+  
+  if(meanonly == 0){
+    V_z_y <- KXstarXstar - (Cov_XstarD%*%Var_D%*%t(Cov_XstarD))
+  }
+  if(meanonly == 1){
+    V_z_y <- 0  
+  }
+  
+  return(list(E_D_fX = E_z_y , C_D_fX = V_z_y , SigmaHat = SigmaHat))  
 }

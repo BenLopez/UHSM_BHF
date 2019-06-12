@@ -8,7 +8,9 @@ POM_CreateDefaultSetofCovForPatIndex <- function(){
              'CPB',
              'ConfirmedFirstNewAF',
              'FirstNewAF',
-             'Pre_OperativeHeartRhythm'))
+             'Pre_OperativeHeartRhythm',
+             'PreopRRT',
+             'Height'))
 }
 POM_CreateDefaultSetofCovForDet <- function(){
   return(c("LogisticEUROScore" ,
@@ -16,7 +18,7 @@ POM_CreateDefaultSetofCovForDet <- function(){
            "SCTSLogisticEuroSCORE"))
 }
 POM_CreateDefaultSetofCov <- function(){
-  listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' ,'PreOpCRP', 'PreOpAlb' , 'PreopBili' , 'PreopCreat')
+  listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' ,'PreOpCRP', 'PreOpAlb' , 'PreopBili' , 'PreopCreat' )
   return(listofcovariates)
 }
 POM_CreateDataStructure <- function(PatIndex2017 , DetIndex2017 , BioChemIndex2017, SetofCovariatesPatientIndex = POM_CreateDefaultSetofCovForPatIndex(), SetofCovariatesDetIndex = POM_CreateDefaultSetofCovForDet()){
@@ -52,16 +54,17 @@ POM_CreateDataStructure <- function(PatIndex2017 , DetIndex2017 , BioChemIndex20
   MasterPreOpData <- cbind(MasterPreOpData , ReducedPreOpBioChemData)
   MasterPreOpData$Gender <- as.factor(MasterPreOpData$Gender)
   
-  for(ii in 1:dim(MasterPreOpData)[2]){
-    if(is.numeric(MasterPreOpData[, ii]) ){
-      MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- mean(MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii])
-    }
-  }
+  #for(ii in 1:dim(MasterPreOpData)[2]){
+  #  if(is.numeric(MasterPreOpData[, ii]) ){
+  #    MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- mean(MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii])
+  #  }
+  #}
   
   MasterPreOpData <- MasterPreOpData[duplicated(MasterPreOpData$PseudoId) == 0 , ]
   
   MasterPreOpData$ConfirmedFirstNewAF[is.na(MasterPreOpData$ConfirmedFirstNewAF)] <- 'NA'
-  MasterPreOpData <- data.frame(AFLogical = ((!is.na(MasterPreOpData$FirstNewAF))*(MasterPreOpData$ConfirmedFirstNewAF != 'CNAF')) == 1 , MasterPreOpData)
+  
+  MasterPreOpData <- data.frame(AFLogical = ((!is.na(MasterPreOpData$FirstNewAF))*(MasterPreOpData$ConfirmedFirstNewAF != 'CNAF')) , MasterPreOpData)
   
   
   return(MasterPreOpData)
@@ -157,4 +160,119 @@ POM_CalculatePreOpProbability <- function(MasterPreOpData , BLBModelStruct,BLBCa
   outut$E_D_P[outut$E_D_P > 1] <- 0.999
   
   return(outut)
+}
+POM_ExtractPreOpFromHaem <- function(HaemIndex2017){
+  HaemDataMatrix <- matrix(0 , length(HaemIndex2017) , 5)
+  PatientNames <- matrix(0 , length(HaemIndex2017) , 1)
+  counter <- 1
+  for( i in 1:dim(HaemDataMatrix)[1] ){
+    PatientNames[counter] = HaemIndex2017[[i]]$MetaData$NewPseudoId
+    HaemDataMatrix[counter,] = as.numeric(HaemIndex2017[[i]]$MetaData[ , c(4,5,6,8,11 ) ])
+    counter <- counter + 1
+  }
+  
+  rownames(HaemDataMatrix) = PatientNames
+  colnames(HaemDataMatrix) = names(HaemIndex2017[[1]]$MetaData[ , c(4,5,6,8,11 ) ])
+  
+  return(HaemDataMatrix)
+}
+POM_ExtractAFMedication <- function(FluidsIndex2017){
+  DidoxinLogical <- matrix(0 , length(FluidsIndex2017) , 1)
+  AmiodaroneLogical <- matrix(0 , length(FluidsIndex2017) , 1)   
+  for(i in 1:length(FluidsIndex2017)){
+    
+    DidoxinLogical[i,] <-   sum(!is.na(FluidsIndex2017[[i]]$TimeSeriesData$Digoxin..)) > 0
+    AmiodaroneLogical[i,] <- sum(!is.na(FluidsIndex2017[[i]]$TimeSeriesData[ , which(grepl('Amiodarone', names(FluidsIndex2017[[i]]$TimeSeriesData) ))]))>0
+  }
+  outputstruct <- data.frame(NewPseudoId = names(FluidsIndex2017) , DidoxinLogical = DidoxinLogical , AmiodaroneLogical = AmiodaroneLogical)
+  return(outputstruct)
+}
+POM_ExtractPostOpFromBioChem <- function(BioChemIndex2017){
+  
+  PostOpBioChem <- matrix(0 , length(BioChemIndex2017) , 8)
+  
+  for(i in 1:length(BioChemIndex2017)){
+    PostOpBioChem[i , 1:8] <- as.numeric(BioChemIndex2017[[i]]$TimeSeriesData[1 , 2:9])
+  }
+  
+  colnames(PostOpBioChem) <- c(names(BioChemIndex2017[[i]]$TimeSeriesData[1 , 2:9]) )
+  rownames(PostOpBioChem) <- names(BioChemIndex2017)
+  return(PostOpBioChem)
+}
+
+POM_ExtractPostOpFromHaem <- function(HaemIndex2017){
+  {
+  PostopHaemDataMatrix <- matrix(0 , length(HaemIndex2017) , 7)
+  for( i in 1:dim(PostopHaemDataMatrix)[1] ){
+    if(!is.na(HaemIndex2017[[i]]$TimeSeriesData[1 , 2])){
+      PostopHaemDataMatrix[i,-c(1,2,3)] = as.numeric(HaemIndex2017[[i]]$TimeSeriesData[2 , c(5,6,8,9) ])
+      PostopHaemDataMatrix[i,c(1,2,3) ] = as.numeric(HaemIndex2017[[i]]$TimeSeriesData[1 , c(2,3 , 4) ])
+    }
+    if(!is.na(HaemIndex2017[[i]]$TimeSeriesData[2 , 2])){
+      PostopHaemDataMatrix[i,c(1,2,3) ] = as.numeric(HaemIndex2017[[i]]$TimeSeriesData[2 , c(2,3 , 4) ])
+      PostopHaemDataMatrix[i,-c(1,2,3)] = as.numeric(HaemIndex2017[[i]]$TimeSeriesData[1 , c(5,6,8,9) ])
+    }
+    if(is.na(HaemIndex2017[[i]]$TimeSeriesData[2 , 2]) & is.na(HaemIndex2017[[i]]$TimeSeriesData[1 , 2])){
+      PostopHaemDataMatrix[i, ] = as.numeric(HaemIndex2017[[i]]$TimeSeriesData[2 , c(2,3 , 4 , 5,6,8,9) ])
+    }
+  }
+  rownames(PostopHaemDataMatrix) = names(HaemIndex2017)
+  colnames(PostopHaemDataMatrix) = names(HaemIndex2017[[1]]$TimeSeriesData[1 , c(2,3 , 4, 5,6,8,9) ])
+  }
+  return(PostopHaemDataMatrix)
+}
+POM_ExtractPostOpFromFluids<- function(FluidsIndex2017){
+  PostopFluidsDataMatrix <- matrix(0 , length(FluidsIndex2017) , 1)
+  for(i in 1:length(FluidsIndex2017)){
+    
+      diff <- FluidsIndex2017[[i]]$TimeSeriesData$Hourly.In - FluidsIndex2017[[i]]$TimeSeriesData$Hourly.Out
+      timevec <- FluidsIndex2017[[i]]$TimeSeriesData$time
+      timevec <- timevec[!is.na(diff)]
+      diff <- diff[!is.na(diff)]
+      diff <- diff[!is.na(timevec)]
+      timevec <- timevec[!is.na(timevec)] 
+      
+      PostopFluidsDataMatrix[i ,1] <- c(diff[which(!is.na(diff))[1] ])
+  }
+  rownames(PostopFluidsDataMatrix) <- names(FluidsIndex2017)
+  colnames(PostopFluidsDataMatrix) <- 'FluidBalance'
+return(PostopFluidsDataMatrix)
+}
+POM_MeanImputation <- function(MasterPreOpData){
+  for(ii in 1:dim(MasterPreOpData)[2]){
+    if(is.numeric(MasterPreOpData[, ii]) ){
+     MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- mean(MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii])
+    }
+  }
+  return(MasterPreOpData)
+}
+POM_GaussianImputation <- function(MasterPreOpData){
+for(ii in 1:dim(MasterPreOpData)[2]){
+    if(is.numeric(MasterPreOpData[, ii]) ){
+      if(sum(is.na(MasterPreOpData[, ii]))> 0){
+      MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- rnorm(sum(is.na(MasterPreOpData[, ii])) , mean(MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii]) , sqrt(var(MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii])))
+      }
+      }
+  }
+  return(MasterPreOpData)
+}
+POM_SampledImputation <- function(MasterPreOpData){
+  for(ii in 1:dim(MasterPreOpData)[2]){
+    if(is.numeric(MasterPreOpData[, ii]) ){
+      if(sum(is.na(MasterPreOpData[, ii]))> 0){
+      MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- sample(x = MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii] , size = sum(is.na(MasterPreOpData[, ii])) , replace = T )
+      }
+      }
+  }
+  return(MasterPreOpData)
+}
+POM_RemoveOutliers <- function(MasterPreOpData , threshold = 5){
+  for(ii in 1:dim(MasterPreOpData)[2]){
+    if(is.numeric(MasterPreOpData[, ii]) ){
+     logicalVector = abs(DP_NormaliseData(MasterPreOpData[,ii]) ) > threshold
+     logicalVector[is.na(logicalVector)] <- FALSE
+     MasterPreOpData[logicalVector , ii] <- NA
+     }
+  }
+  return(MasterPreOpData)
 }

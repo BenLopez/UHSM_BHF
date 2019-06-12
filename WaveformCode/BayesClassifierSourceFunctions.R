@@ -764,13 +764,12 @@ BC_PlotCreateECGPlots <- function(RPeaksStruct ,  ECGStruct  , timestart = ECGSt
   f_t <- ECGStruct$Value[(ECGStruct$Date > timestart )*(ECGStruct$Date < (timestart+timeindex) ) == 1]
   RA1 <- f_t[t %in% t1]
   t1 <- t[t %in% t1]
-  RA2 <- RPeaksStruct[[ECGindex]]$RA[(RPeaksStruct[[ECGindex]]$t > timestart )*(RPeaksStruct[[ECGindex]]$t < (timestart+timeindex) ) == 1]
+  #RA2 <- RPeaksStruct[[ECGindex]]$RA[(RPeaksStruct[[ECGindex]]$t > timestart )*(RPeaksStruct[[ECGindex]]$t < (timestart+timeindex) ) == 1]
   
   plotstruct <- ggplot(data.frame(t = t , f_t = f_t ) , aes(t , f_t))+
     geom_line(colour= color) + 
     ylab('V') + 
     xlab('t') +
-    geom_point(data = data.frame(t = t2 , RA = RA2) , aes(t , RA) , colour = 'black'  )+
     geom_point(data = data.frame(t = t1 , RA = RA1) , aes(t , RA) , colour = 'red' )
   return(plotstruct)  
 }
@@ -864,10 +863,27 @@ BC_plotValidateDensityEstimationMarginalHistograms <- function(A , B , C , D ){
                  round(sum( abs(tmp2$density - tmp4$density)) , 3)) )
   }
 }
-BC_PlotPairsFromTwoVariables <- function( X , Y , alpha = 0.01 ){
+BC_PlotPairsFromTwoVariables <- function( X , Y , alpha = 0.01 , labels =1 ,...){
   x11(20 , 14)
-  pairs( rbind(X , Y) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1]) )) , pch = 16) 
+  if(labels == 1){
+  pairs( rbind(X , Y) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1]) )) , pch = 16 ,...) 
+  }else{
+  pairs( rbind(X , Y) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = alpha) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = alpha) , size(Y)[1]) )) , pch = 16 , labels = labels , ...) 
+  }
+    }
+BC_PlotPairsFromThreeVariables <- function( X , Y , Z , alpha = c(0.1,0.1,0.1)  , labels =1 , ...){
+  if(length(alpha) == 1){alpha = rep(alpha , 3)}
+  
+  x11(20 , 14)
+  
+  if(labels == 1){
+  pairs( rbind(X , Y , Z) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = alpha[1]) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = alpha[2]) , size(Y)[1]) ) , as.matrix(rep(rgb(0,1,0 , alpha = alpha[3]) , size(Z)[1]) )) , pch = 16 , ...) 
+  }else{
+    pairs( rbind(X , Y , Z) ,  col = rbind(as.matrix(rep(rgb(1,0,0 , alpha = alpha[1]) , size(X)[1])) , as.matrix(rep(rgb(0,0,1 , alpha = alpha[2]) , size(Y)[1]) ) , as.matrix(rep(rgb(0,1,0 , alpha = alpha[3]) , size(Z)[1]) )) , pch = 16, labels = labels , ...) 
+    
 }
+    }
+
 BC_PlotPairs<- function(X , alpha = 0.01 ){
   x11(20 , 14)
   pairs( X , col = rgb(1 , 0 , 0 , alpha = alpha) , pch =16) 
@@ -919,7 +935,7 @@ BC_PlotCompareSingleHists <- function(X , Y, breaks = 15, ...){
        , freq = FALSE 
        , breaks = tmphist$breaks
        , add = T)   
-  ImMean  <- return(abs( (mean(X) - mean(Y))/((var(X)/length(X)) + (var(Y)/length(Y))) ))
+  ImMean  <- return(abs( (mean(X) - mean(Y))/(sqrt(var(X)/length(X)) + sqrt(var(Y)/length(Y))) ))
 }
 BC_PlotPrevision <- function( Prevision ){
   output <- ggplot( )+

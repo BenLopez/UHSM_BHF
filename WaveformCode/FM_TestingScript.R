@@ -79,8 +79,7 @@ RPeakData <- DP_LoadRpeaksfile( path , PatientID )
   RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = IrtimePoints , fillcolor = 'orange')
   RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegIrRegulartimePoints , fillcolor = 'red')
   x11(40 , 25)
-  RRPlot + geom_line(data = data.frame( t = timemat , P = ((1/MulImReg) / ((1/MulImReg) + (1/MulImRegIre) ))) , aes(t, P) , col ='blue')+
-    geom_hline(yintercept = 0.6)
+  RRPlot + ggtitle('Heart-rhythm Analysis')
 }
 
 

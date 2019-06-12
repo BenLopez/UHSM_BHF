@@ -40,7 +40,9 @@ packages<-c("ggplot2",
             'miscTools',
             'rmutil',
             'matrixStats',
-            'gridExtra')
+            'gridExtra',
+            'GGally',
+            'lattice')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -73,6 +75,8 @@ library( miscTools )
 library( matrixStats )
 library(gridExtra)
 library(rmutil)
+library(GGally)
+library(lattice)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
@@ -101,5 +105,6 @@ source('PWaveHistoryMatchingSourceFunctions.R' )
 source('BayesLinearBayesForecastingSourceFunctions.R')
 source('PreOpModelSourceFunctions.R')
 source('ForwardModellingSourceFunctions.R')
+source('CriticalValueEmulationsSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

@@ -735,3 +735,18 @@ DP_RestructureVent <- function(VentIndex2017){
 DP_ExtractPatientIDFromNewPatinetID <- function( newpatientID ){
   return(  substr(x = newpatientID , start = 1 , stop =  gregexpr( '-' , newpatientID )[[1]][1] -1 )  ) 
 }
+DP_AssignSurgeryLabels <- function(Proc){
+  Proc2 <- as.matrix(Proc)
+  LevelNames <- c('Aortic' , 'Complex' , 'CABG' , 'Transplant' , 'Valve' , 'MCS' , 'SP' , 'PP' , 'Other')
+  
+  Proc2[ Proc %in% c('Aortic','Aortic and CABG','Aortic and Valve')] <- LevelNames[1]
+  Proc2[ Proc %in% c(' Aortic and CABG and Other', 'Aortic and CABG and Other', ' Aortic and Valve and CABG and Other','Aortic and Valve and CABG and Other','Aortic and Valve and Other','CABG and Valve and Other' , "Aortic and Valve and CABG" )] <-  LevelNames[2]
+  Proc2[  Proc %in% c('CABG','CABG and Other','CABG and Valve') ] <-  LevelNames[3]
+  Proc2[ Proc %in% c('Cardiac transplant','Cardiac Transplant')] <-  LevelNames[4]
+  Proc2[ Proc %in% c("Valve and LVAD insertion",'valve and LVAD insertion', 'Valve and Other')] <-  LevelNames[5]
+  Proc2[ Proc %in% c('ecmo decannulation','ECMO decannulation','explantation of BiVAD',"BIVAD Insertion",'LVAD Insertion','LVAD Removal','LVAD Replacement','Perc RVAD Insertion',"LV aneurysmectomy;",'Peripheral VA ECMO','Primary VAD','Primary VAD;Other procedure not listed above;','PrimaryVAD;ASD Closure','LVAD Replacement','RVAD insertion','VA ECMO','VA ECMO (off on unit)','VA ECMO insertion','VA ECMO Insertion','VAD Explantation')] <-  LevelNames[6]
+  Proc2[ Proc %in% c('ASD closure','Atrial myxoma','Atrial myxoma and Other','LV aneurysmectomy')] <-  LevelNames[7]
+  Proc2[ Proc %in% c('drain removal','Major Sternal Debridement/VAC','exploration secondary to flow issues','Oxygenator removal','pericardial collection drainage','Pericardial Window','Pericardiectomy','removal of chest drain','Removal Of Packs/Secondary Chest Closure','Removal Sternal Wire/Debdridement','Sternal Flap','sternal rewire','Sternal wound flap','Tamponade/Re-Operation For Bleeding',"Surgical Tracheostomy")] <-  LevelNames[8]
+  Proc2[ Proc %in% c('Stenting carotid pseudo aneurysm','Leg fasciectomy','embolisation of gi bleed','Laparotomy' , 'Epicardial pacemaker;Other procedure not listed above;','BK amuptation')] <-LevelNames[9]
+return(Proc2)
+}

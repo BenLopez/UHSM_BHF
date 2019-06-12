@@ -19,7 +19,7 @@ if(UserResponse == 'NO'){
 }
 
 for( ii in 1:length(listAllPatients) ){
-  
+  {  
 sub_pat <- subset(PatIndex2017, PseudoId %in% listAllPatients[[ii]])
 
 if(nrow(sub_pat) == 0 ){
@@ -51,5 +51,6 @@ if(DP_CheckFieldExists(outputdata , 'RRCombined')){
   
   DP_WaitBar(ii/length(listAllPatients))
   next
+}
 }
 }

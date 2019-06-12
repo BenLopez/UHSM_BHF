@@ -59,7 +59,7 @@ RPeakTs <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeakData , MetaData = MetaD
 
 StartBeat <- 1
 for(i in 1:72){
-  rangeofbeats <- c(StartBeat:(StartBeat + 500))
+  rangeofbeats <- c(StartBeat:(StartBeat + 499))
   
   RRtimes <- PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats,3]
   RPeakKDEEstmate <- kde( RRtimes )
@@ -77,20 +77,20 @@ for(i in 1:72){
   
   RPeakdisPlot <- ggplot(data = data.frame( RRTimes=RPeakKDEEstmate$eval.points , density = RPeakKDEEstmate$estimate) , aes(RRTimes , density)) + 
     geom_line( col ='blue') +
-    geom_vline(xintercept =  0.6) +
-    geom_vline(xintercept =  1 ) +
-    geom_vline(xintercept =  modeRate  , col = 'red' , linetype = "dashed" ) +
-    geom_vline(xintercept =  modeRate + PrecentageforRegular*modeRate  , col = 'red' , linetype = "dashed" ) +
-    geom_vline(xintercept =  modeRate - PrecentageforRegular*modeRate  , col = 'red' , linetype = "dashed" ) +
-    xlim(0.1 , 1.2)
+    #geom_vline(xintercept =  0.6) +
+    #geom_vline(xintercept =  1 ) +
+    #geom_vline(xintercept =  modeRate  , col = 'red' , linetype = "dashed" ) +
+    #geom_vline(xintercept =  modeRate + PrecentageforRegular*modeRate  , col = 'red' , linetype = "dashed" ) +
+    #geom_vline(xintercept =  modeRate - PrecentageforRegular*modeRate  , col = 'red' , linetype = "dashed" ) +
+    xlim(0.2 , 1.2)
   
-      RPeakdisPlot <- RPeakdisPlot + ggtitle(ggtitle(paste0( ' RR-Times Distribution ')))
+  RPeakdisPlot <- RPeakdisPlot + ggtitle(ggtitle(paste0( ' RR-Times Distribution ')))
       
   #QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGII , RPeaks = RPeakData$RRCombined[10000:10500,] , QSwidth = 10)
   
-  PWavePlot1 <- FM_PlotPWaveAnalysisSingle(ECG = ECGs$ECGI , Beats = RPeakData$RRCombined[rangeofbeats,] , QSwidth  = 10) 
-  PWavePlot2 <- FM_PlotPWaveAnalysisSingle(ECG = ECGs$ECGII , Beats = RPeakData$RRCombined[rangeofbeats,] , QSwidth  = 10)
-  PWavePlot3 <- FM_PlotPWaveAnalysisSingle(ECG = ECGs$ECGIII , Beats = RPeakData$RRCombined[rangeofbeats,] , QSwidth  = 10)
+  #PWavePlot1 <- FM_PlotPWaveAnalysisSingle(ECG = ECGs$ECGI , Beats = RPeakData$RRCombined[rangeofbeats,] , QSwidth  = 10) 
+  #PWavePlot2 <- FM_PlotPWaveAnalysisSingle(ECG = ECGs$ECGII , Beats = RPeakData$RRCombined[rangeofbeats,] , QSwidth  = 10)
+  #PWavePlot3 <- FM_PlotPWaveAnalysisSingle(ECG = ECGs$ECGIII , Beats = RPeakData$RRCombined[rangeofbeats,] , QSwidth  = 10)
   lay <- rbind(c(1,1 ) ,
                c(1,1 ) ,
                c(1,1 ) ,
@@ -100,16 +100,16 @@ for(i in 1:72){
   lay <- rbind( c( 1 , 1 , 1 , 1) ,
                 c( 1 , 1 , 1 , 1) ,
                 c( 1 , 1 , 1 , 1) ,
-                c( 2 , 2 , 3 , 3) , 
-                c( 2 , 2 , 4 , 4) ,
-                c( 2 , 2 , 5 , 5) )  
+                c( 2 , 2 , 2 , 2) , 
+                c( 2 , 2 , 2 , 2) ,
+                c( 2 , 2 , 2 , 2) )  
   
   x11(40 , 25)
   tmpRPeakTs <- RPeakTs + geom_vline(xintercept = PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats[1],1] , linetype = "dashed") + geom_vline(xintercept = PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats[length(rangeofbeats)],1] , linetype = "dashed") 
-  print(grid.arrange(tmpRPeakTs , RPeakdisPlot , PWavePlot1 +ggtitle('P-Waves') ,PWavePlot2 , PWavePlot3 , layout_matrix = lay))
-  dev.copy(png , paste0('C:\\Users\\Ben\\Documents\\Output Images\\Videos\\image' , rangeofbeats[1] , '.png'))
+  print( grid.arrange(tmpRPeakTs , RPeakdisPlot , layout_matrix = lay) )
+  dev.copy(png , paste0('C:\\Users\\Ben\\Documents\\Output Images\\Videos2\\image' , rangeofbeats[1] , '.png'))
   dev.off()
-  StartBeat = StartBeat + 500 +1
+  StartBeat = StartBeat + 500
 }
 
 

@@ -28,13 +28,13 @@ MasterPreOpData <- POM_CreateDataStructure(PatIndex2017 , DetIndex2017 , BioChem
 
 summary(glm(formula = AFLogical ~ Age  + Gender + Weight + CPB + AdditiveEUROScore +LogisticEUROScore + SCTSLogisticEuroSCORE+ PreOpNa+PreOpK+PreopUrea+PreopCreat+PreOpCRP+PreOpAlb+PreopBili+PreopMg,family=binomial(link='logit') , data=ReducedMasterPreOpData))
 
-model <- (glm(formula = AFLogical ~ Age  + CPB + AdditiveEUROScore  + PreOpNa +PreopUrea + log(PreOpAlb) + PreopBili + PreopCreat ,family=binomial(link='logit') , data=ReducedMasterPreOpData))
+model <- (glm(formula = AFLogical ~ Age  + CPB + AdditiveEUROScore  + PreOpNa +PreopUrea + log(PreOpAlb)  ,family=binomial(link='logit') , data=ReducedMasterPreOpData))
 summary(model)
 
 AFLogical <- ReducedMasterPreOpData$AFLogical
 BC_PlotCompareSingleHists(model$fitted.values[AFLogical == F] , model$fitted.values[AFLogical == T])
 
-listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' , 'PreOpAlb' , 'PreopBili' , 'PreopCreat')
+listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' , 'PreOpAlb' )
 #listofcovariates <- c('Age'  , 'weight' ,   'CPB' ,  'AdditiveEUROScore' , 'LogisticEUROScore ' , 'SCTSLogisticEuroSCORE' , 'PreOpNa','PreOpK', 'PreopUrea' , 'PreOpAlb' , 'PreopBili' , 'PreopCreat' , 'PreopMg')
 indexesofcovariates <-  which(names(ReducedMasterPreOpData) %in%listofcovariates )
 

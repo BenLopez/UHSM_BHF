@@ -1,6 +1,19 @@
-
-{pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
-source("LibrariesAndSettings.R" , print.eval  = TRUE )}
+{
+  {
+    if(file.exists('CheckforDefaultsScript.R')){
+      source('CheckforDefaultsScript.R')
+    }else{
+      pathFiles <- setwd(paste0(choose.dir(caption="Select folder with source code."), "\\"))
+      source("LibrariesAndSettings.R" , print.eval  = TRUE )
+      DP_LoadPatientIndex()
+      DP_ChooseDataReps()
+      FilestoProcess <- DP_ChooseECGstoProcess() 
+      HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter()
+    }
+    listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
+    set.seed( 1 )
+  }
+}
 
 HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter()
 OutputDirectory <- choose.dir()
@@ -13,12 +26,16 @@ for( i in 1:length(FileNames) ){
   tmp <- readMat(Listoffiles[[i]])
   timetmp <- as.POSIXct(Sys.time())
   WaveData <- data.frame(Date = as.POSIXct( tmp[[1]][[1]][,1] , origin = timetmp ) , Value = tmp[[1]][[1]][,2])
-  AFlocations <-  as.POSIXct( tmp[[1]][[3]], origin = timetmp)
+  AFStartTimes <-  as.POSIXct( tmp[[1]][[3]], origin = timetmp)
+  AFEndTimes <-  as.POSIXct( tmp[[1]][[4]], origin = timetmp)
   
-  if(sum(difftime(AFlocations,WaveData$Date[1] , units = 'hours') > 6) > 0){
-    indexOI <- which.min(abs(WaveData$Date - AFlocations[difftime(AFlocations,WaveData$Date[1] , units = 'hours') > 5][1]))
+  if(sum(difftime(AFStartTimes , WaveData$Date[1] , units = 'hours') > 6) > 0){
+    tmp1 <- AFStartTimes[difftime(AFStartTimes , WaveData$Date[1] , units = 'hours') > 5]
+    tmp2 <- AFEndTimes[difftime(AFEndTimes , WaveData$Date[1] , units = 'hours') > 5]
+    TimeIndexuse <- which.max(abs(AFStartTimes - AFEndTimes))
+    indexOI <- which.min(abs(WaveData$Date - AFStartTimes[TimeIndexuse] ))
   }
-  if(sum(difftime(AFlocations,WaveData$Date[1] , units = 'hours')) == 0){
+  if(sum(difftime(AFStartTimes , WaveData$Date[1] , units = 'hours') > 6) == 0){
     indexOI <- which(difftime(WaveData$Date,WaveData$Date[1] , units = 'hours')>6)[1]
   }
   
@@ -38,7 +55,13 @@ for( i in 1:length(FileNames) ){
   print('Saving ECGIII')
   save(WaveData , file = paste0( OutputDirectory , '\\' ,  FileNames[[i]] , '\\Zip_out\\' , FileNames[[i]] , '_ECGIII_Reduced.RData') )
   print('ECGIII Saved')
+  
+  print('Saving AFLocations')
+  AFlocations = data.frame(AFStartTimes = AFStartTimes , AFEndTimes = AFEndTimes)
+  save(AFlocations , file = paste0( OutputDirectory , '\\' ,  FileNames[[i]] , '\\Zip_out\\' , FileNames[[i]] , '_AFTimes.RData') )
+  print('AFLocations Saved')
   DP_WaitBar(i/length(FileNames))
+  
 }
 
 

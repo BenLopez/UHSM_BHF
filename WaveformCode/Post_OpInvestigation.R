@@ -23,53 +23,42 @@
 }
 
 
-PostOpBioChem <- matrix(0 , length(BioChemIndex2017) , 9)
+POM_ExractPostOpFromBioChem <- function(BioChemIndex2017){
+
+PostOpBioChem <- matrix(0 , length(BioChemIndex2017) , )
 
 for(i in 1:length(BioChemIndex2017)){
-PatientID <- DP_ExtractPatientIDFromNewPatinetID(BioChemIndex2017[[i]]$MetaData$NewPseudoId)
-MetaData <- DP_ExtractPatientRecordforIndex(PatIndex2017  , PatientID)
-if(!is.na(MetaData$Pre_OperativeHeartRhythm)){
-if(MetaData$Pre_OperativeHeartRhythm ==  "Atrial fibrillation/flutter" ){next
-  }
-}
-
 PostOpBioChem[i , 1:8] <- as.numeric(BioChemIndex2017[[i]]$TimeSeriesData[1 , 2:9])
-
-if( !is.na(MetaData$FirstNewAF[1]) ){
-  PostOpBioChem[i , 9] <- 1 
-if(  !is.na(MetaData$ConfirmedFirstNewAF) ){
-  PostOpBioChem[i , 9] <- 1 
-if(MetaData$ConfirmedFirstNewAF[1] == 'CNAF'){
-    PostOpBioChem[i , 9] <- 0
-  }
-}
-}
 }
 
-for(ii in 1:dim(PostOpBioChem)[2]){
-  if(is.numeric(PostOpBioChem[, ii]) ){
-    PostOpBioChem[is.na(PostOpBioChem[, ii]), ii] <- mean(PostOpBioChem[!is.na(PostOpBioChem[, ii]), ii])
-  }
-}
 
 colnames(PostOpBioChem) <- c(names(BioChemIndex2017[[i]]$TimeSeriesData[1 , 2:9]) , 'AFLogical' )
-rownames(PostOpBioChem) <- apply(as.matrix(names(BioChemIndex2017)) , 1 ,DP_ExtractPatientIDFromNewPatinetID)
+rownames(PostOpBioChem) <- apply(as.matrix(names(BioChemIndex2017)) , 1 ,names(BioChemIndex2017))
+return(PostOpBioChem)
+}
 
 PostOpBioChem <- PostOpBioChem[apply(PostOpBioChem , 1 , sum) !=0 , ]
 PostOpBioChem <- PostOpBioChem[duplicated(rownames(PostOpBioChem)) == F , ]
+
+PostOpBioChem <- DP_RemoveNaRows(PostOpBioChem)
+
 PostOpBioChem <- data.frame(PostOpBioChem)
 PostOpBioChem$AFLogical <- as.factor(PostOpBioChem$AFLogical)
 
-model <- (glm(formula = AFLogical ~ Na +K +Urea +Creatinine + CRP +Albumin + Bilirubin + Mg  ,family=binomial(link='logit') , data=PostOpBioChem ))
-summary(model)
+model <- (glm(formula = AFLogical ~ Na + K + Urea + Creatinine + CRP +Albumin + Bilirubin + Mg  ,family=binomial(link='logit') , data=PostOpBioChem ))
+summary( model )
 
-model <- (glm(formula = AFLogical ~  CRP  ,family=binomial(link='logit') , data=PostOpBioChem ))
-summary(model)
+model <- (glm(formula = AFLogical ~  as.factor(CRP > 100)  ,family=binomial(link='logit') , data=PostOpBioChem ))
+summary( model )
 
 AFLogical <- PostOpBioChem$AFLogical == 1
 BC_PlotCompareSingleHists(model$fitted.values[AFLogical == F] , model$fitted.values[AFLogical == T])
 
-listofcovariates <- c('Na' ,  'Urea' , 'CRP'  , 'Mg')
+DataMatrix <- PostOpBioChem[ , indexesofcovariates]
+BC_PlotCompareSingleHists(DataMatrix[AFLogical == F , 1] , DataMatrix[AFLogical == T , 1])
+
+
+listofcovariates <- c('CRP'  , 'Mg')
 indexesofcovariates <-  which(names(PostOpBioChem) %in% listofcovariates )
 
 DataMatrix <- PostOpBioChem[ , indexesofcovariates]

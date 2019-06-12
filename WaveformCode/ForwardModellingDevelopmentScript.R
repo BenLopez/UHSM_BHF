@@ -91,7 +91,7 @@ RPeakData <- DP_LoadRpeaksfile(path , PatientID)
 
 {
 #rangeofbeats <- 1:500
-rangeofbeats <- 11501:(11501 + 500)
+rangeofbeats <- 30000:(30000 + 500)
 #rangeofbeats <- 25000:25500
   
 RRtimes <- PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats,3]
@@ -149,29 +149,54 @@ ReIreHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = Pri
 
 if( length(ReHmOutput$Implausability) > 3 ){
   
-samplenum <- which.min(ReHmOutput$Implausability[,3])
-plot(  x , ReHmOutput$f_x[samplenum, ] , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )
+samplenum <- which.min(ReHmOutput$Implausability[,1])
+plot(  x , ReHmOutput$f_x[samplenum, ] , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density' , xlim =c(0.5,0.75) )
 lines( x , ReHmOutput$y , type ='l' , col = 'black' )
-lines( x , ReHmOutput$f_x[samplenum , ] + ImThreshold2[2]*(MDFunction(ReHmOutput$f_x[ samplenum , ] ,ReHmOutput$NonImplausibleSets[samplenum , ] )+ 0.0045)  , col ='red' , lty=2 )
-lines( x , ReHmOutput$f_x[samplenum , ] - ImThreshold2[2]*(MDFunction(ReHmOutput$f_x[ samplenum , ]  ,ReHmOutput$NonImplausibleSets[samplenum , ]  )+ 0.0045)  , col ='red' , lty=2 )
+lines( x , ReHmOutput$f_x[samplenum , ] + 4*(MDFunction(ReHmOutput$f_x[ samplenum , ] , ReHmOutput$NonImplausibleSets[samplenum , ] ))  , col ='red' , lty=2 )
+lines( x , ReHmOutput$f_x[samplenum , ] - 4*(MDFunction(ReHmOutput$f_x[ samplenum , ]  ,ReHmOutput$NonImplausibleSets[samplenum , ]  ))  , col ='red' , lty=2 )
+
+x11()
+p1 <- ggplot(data.frame(x = x , y = ReHmOutput$f_x[samplenum, ]) , aes(x , y) ) +
+  geom_line(col ='blue') +
+  xlim(0.5,0.75) +
+  geom_line(data = data.frame(x = x , y = ReHmOutput$y) , aes(x , y)  , col ='black')+
+  geom_line(data = data.frame(x = x , y = ReHmOutput$f_x[samplenum , ] + 4*(MDFunction(ReHmOutput$f_x[ samplenum , ]  ,ReHmOutput$NonImplausibleSets[samplenum , ]  ))) , aes(x , y)  , col ='red')+
+  geom_line(data = data.frame(x = x , y = ReHmOutput$f_x[samplenum , ] - 4*(MDFunction(ReHmOutput$f_x[ samplenum , ]  ,ReHmOutput$NonImplausibleSets[samplenum , ]  ))) , aes(x , y)  , col ='red')+
+  ggtitle('Acceptable Match') +
+  xlab('RR')+
+  ylab('Culmulative Probability')
+print(p1)
+
 
 }else{
   
 plot(  x , ReHmOutput$f_x , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )
 lines( x , ReHmOutput$y , type ='l' , col = 'black' )
-lines( x , ReHmOutput$f_x + ImThreshold2[2]*(MDFunction(ReHmOutput$f_x , ReHmOutput$NonImplausibleSets ) + 0.0045 )  , col ='red' , lty=2 )
-lines( x , ReHmOutput$f_x - ImThreshold2[2]*(MDFunction(ReHmOutput$f_x  , ReHmOutput$NonImplausibleSets  ) + 0.0045 )  , col ='red' , lty=2 )
+lines( x , ReHmOutput$f_x + 3*(MDFunction(ReHmOutput$f_x , ReHmOutput$NonImplausibleSets ) + 0.0045 )  , col ='red' , lty=2 )
+lines( x , ReHmOutput$f_x - 3*(MDFunction(ReHmOutput$f_x  , ReHmOutput$NonImplausibleSets  ) + 0.0045 )  , col ='red' , lty=2 )
 
 }
 
 if( length( ReIreHmOutput$Implausability ) > 3 ){
   
-  samplenum <- which.min(ReIreHmOutput$Implausability[,3])
+  samplenum <- which.min(ReIreHmOutput$Implausability[,1])
   plot(  x , ReIreHmOutput$f_x[samplenum, ] , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )
   lines( x , ReIreHmOutput$y , type ='l' , col = 'black' )
   lines( x , ReIreHmOutput$f_x[samplenum , ] + ImThreshold1[2]*(MDFunction(ReIreHmOutput$f_x[ samplenum , ] , ReIreHmOutput$NonImplausibleSets[samplenum , ] ) + 0.0045)  , col ='red' , lty=2 )
   lines( x , ReIreHmOutput$f_x[samplenum , ] - ImThreshold1[2]*(MDFunction(ReIreHmOutput$f_x[ samplenum , ]  ,ReIreHmOutput$NonImplausibleSets[samplenum , ]  )+ 0.0045)  , col ='red' , lty=2 )
 
+  x11()
+  p1 <- ggplot(data.frame(x = x , y = ReIreHmOutput$f_x[samplenum, ]) , aes(x , y) ) +
+    geom_line(col ='blue') +
+    xlim(0.1,0.75)+
+    geom_line(data = data.frame(x = x , y = ReIreHmOutput$y) , aes(x , y)  , col ='black')+
+    geom_line(data = data.frame(x = x , y = ReIreHmOutput$f_x[samplenum , ] + 4*(MDFunction(ReIreHmOutput$f_x[ samplenum , ]  ,ReHmOutput$NonImplausibleSets[samplenum , ]  ))) , aes(x , y)  , col ='red')+
+    geom_line(data = data.frame(x = x , y = ReIreHmOutput$f_x[samplenum , ] - 4*(MDFunction(ReIreHmOutput$f_x[ samplenum , ]  ,ReHmOutput$NonImplausibleSets[samplenum , ]  ))) , aes(x , y)  , col ='red')+
+    ggtitle('Acceptable Match') +
+    xlab('RR')+
+    ylab('Culmulative Probability')
+  print(p1)  
+  
 }else{
   
   plot(  x , ReIreHmOutput$f_x , col = 'purple', type = 'l' , xlab = 'RRTimes' , ylab = 'Density'  )
@@ -223,8 +248,21 @@ if( length( ReIreHmOutput$Implausability[,1] ) > 3 ){
  
 }
 
-
-
+FM_ExtractActiveOutputs <- function(y , x){
+  
+  NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
+  
+  if(sum(NonZeroLogical) <= 2){
+    NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
+  }
+  if(sum(NonZeroLogical) <= 2){
+    NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
+  }
+  
+  seq(min(x[NonZeroLogical]) , max(x[NonZeroLogical]) , (max(x[NonZeroLogical]) - min(x[NonZeroLogical]))/length(x) )
+  return(seq(min(x[NonZeroLogical]) , max(x[NonZeroLogical]) , (max(x[NonZeroLogical]) - min(x[NonZeroLogical]))/length(x) )[1:201])
+  
+}
 
 # Cabage code for fitting with pdf rather than pdf
 #ReHmOutput <- FM_HistoryMatchRRDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegular, x = x , f_x = f_xreg , MD = MD_Reg , RRtimes = RRtimes , imthreshold = 0.5)

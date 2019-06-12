@@ -35,7 +35,6 @@ DP_FilterPatients<-function(listAllPatients , PatIndex2017 , HowtoFilterops , pa
   set.seed(1)
 }
 FilestoProcess = DP_ChooseECGstoProcess()
-HowtoFilterops[is.na(HowtoFilterops)] <- 0
 
 Stocklist <- matrix(0 , length(listAllPatients) ,  length(FilestoProcess) + 2)
 colnames( Stocklist ) <- c(FilestoProcess , 'TotalHours' , 'v1Logical_ProcessbyCamila')
@@ -49,22 +48,6 @@ Stocklist[i , j] <- DP_CheckFileExists(path , listAllPatients[[i]] , paste0(File
 sub_pat = subset(PatIndex2017, PseudoId %in% listAllPatients[i])
 if(nrow( sub_pat ) > 0){
 Stocklist[i , length(FilestoProcess) + 1] <- sub_pat$TotalITUTimeHRS[1]
-}
-if(nrow( sub_pat ) == 0){
-Stocklist[i , length(FilestoProcess) + 1] <- NA
-next
-}
-
-# Filter out ops and pre op AF
-index <- which(sub_pat$ProcDetails[1] == HowtoFilterops$Optype)
-
-
-if( sub_pat$Pre_OperativeHeartRhythm[1] !=  "Sinus Rhythm"){
-  Stocklist[i , length(FilestoProcess) + 1] <- NA}
-if( HowtoFilterops$Removal.all.data.if.they.ever.have.this.op[index] == 1 || HowtoFilterops$Remove.for.this.op[index] == 1  ){
-  Stocklist[ i , length(FilestoProcess) + 1 ] <- NA
-  Stocklist[ which( rownames(Stocklist) == rownames(Stocklist)[i] ) ,  length(FilestoProcess) + 1] <- NA  
-next
 }
 }
 

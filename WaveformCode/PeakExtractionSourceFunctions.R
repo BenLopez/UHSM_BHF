@@ -181,7 +181,7 @@ PE_RPeakExtractionWavelet <- function(WaveData , Filter = wt.filter(filter = "d6
   output <- data.frame(t , RA , RR)
   return(output)
 }
-PE_MultipleECGRPeaks <- function( outputdata , ECGs ,  thresh = 0.02  ){
+PE_MultipleECGRPeaks <- function( outputdata , ECGs ,  thresh = 0.04  ){
   
   ActiveMatrix <- rbind(1 + as.matrix(apply(PE_ExractECGActiveLogical(outputdata$ECGI , ECGs$ECGII$Date, ECGs$ECGIII$Date) , 1 , sum)) ,
                         1 + as.matrix(apply(PE_ExractECGActiveLogical(outputdata$ECGII , ECGs$ECGI$Date, ECGs$ECGIII$Date) , 1 , sum)) ,

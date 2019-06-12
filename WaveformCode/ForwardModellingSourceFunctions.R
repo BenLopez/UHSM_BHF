@@ -64,60 +64,96 @@ FM_HistoryMatchRRDensity <- function( PriorNonImplausibleSet , x , f_x , MD , RR
     return( setNames(list( PriorNonImplausibleSet[which.min(Im),] , min(Im) , f_x[which.min(Im) ,  ] , y ) , c('MinImplausiblePoint' , 'Implausability' , 'f_x' , 'y' ) ) )
   }
 }
-FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x ,f_x ,  MD , RRtimes  , Corr_sdhat , imthreshold = 3  ){
-  set.seed(1)
+
+FM_QuadraticEstimate <- function(Y){
+  H = cbind(matrix(1 , length(Y) , 1) , matrix(1:length(Y) , length(Y) , 1) , matrix(c(1:length(Y))^2 , length(Y) , 1)  )
+  Beta = solve(t(H)%*%H)%*%t(H)%*%Y
+  return(H%*%Beta)
+}
+
+FM_EmulatorEstimate <- function(Y){
+ X <- 1:length(Y)
+ EmulatorParameters <- BE_CreateDefaultEmulationClass()
+ EmulatorParameters$X <- X
+ EmulatorParameters$Y <- Y
+ EmulatorParameters$MeanFunction <- function(X){
+   X <- as.matrix(X)
+   H = cbind(as.matrix(1 + 0*X) )
+   return(H)
+ }
+ EmulatorParameters$CorrelationLength <- function(X , n){
+   return(100)
+ }
+ EmulatorParameters$w <- function(X){
+   return(0.75*var(Y)*diag(length(Y)))
+ }
+ EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(xstar = X , EmulatorSettings = EmulatorParameters , meanonly = 1 )
+return(EmulatorOutput$E_D_fX)
+ }
+
+FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x ,f_x ,  MD , RRtimes  , Corr_sdhat , imthreshold = 3 , imthreshold2 = 1.6  ){
   # Build kdeestimate for history matching  
-  m <- rollmedian( RRtimes , k = 21 , na.pad = T )
-  mm <- median( RRtimes )
-  
-  RRtimes <- RRtimes - m + mm + rnorm(length(RRtimes) , 0 , 0.0025 )
+  #m <- rollmedian( RRtimes , k = 21 , na.pad = T )
+  mm <- FM_EmulatorEstimate( RRtimes )
+  m <- median(RRtimes)
+  RRtimes <- RRtimes + m - mm + rnorm(length(RRtimes) , 0 , 0.0025 )
   RRtimes <- RRtimes[!is.na(RRtimes)]
   
-  y <- FM_CalculateCDFS( RRtimes = RRtimes , xx = x )
+  y <- matrix(FM_CalculateCDFS( RRtimes = RRtimes , xx = x ) , dim(x)[1] , dim(x)[2])
 
-  NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
+  NonZeroLogical <- matrix(T , length(RRtimes) , 1)
+  #NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
   
-  if(sum(NonZeroLogical) <= 1){
-    NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
-  }
+  #if(sum(NonZeroLogical) <= 2){
+  #  NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
+  #}
   
+  #if(sum(NonZeroLogical) <= 2){
+  #  NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
+  #}
   
-  Im2 <- colMeans( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} )/ t(MD[ , NonZeroLogical] + 0.0045)  , na.rm = T)
-  Im <- apply( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} ) / t(MD[ , NonZeroLogical] + 0.0045) , 2 , function(X){max(X , na.rm = T)} )
+  StdResidVector <- abs((F_x - y) / MD) 
+  Im2 <- rowMeans(StdResidVector)
+  Im <- apply(StdResidVector , 1 , max)
+  
+  #Im2 <- colMeans( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} )/ t(MD[ , NonZeroLogical] + 0.0045)  , na.rm = T)
+  #Im <- apply( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} ) / t(MD[ , NonZeroLogical] + 0.0045) , 2 , function(X){max(X , na.rm = T)} )
+  
   RPeakKDEEstmate <- kde( RRtimes )
-  z <- predict(RPeakKDEEstmate , x = x - 0.005)
+  z <- predict(RPeakKDEEstmate , x = x[which.min(Im2) , ])
   
-  if(sum(Im <= imthreshold) > 1){
+  LogicalVector <- (Im <= imthreshold)&(Im2 <  imthreshold2)
+
+  #if(sum(LogicalVector) > 1){
   
-  LogicalVector <- (Im < imthreshold)
-  Im3 <- matrix(0 , sum(LogicalVector) , 1)
-  Im4 <- matrix(0 , sum(LogicalVector) , 1)
+  #Im3 <- matrix(0 , sum(LogicalVector) , 1)
+  #Im4 <- matrix(0 , sum(LogicalVector) , 1)
   
-  for(i in 1:dim(Im3)[1]){
+  #for(i in 1:dim(Im3)[1]){
     #covMattmp <- DP_AddNugget( ((MD[which(LogicalVector)[i] , NonZeroLogical] + 0.0045) %*% t(MD[which(LogicalVector)[i] , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[which(LogicalVector)[i] , NonZeroLogical]+ 0.0045) )
-    Im3[i , ] <- (abs((z[NonZeroLogical] - f_x[which(LogicalVector)[i] , NonZeroLogical])/f_x[which(LogicalVector)[i] , NonZeroLogical]  ))[which.max(z[NonZeroLogical]) ]
-    Im4[i , ] <- sum(log(FM_EvaluateDenistyEstimate(RRtimes , PriorNonImplausibleSet[which(LogicalVector)[i] , ])   ))
+  #  Im3[i , ] <- (abs((z[NonZeroLogical] - f_x[which(LogicalVector)[i] , NonZeroLogical])/f_x[which(LogicalVector)[i] , NonZeroLogical]  ))[which.max(z[NonZeroLogical]) ]
+  #  Im4[i , ] <- sum(log(FM_EvaluateDenistyEstimate(RRtimes , PriorNonImplausibleSet[which(LogicalVector)[i] , ])   ))
     #Im3[i, ] <- mahalanobis(x = y[NonZeroLogical] , center = F_x[which(LogicalVector)[i] , NonZeroLogical] , cov = covMattmp  ) 
-  }
-  }
-  if(sum(Im <= imthreshold) <= 1){
-    Im3<- (abs( (z[NonZeroLogical] - f_x[which.min(Im) , NonZeroLogical])/f_x[which.min(Im) , NonZeroLogical] ) )[which.max(z[NonZeroLogical])]
-    Im4<- sum(log(FM_EvaluateDenistyEstimate(RRtimes , PriorNonImplausibleSet[which.min(Im) , ])   ))
+  #}
+  #}
+  #if(sum(LogicalVector) <= 1){
+  #  Im3<- (abs( (z[NonZeroLogical] - f_x[which.min(Im) , NonZeroLogical])/f_x[which.min(Im) , NonZeroLogical] ) )[which.max(z[NonZeroLogical])]
+   # Im4<- sum(log(FM_EvaluateDenistyEstimate(RRtimes , PriorNonImplausibleSet[which.min(Im) , ])   ))
     
     #covMattmp <- DP_AddNugget( ((MD[which.min(Im) , NonZeroLogical] + 0.0045) %*% t(MD[which.min(Im) , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[which.min(Im)  , NonZeroLogical]+ 0.0045) )
     #Im3 <- mahalanobis(x = y[NonZeroLogical] , center = F_x[which.min(Im) , NonZeroLogical] , cov = covMattmp  ) 
-  }
+  #}
   
-  if(sum(Im <= imthreshold) > 1){
-    return( setNames(list( PriorNonImplausibleSet[Im < imthreshold,] , cbind(Im[Im < imthreshold] , Im2[Im < imthreshold] , Im3 , Im4) , F_x[Im < imthreshold ,  ] , y  ) , c('NonImplausibleSets' , 'Implausability' , 'f_x' , 'y'  )  ) )
+  if(sum(LogicalVector) > 1){
+    return( setNames(list( PriorNonImplausibleSet[LogicalVector,] , cbind(Im[LogicalVector] , Im2[LogicalVector] ) , F_x[LogicalVector ,  ] , y[which.min(Im2) , ]  ) , c('NonImplausibleSets' , 'Implausability' , 'f_x' , 'y'  )  ) )
   }else{
-    return( setNames(list( PriorNonImplausibleSet[which.min(Im),] , cbind(min(Im ) , Im2[which.min(Im)] , Im3 , Im4) , F_x[which.min(Im) ,  ] , y  ) , c('MinImplausiblePoint' , 'Implausability' , 'f_x' , 'y'  ) ) )
+    return( setNames(list( PriorNonImplausibleSet[which.min(Im),] , cbind(min(Im ) , Im2[which.min(Im)] ) , F_x[which.min(Im) ,  ] , y[which.min(Im2),]  ) , c('MinImplausiblePoint' , 'Implausability' , 'f_x' , 'y'  ) ) )
   }
 }
 FM_SampleRealisationsSet <- function( PriorNonImplausibleSet , N , x ){
-  output <- matrix( 0 , dim(PriorNonImplausibleSet)[1] , length(x) )
+  output <- matrix( 0 , dim(PriorNonImplausibleSet)[1] , dim(x)[2] )
   for(i in 1:dim(PriorNonImplausibleSet)[1]){
-    output[i , ] <-  FM_CalculateCDFS( RRtimes = FM_SampleGMM( X = PriorNonImplausibleSet[i,] , N = N )  , xx = x) 
+    output[i , ] <-  FM_CalculateCDFS( RRtimes = FM_SampleGMM( X = PriorNonImplausibleSet[i,] , N = N )  , xx = x[i,]) 
     #output[i , ] <-  FM_CalculateCDFS( RRtimes = FM_EvaluateDenistyEstimate( x = x , X = PriorNonImplausibleSet[i,] )  , xx = x) 
   }
   return(output)
@@ -127,20 +163,22 @@ FM_CalulateImForGroundTruth <- function(x , F_x , f_x , PriorNonImplausibleSet ,
   ImplausabilityMatrix <- matrix(0 , dim(PriorNonImplausibleSet)[1] , 4)
   
   for( ii in 1:dim(PriorNonImplausibleSet)[1] ){
-    
+    {  
     #RRtimes <- FM_SampleGMM(X = PriorNonImplausibleSet[ii , ] ,  N)
     G_0 <- function(N){ FM_SampleGMM( X = PriorNonImplausibleSet[ii,] , N) }
+   
     RRtimes <- FM_SampleDP(c , l , N , G_0)
+    y <- FM_CalculateCDFS( RRtimes = RRtimes , xx = x[ii,] )
+    #lines(x , y)
     
-    y <- FM_CalculateCDFS( RRtimes = RRtimes , xx = x )
-    NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
-    
-    if(sum(NonZeroLogical) <= 2){
-      NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
-    }
-    if(sum(NonZeroLogical) <= 2){
-      NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
-    }
+    NonZeroLogical = matrix(T , length(y) , 1) 
+   # NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
+  #  if(sum(NonZeroLogical) <= 2){
+   #   NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
+  #  }
+   # if(sum(NonZeroLogical) <= 2){
+  #    NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
+  #  }
     
     
     #mean( abs(y[NonZeroLogical] - F_x[ii , NonZeroLogical]) / (MD[ii , NonZeroLogical] + 0.003) , na.rm = T)
@@ -154,11 +192,11 @@ FM_CalulateImForGroundTruth <- function(x , F_x , f_x , PriorNonImplausibleSet ,
     #covMattmp <- DP_AddNugget( ((MD[ii , NonZeroLogical] + 0.0045) %*% t(MD[ii , NonZeroLogical]+ 0.0045)) * Corr_sdhat[NonZeroLogical , NonZeroLogical]  , 0.0001*diag(MD[ii , NonZeroLogical]+ 0.0045) )
     #ImplausabilityMatrix[ii , 3] <- mahalanobis(x = y[NonZeroLogical] , center = F_x[ii , NonZeroLogical] , cov = covMattmp  ) 
     
-    RPeakKDEEstmate <- kde( RRtimes )
-    z <- predict(RPeakKDEEstmate , x = x - 0.005)
+    #RPeakKDEEstmate <- kde( RRtimes )
+    #z <- predict(RPeakKDEEstmate , x = x )
     
-    ImplausabilityMatrix[ii , 3] <- (abs( (z[NonZeroLogical] - f_x[ii , NonZeroLogical])/f_x[ii , NonZeroLogical] ) )[which.max(z[NonZeroLogical])]
-    
+    #ImplausabilityMatrix[ii , 3] <- (abs( (z[NonZeroLogical] - f_x[ii , NonZeroLogical])/f_x[ii , NonZeroLogical] ) )[which.max(z[NonZeroLogical])]
+    }
   }
   return(ImplausabilityMatrix)
   
@@ -187,11 +225,21 @@ FM_EvaluateDenistyEstimate <- function(x , X){
  return(a + b)
 }
 FM_CalculateCDFS  <- function(RRtimes , xx = seq(0.25 , 2 , 0.01)){
+  #if( is.matrix( xx ) ){
+  #  RRtimes <- as.matrix(RRtimes)
+  #  output <- matrix(0 , dim(xx)[1] , dim(xx)[2])
+  #  for(i in 1:dim(xx)[2]){
+  #    output[,i] <-  apply(as.matrix(xx[,i]) , 1, function(X){sum(as.matrix(RRtimes)<= X)} )    
+  #  }
+  #  return(output/length(RRtimes))  
+  #}
+  #if(!is.matrix(xx)){
   output <- matrix(0 , length(xx) , 1)
   for(i in 1:length(xx)){
     output[i] <- sum(RRtimes <= xx[i])/length(RRtimes)   
   }
   return(output)
+  #}
 }
 FM_SampleGMM <- function( X , N = 250 ){
 
@@ -224,7 +272,7 @@ FM_CreateDefaultFeatureTable <- function( ReHmOutput , ReIreHmOutput ){
   
   d <- matrix(' ' , 6 , 5)
   
-  colnames(d) <- c('Feature' , 'Note' , 'Non-implausible' , 'Expectation' , 'Variance' )
+  colnames(d) <- c('Feature' , 'Note' , 'Non-implausible' , 'Median' , 'IQR' )
   
   d[1 , 1] <- 'Heart Rhythum (bpm)'
   d[2 , 1] <- 'P-wave Amplitude (mV)'
@@ -242,23 +290,30 @@ FMPWaveHM_EmulateTQSegment <- function( QS_Struct , EmulatorParameters = PWaveHM
   EmulatorParameters$Y <- QS_Struct$Value[1,tmp] - mean(QS_Struct$Value[1,tmp])
   
   EmulatedQS <- matrix( 0 , dim(QS_Struct$Date)[1] , length(Xstar) )
+  
+  Start_Xstar <- Xstar[1]
   #EmulatedQS <- matrix( 0 , 100 , length(Xstar) )
   counter <- 1
-  print( 'Emulating TQ Segments.' )
+  #print( 'Emulating TQ Segments.' )
   for(i in 1:dim(QS_Struct$Date)[1]){
     #if(QS_Struct$numvalues[i ] > as.numeric( quantile( QS_Struct$numvalues  , upper)) ){next}
     #if(QS_Struct$numvalues[i ] < as.numeric( quantile( QS_Struct$numvalues  , lower)) ){next}
     tmp = 1:(min(dim(QS_Struct$Date)[2] , QS_Struct$numvalues[i ]) -1)
     EmulatorParameters$X <- (1:length(QS_Struct$Date[i,tmp]))/length(QS_Struct$Date[i,tmp])
-    EmulatorParameters$Y <- QS_Struct$Value[i,tmp] - mean(QS_Struct$Value[i,tmp])
-    if(length(  EmulatorParameters$X ) < 10){next}
-    EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(Xstar , EmulatorParameters  , meanonly = 1)
+    
+    EmulatorParameters$Y <- QS_Struct$Value[i,tmp]
+    EmulatorParameters$Y <- EmulatorParameters$Y[EmulatorParameters$X >= max(Start_Xstar[1] , EmulatorParameters$X[which.min(abs(QS_Struct$Date[i,tmp] - 0.275) ) ] ) ]
+    EmulatorParameters$X <- EmulatorParameters$X[EmulatorParameters$X >= max(Start_Xstar[1] , EmulatorParameters$X[which.min(abs(QS_Struct$Date[i,tmp] - 0.275) ) ] ) ]
+    
+    if(length(  EmulatorParameters$X ) < 5){next}
+    Xstar = seq(from = min(EmulatorParameters$X) , to = max(EmulatorParameters$X)   , length.out = length(Xstar) )
+    EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(xstar = Xstar , EmulatorSettings = EmulatorParameters  , meanonly = 1)
     EmulatedQS[counter,] <- EmulatorOutput$E_D_fX
     counter <- counter +1
     #if(counter > 100){break}
   }  
-  print('TQ Segments Emulated.' )
-  #EmulatedQS <- EmulatedQS[-(counter:dim(EmulatedQS)[1] ), ]
+  #print('TQ Segments Emulated.' )
+  EmulatedQS <- EmulatedQS[-(counter:dim(EmulatedQS)[1] ), ]
   return(EmulatedQS)
 }
 FMPWaveHM_BLUBetas <- function( H , z  , E_Beta , V_Beta  , V_me , alpha = 0 ){
@@ -287,4 +342,41 @@ FM_SampleDP <- function(c , l , n , G_0){
   A <- sqrt(var(theta)/(var(theta) + l^2))
   theta <- A*(theta + rnorm(n = n  , mean = 0 , l )) + (1 - A)*mean(theta)
   return(theta)
+}
+PWaveHM_CreateDefaultEmulationclass<- function(){ 
+  EmulatorParameters <- BE_CreateDefaultEmulationClass()
+  EmulatorParameters$w <- function(X){
+    return( 0.5*diag(length(X) ) )
+  }
+  EmulatorParameters$CorrelationLength<- function(X , n){
+    return(0.01)
+  }
+  return(EmulatorParameters)
+}
+FM_GMMCulDenisty <- function(x , Pi =1 , mu =0 , sigma =1){
+  f <- matrix(0 , length(x) , 1)
+  for(i in 1:length(Pi)){
+    f <- f + Pi[i]*pnorm(x , mean = mu[i] , sd = sigma[i])  
+  }
+  return(f)
+}
+FM_cdflaplace <- function(x , mu = 0 , sigma = 1 , alpha = 0){
+  return(alpha*pnorm(x , mu , sigma) + (1-alpha)*plaplace(x , mu , sigma/sqrt(2)) )
+}
+FM_EvalulateCDFEstimate <-function(x , X){
+  a <-  FM_GMMCulDenisty(x = x , Pi = X[c(1,3) ] , mu = X[c(4,6) ] , sigma = X[c(7,9) ] ) 
+  b <- X[2]*FM_cdflaplace(x =x , mu = X[5] , sigma = X[8] , alpha = X[10] ) 
+  return(a + b)
+}
+
+FM_ExtractActiveOutputs <- function(y , x){
+  
+  NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
+  if(sum(NonZeroLogical) <= 2){
+    NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
+  }
+  
+  seq(min(x[NonZeroLogical]) , max(x[NonZeroLogical]) , (max(x[NonZeroLogical]) - min(x[NonZeroLogical]))/length(x) )
+  return(seq(min(x[NonZeroLogical]) , max(x[NonZeroLogical]) , (max(x[NonZeroLogical]) - min(x[NonZeroLogical]))/length(x) )[1:201])
+  
 }
