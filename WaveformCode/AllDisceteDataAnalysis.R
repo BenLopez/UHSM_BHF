@@ -15,12 +15,6 @@
   }
 }
 
-
-BC_CalculateAreaUnderCurve <- function(PerformanceSweep){
-  return(sum(diff(PerformanceSweep[,2])*PerformanceSweep[2:dim(PerformanceSweep)[1],1]))
-}
-
-
 ##### Preoperation Data #####
 
 # PatIndex2017, DetIndex2017 , BioChemIndex2017, HaemIndex2017 
@@ -62,13 +56,69 @@ MasterPreOpData$Gender <- as.factor( MasterPreOpData$Gender )
   
   PostOpFluids <- as.matrix(PostOpFluids[ which(rownames(PostOpFluids) %in% MasterPreOpData$NewPseudoId) ,  ])
   PostOpFluids <- PostOpFluids[order(rownames(PostOpFluids) ),   ]
-}
+  
+  PostOpFlow <- POM_ExtractPostOpFromFlow(FlowIndex2017)
+  PostOpFlow <- PostOpFlow[ which(rownames(PostOpFlow) %in% MasterPreOpData$NewPseudoId) ,  ]
+  PostOpFlow <- PostOpFlow[order(rownames(PostOpFlow)) , ]
 
-MasterData <- cbind(MasterPreOpData , PostOpBioChem , PostOpHaem , PostOpFluids)
+  PostOpRiskScore <- POM_ExtraPostOpScores(PostOpScoresIndex2017 = PostOpScoresIndex2017)
+  PostOpRiskScore <- PostOpRiskScore[ which(rownames(PostOpRiskScore) %in% MasterPreOpData$PseudoId ) ,  ]
+  PostOpRiskScore <- PostOpRiskScore[ order( rownames( PostOpRiskScore ) ) , ]
+  
+  TreatmentsLogcal <- POM_TreatmentBeforeAFib(FluidsIndex2017 )
+  TreatmentsLogcal <- TreatmentsLogcal[ which(rownames(TreatmentsLogcal) %in% MasterPreOpData$NewPseudoId ) ,  ]
+  TreatmentsLogcal <- TreatmentsLogcal[ order( rownames( TreatmentsLogcal ) ) , ]
+  
+  }
+
+MasterData <- cbind(MasterPreOpData , PostOpBioChem , PostOpHaem , PostOpFluids , PostOpFlow , TreatmentsLogcal )
+MasterData <- MasterData[which(MasterData$PseudoId %in% rownames( PostOpRiskScore )) , ]
+MasterData <- MasterData[order(MasterData$PseudoId) , ]
+MasterData <- cbind(MasterData , PostOpRiskScore)
+
 MasterData$ProcDetails <- DP_AssignSurgeryLabels(MasterData$ProcDetails)
-MasterData$LogisticEUROScore <- log(MasterData$LogisticEUROScore)
 
 MasterData$BMI = MasterData$Weight/(MasterData$Height/100)
+
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Not Known"] = NA 
+MasterData$NYHAGrade[MasterData$NYHAGrade == ""] = NA 
+
+MasterData$AnginaGrade[MasterData$AnginaGrade == ""] = NA 
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Unknown"] = NA 
+
+MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == ""] = NA 
+MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Not measured"] = NA 
+
+# Transformations
+MasterData$LogisticEUROScore <- log(MasterData$LogisticEUROScore)
+MasterData$SCTSLogisticEuroSCORE <- MasterData$SCTSLogisticEuroSCORE
+
+MasterData$CRP <- log(MasterData$CRP)
+MasterData$PreOpCRP <- log(MasterData$PreOpCRP)
+
+
+MasterData$PreopBili <- log(MasterData$PreopBili)
+MasterData$Bilirubin <- log(MasterData$Bilirubin)
+
+{ #biochem
+  MasterData$dMg <- MasterData$Mg - MasterData$PreopMg
+  MasterData$dAlb <- MasterData$Albumin - MasterData$PreOpAlb
+  MasterData$dUrea <- MasterData$Urea - MasterData$PreopUrea
+  MasterData$dNa <- MasterData$Na - MasterData$PreOpNa
+  MasterData$dBili <- MasterData$Bilirubin - MasterData$PreopBili
+  MasterData$dCreat <- MasterData$Creatinine - MasterData$PreopCreat
+  MasterData$dK <-   MasterData$K - MasterData$PreOpK
+  MasterData$dPT <-  MasterData$PT - MasterData$PreopPT
+  #bloods
+  MasterData$dCRP <- MasterData$CRP - MasterData$PreOpCRP 
+  MasterData$dPLT <- MasterData$Platelets - MasterData$PreopPLT
+  MasterData$dHb <- MasterData$Hb - MasterData$PreopHb 
+  MasterData$dAPTT <- MasterData$APTT - MasterData$PreopAPTT
+}
+
+MasterData <- POM_RemoveOutliers(MasterPreOpData = MasterData)
+
+MasterData$ProcDetails <- as.factor(MasterData$ProcDetails)
 
 }
 
@@ -88,6 +138,22 @@ sqrt(var(MasterData$Age[MasterData$AFLogical == 0]))
 (summary(MasterData$Gender[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
 (summary(MasterData$Gender[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
 prop.test( c(summary(MasterData$Gender[MasterData$AFLogical == 1])[1] ,summary(MasterData$Gender[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) ))
+
+# Post op meds
+MasterData$Adrenaline <- as.factor(MasterData$Adrenaline)
+(summary(MasterData$Adrenaline[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+(summary(MasterData$Adrenaline[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+prop.test( c(summary(MasterData$Adrenaline[MasterData$AFLogical == 1])[1] ,summary(MasterData$Adrenaline[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) ))
+
+MasterData$Noradrenaline <- as.factor(MasterData$Noradrenaline)
+(summary(MasterData$Noradrenaline[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+(summary(MasterData$Noradrenaline[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+prop.test( c(summary(MasterData$Noradrenaline[MasterData$AFLogical == 1])[1] ,summary(MasterData$Noradrenaline[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) ))
+
+MasterData$Dopamine <- as.factor(MasterData$Dopamine)
+(summary(MasterData$Dopamine[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+(summary(MasterData$Dopamine[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+prop.test( c(summary(MasterData$Dopamine[MasterData$AFLogical == 1])[1] ,summary(MasterData$Dopamine[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) ))
 
 # Weight
 t.test(MasterData$Weight[MasterData$AFLogical == 1] , MasterData$Weight[MasterData$AFLogical == 0])
@@ -125,8 +191,61 @@ tmp <- as.factor(MasterData$ProcDetails == levels(ProcDetails)[i] )
 print(summary(tmp[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
 print(summary(tmp[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
 print(prop.test( c(summary(tmp[MasterData$AFLogical == 1])[1] ,summary(tmp[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) )))
-}  
 }
+
+ProcDetails <- as.factor(MasterData$EjectionFractionCategory)
+
+for(i in 1:length(levels(ProcDetails))){
+  print(levels(ProcDetails)[i])
+  tmp <- as.factor(MasterData$EjectionFractionCategory == levels(ProcDetails)[i] )
+  print(summary(tmp[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+  print(summary(tmp[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+  print(prop.test( c(summary(tmp[MasterData$AFLogical == 1])[1] ,summary(tmp[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) )))
+}
+# NYHA Grade
+
+ProcDetails <- as.factor(MasterData$NYHAGrade)
+
+for(i in 1:length(levels(ProcDetails))){
+  print(levels(ProcDetails)[i])
+  print(sum(MasterData$NYHAGrade == levels(ProcDetails)[i] , na.rm = T))
+  print(sum(MasterData$NYHAGrade[MasterData$AFLogical ==1] == levels(ProcDetails)[i] , na.rm = T)/sum(MasterData$NYHAGrade == levels(ProcDetails)[i] , na.rm = T))
+  tmp <- as.factor(MasterData$NYHAGrade == levels(ProcDetails)[i] )
+  print(summary(tmp[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+  print(summary(tmp[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+  print(prop.test( c(summary(tmp[MasterData$AFLogical == 1])[1] ,summary(tmp[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) )))
+}
+
+# Angina Grade
+
+ProcDetails <- as.factor(MasterData$AnginaGrade)
+
+for(i in 1:length(levels(ProcDetails))){
+  print(levels(ProcDetails)[i])
+  print(sum(MasterData$AnginaGrade == levels(ProcDetails)[i] , na.rm = T))
+  print(sum(MasterData$AnginaGrade[MasterData$AFLogical ==1] == levels(ProcDetails)[i] , na.rm = T)/sum(MasterData$AnginaGrade == levels(ProcDetails)[i] , na.rm = T))
+  tmp <- as.factor(MasterData$AnginaGrade == levels(ProcDetails)[i] )
+  print(summary(tmp[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+  print(summary(tmp[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+  print(prop.test( c(summary(tmp[MasterData$AFLogical == 1])[1] ,summary(tmp[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) )))
+}
+
+# Urgency 
+ProcDetails <- as.factor(MasterData$Urgency)
+
+for(i in 1:length(levels(ProcDetails))){
+  print(levels(ProcDetails)[i])
+  print(sum(MasterData$Urgency == levels(ProcDetails)[i] , na.rm = T))
+  print(sum(MasterData$Urgency[MasterData$AFLogical ==1] == levels(ProcDetails)[i] , na.rm = T)/sum(MasterData$Urgency == levels(ProcDetails)[i] , na.rm = T))
+  tmp <- as.factor(MasterData$Urgency == levels(ProcDetails)[i] )
+  print(summary(tmp[MasterData$AFLogical == 1])/sum(MasterData$AFLogical == 1))*100
+  print(summary(tmp[MasterData$AFLogical == 0])/sum(MasterData$AFLogical == 0))*100
+  print(prop.test( c(summary(tmp[MasterData$AFLogical == 1])[1] ,summary(tmp[MasterData$AFLogical == 0])[1]) , c(  sum(MasterData$AFLogical == 1), sum(MasterData$AFLogical == 0) )))
+}
+
+}
+
+
 # Surgery type boxplots
 for(i in c(1,2,3,4,13:28)){
   plot(data.frame(as.factor(MasterData$ProcDetails) , MasterData[ , i]) , ylab = names(MasterData)[i] , xlab = 'ProxDetails' )
@@ -135,12 +254,38 @@ for(i in c(1,2,3,4,13:28)){
 
 rownames(tteststruct) = names(MasterData)[c(2,4,13:28 )]
 
-MasterData <- POM_RemoveOutliers(MasterPreOpData = MasterData)
+NamesofPreOperativePredictors <- c('Age' ,
+                                   'Gender' ,
+                                   'Weight' , 
+                                   'ProcDetails' ,
+                                   'BMI',
+                                   "LogisticEUROScore" ,
+                                   "EjectionFractionCategory",
+                                   "NYHAGrade",
+                                   "AnginaGrade",
+                                   "Urgency",
+                                   'PreOpNa',
+                                   'PreOpK',
+                                   'PreopMg',
+                                   'PreopUrea' ,
+                                   'PreOpCRP',
+                                   'PreOpAlb' ,
+                                   'PreopBili' ,
+                                   'PreopCreat',
+                                   "PreopHb" ,
+                                   "PreopPLT" ,
+                                   "PreopWBC",
+                                   "PreopPT",
+                                   "PreopAPTT")
+PreoperativeIndices = which( names(MasterData) %in% NamesofPreOperativePredictors)
 
-NamesofPreOperativePredictors <- names(MasterData)[c(1:4,14:30 , 46) ]
+
 counter <- 1
-tteststruct <- matrix(0 , length( c(2,4,14:29 , 46 )) , 1)
-for(i in c(2,4,14:29 , 46)){
+tteststruct <- matrix(0 , length( PreoperativeIndices ) , 1)
+for(i in PreoperativeIndices){
+if(!is.numeric(MasterData[MasterData$AFLogical == 0 , i])){
+  next
+}  
 BC_PlotCompareSingleHists(MasterData[MasterData$AFLogical == 0 , i] , MasterData[MasterData$AFLogical == 1 , i] , main =  names(MasterData)[i])
 print(names(MasterData)[i])
 print(t.test(MasterData[MasterData$AFLogical == 1 , i] , MasterData[MasterData$AFLogical == 0 , i]))
@@ -151,8 +296,8 @@ counter <- counter + 1
 }
 
 # Logistic regression analysis individual variables.
-DataForLogistic <- data.frame(MasterData[  , c(1,2,4,10,13:28)])
 
+DataForLogistic <- data.frame(MasterData[  , c(1,PreoperativeIndices)])
 for(i in 2:dim(DataForLogistic)[2]){
   model <- (glm(formula = as.formula(paste0("AFLogical ~" , names(DataForLogistic)[i]) )
                 ,family=binomial(link='logit') , data=DataForLogistic))
@@ -160,17 +305,32 @@ for(i in 2:dim(DataForLogistic)[2]){
 # print( names(DataForLogistic)[i] )
   print(exp(coef(model)[2]))
   print( exp(confint(model)[2,] ))  
-  print( summary( model )$coefficients[2,4] )
+  print( summary( model )$coefficients )
+  print(auc(model$y, predict(model , DataForLogistic ,  type = c( "response")) ) )
 }
+
 MasterData$ProcDetails <- as.factor(MasterData$ProcDetails)
 
-DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,2,3,4,5,10,14:29 , 46)]))
+
+StepResults <- matrix(0 , 100, length(NamesofPreOperativePredictors) )
+colnames(StepResults) <- NamesofPreOperativePredictors
+
+for(ii in 1:100){
+#imputed_Data <- mice(MasterData[ , c(1,PreoperativeIndices)], m=1)
+#DataForLogistic <- MasterData[ , c(1,PreoperativeIndices)]
+DataForLogistic <- POM_SampledImputation(MasterData[ , c(1,PreoperativeIndices)] )
+#  POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,PreoperativeIndices)]))
+#DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,PreoperativeIndices)]))
 model <- (glm(formula = AFLogical ~ 
                 ProcDetails  +
                 Age +
                 Gender +
                 Weight +
-               BMI +
+                BMI +
+                Urgency +
+                AnginaGrade +
+                NYHAGrade +
+                EjectionFractionCategory+
                 LogisticEUROScore +
                 PreOpNa +
                 PreOpK +
@@ -183,46 +343,35 @@ model <- (glm(formula = AFLogical ~
                 PreopHb +
                 PreopPLT +
                 PreopWBC +
-                PreopAPTT+
-                
+                PreopAPTT
                 ,family=binomial(link='logit') , data=DataForLogistic))
 summary(model)$coefficients[summary(model)$coefficients[,4] < 0.1,4]
-summary( model )
-stepAIC( model )
+stepoutput <- stepAIC(model)
 
-DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,2,3,4,5,11,14:29 , 46)]))
-model <- (glm(formula = AFLogical ~
-                (ProcDetails == 'CABG' ) +
-                Age +
-                Gender +
-                AdditiveEUROScore +
-                PreOpNa +
-                PreopUrea +
-                PreOpAlb  +
-                PreopAPTT
-              , family=binomial(link='logit') , data=DataForLogistic))
+StepResults[ii,] <- apply(as.matrix(NamesofPreOperativePredictors) , 1 , function(X){grepl(X ,as.character(stepoutput$formula)[3])} )
+}
+
+indexesfromstep <- which(names(MasterData) %in% colnames(StepResults[ , apply(StepResults , 2 , function(X){ (sum(X)/length(X))*100 })>50]))
+
+model <- glm(formula = FB_CreateFormula('AFLogical' , indexesfromstep , MasterData), 
+             family = binomial(link = "logit"), data = DataForLogistic)
 summary(model)
+LogisticProbility <- predict(model , DataForLogistic , type = c( "response"))
 
+PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,MasterData$AFLogical == 1))
+BC_CalculateAreaUnderCurve(PerformanceSweep)
 
 LogisticProbility <- matrix(0,length(MasterData$AFLogical),1)
 for(i in 1:dim(LogisticProbility)[1]){
-  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,2,3,4,5,11,14:29 , 46)]))
-  model <- (glm(formula = AFLogical ~
-                  (ProcDetails == 'CABG' ) +
-                  Age +
-                  Gender +
-                  AdditiveEUROScore +
-                  PreOpNa +
-                  PreopUrea +
-                  PreOpAlb  +
-                  PreopAPTT
-                , family=binomial(link='logit') , data=DataForLogistic[-i,]))
-LogisticProbility[i,] <- predict(object= model , newdata = DataForLogistic[i , ] , type = c( "response") )
+  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,PreoperativeIndices)]))
+  model <- glm(formula = FB_CreateFormula('AFLogical' , indexesfromstep , MasterData) , family = binomial(link = "logit"), data = DataForLogistic[-i,])
+  LogisticProbility[i,] <- predict(object= model , newdata = DataForLogistic[i , ] , type = c( "response") )
 }
 
 x11()
 BC_PlotCompareSingleHists(LogisticProbility[MasterData$AFLogical ==0] , LogisticProbility[MasterData$AFLogical ==1] , main ='Histogram of Logistic Model Output'  )
 t.test(LogisticProbility[MasterData$AFLogical ==0] ,  LogisticProbility[MasterData$AFLogical ==1])
+
 
 x11()
 plot(seq(0,1,0.01) , FM_CalculateCDFS(LogisticProbility[MasterData$AFLogical ==0] , seq(0,1,0.01) ) , col = 'blue' , type ='l' , xlab = 'Output Logistic Model' , ylab = 'Culmulative Prob')
@@ -233,6 +382,8 @@ title('CDF Analysis')
 PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,MasterData$AFLogical == 1))
 ROCplot2 <- BC_PlotsCreateROC(PerformanceSweep) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
 NPVPPVPlot2 <- BC_PlotsCreateNPVPPV(PerformanceSweep) + geom_vline(xintercept =( 1-0.2)) + geom_hline(yintercept = 0.2)+  ggtitle('PPV vs NPV Curves')
+
+BC_CalculateAreaUnderCurve(PerformanceSweep)
 
 x11(20,14)
 grid.arrange(ROCplot2 , NPVPPVPlot2 + xlim(( 1-0.2) , 1) , nrow= 2)
@@ -282,15 +433,72 @@ plot(LogisticProbility[MasterData$AFLogical ==0] , PosteriorProbability[MasterDa
 points(LogisticProbility[MasterData$AFLogical ==1] , PosteriorProbability[MasterData$AFLogical ==1] , col ='red' , pch = 16 )
 
 ###### PostOp Analysis ######
-PostOpIndexes <- c(1, 9 , 29:44)
-PostOpNames <- names(MasterData)[PostOpIndexes]
+
+NamesofPostOperativePredictors <- c('CPB',
+                                   'Na', 
+                                   'K',
+                                   'Urea',
+                                   'Creatinine',
+                                   'CRP',
+                                   'Albumin',
+                                   'Bilirubin',
+                                   'Mg',
+                                   'WBC',
+                                   'Hb',
+                                   'Platelets',
+                                   'PT',
+                                   'APTT',
+                                   'INR',
+                                   'Fibrinogen',
+                                   'PostOpFluids',
+                                   'HR',
+                                   "ReliableART.S",
+                                   "ReliableART.M",
+                                   "ReliableART.D",
+                                   "CVP",
+                                   "SpO2",
+                                   'dNa',
+                                   'dK',
+                                   'dMg',
+                                   'dUrea' ,
+                                   'dCRP',
+                                   'dAlb' ,
+                                   'dBili' ,
+                                   'dCreat',
+                                   "dHb" ,
+                                   "dPLT" ,
+                                   "dWBC",
+                                   "dPT",
+                                   "dAPTT",
+                                   "SOFA",
+                                   "RACE",
+                                   'logCASUS',
+                                   'Noradrenaline',
+                                   'Dopamine',
+                                   'Adrenaline')
+PostOpIndexes <- which(names(MasterData) %in% NamesofPostOperativePredictors)
+
+# difference transforms
+{
+MasterData$dUrea <- abs(MasterData$dUrea)
+MasterData$dK <-abs(MasterData$dK)
+MasterData$dCreat <- abs(MasterData$dCreat)
+MasterData$dNa <- abs(MasterData$dNa)
+MasterData$PT <- abs(DP_NormaliseData(MasterData$PT ))
+MasterData$WBC <- abs(DP_NormaliseData(MasterData$WBC ))
+MasterData$Bilirubin <- abs(DP_NormaliseData(MasterData$Bilirubin ))
+MasterData$Albumin <- abs(DP_NormaliseData(MasterData$Albumin ))
+MasterData$K <- abs(DP_NormaliseData(MasterData$K ))
+}
 
 NamesofPreOperativePredictors <- names(MasterData)[PostOpIndexes ]
 counter <- 1
 tteststruct <- matrix(0 , length( PostOpIndexes[2:length(PostOpIndexes)]) , 1)
 for(i in PostOpIndexes[2:length(PostOpIndexes)]){
+  if(!is.numeric(MasterData[MasterData$AFLogical == 0 , i])){next}
   BC_PlotCompareSingleHists(MasterData[MasterData$AFLogical == 0 , i] , MasterData[MasterData$AFLogical == 1 , i] , main =  names(MasterData)[i])
-  print(names(MasterData)[i])
+  
+    print(names(MasterData)[i])
   print(t.test(MasterData[MasterData$AFLogical == 1 , i] , MasterData[MasterData$AFLogical == 0 , i]))
   print(sqrt(var(MasterData[MasterData$AFLogical == 1 , i] , na.rm = T)))
   print(sqrt(var(MasterData[MasterData$AFLogical == 0 , i] , na.rm = T)))
@@ -298,7 +506,7 @@ for(i in PostOpIndexes[2:length(PostOpIndexes)]){
   counter <- counter + 1
 }
 
-DataForLogistic <- data.frame(MasterData[  , PostOpIndexes])
+DataForLogistic <- data.frame(MasterData[  ,c(1, PostOpIndexes) ])
 
 for(i in 2:dim(DataForLogistic)[2]){
   model <- (glm(formula = as.formula(paste0("AFLogical ~" , names(DataForLogistic)[i]) )
@@ -311,65 +519,72 @@ for(i in 2:dim(DataForLogistic)[2]){
 }
 
 DataForLogistic <- POM_SampledImputation(data.frame(MasterData[  ,  ]))
-model <- (glm(formula = AFLogical ~ 
-                ProcDetails +
-                Age +
-                Gender +
-                Weight +
-                AdditiveEUROScore +
-                LogisticEUROScore +
-                SCTSLogisticEuroSCORE +
-                PreOpNa +
-                PreOpK +
-                PreopUrea +
-                PreopCreat +
-                PreOpCRP +
-                PreOpAlb +
-                PreopBili +
-                PreopMg+
-                PreopHb +
-                PreopPLT +
-                PreopWBC +
-                PreopAPTT +
-                CPB +
-                Na +
-                K +
-                Urea +
-                Creatinine +
-                CRP +
-                Albumin +
-                Bilirubin +
-                Mg +
-                WBC +
-                Hb +
-                Platelets +
-                PT +
-                PT+
-                APTT +
-                INR +
-                Fibrinogen +
-                PostOpFluids
+model <- (glm(formula = FB_CreateFormula('AFLogical' , c(PreoperativeIndices,PostOpIndexes) , MasterData)
                ,family=binomial(link='logit') , data=DataForLogistic))
-summary(model)$coefficients[summary(model)$coefficients[,4] < 0.1,4]
 summary( model )
 
+StepResults2 <- matrix(0 , 100, length(c(PreoperativeIndices,PostOpIndexes)) )
+colnames(StepResults2) <- c(PreoperativeIndices,PostOpIndexes)
 
-model <- glm(formula = AFLogical ~ (ProcDetails == 'CABG') + Age + Gender + AdditiveEUROScore + 
-                 SCTSLogisticEuroSCORE + PreOpNa + PreopUrea + PreopCreat + 
-                 PreOpAlb + PreopPLT + PreopAPTT + CPB + CRP + Mg + WBC + 
-                 Hb + Platelets, family = binomial(link = "logit"), data = DataForLogistic)
+for(ii in 1:100){
+DataForLogistic <- POM_SampledImputation(data.frame(MasterData[  ,  ]))
+model <- (glm(formula = FB_CreateFormula('AFLogical' , c(PreoperativeIndices,PostOpIndexes) , MasterData)
+              ,family=binomial(link='logit') , data=DataForLogistic))
+stepoutput <- stepAIC(model)
+StepResults2[ii,] <- apply(as.matrix(names(MasterData[c(PreoperativeIndices,PostOpIndexes)])) , 1 , function(X){grepl(X ,as.character(stepoutput$formula)[3])} )
+}
+
+#glm(formula = AFLogical ~ Age + Gender + Urgency + LogisticEUROScore + 
+#      PreOpNa + PreopUrea + PreopCreat + PreOpAlb + PreopAPTT + 
+#      BMI + CPB + CRP + Albumin + Mg + Hb + ReliableART.S + dBili + 
+#      dPLT, family = binomial(link = "logit"), data = DataForLogistic)
+#glm(formula = AFLogical ~ Age + Gender + Urgency + LogisticEUROScore + 
+#      PreOpNa + PreopUrea + PreopCreat + PreOpAlb + PreopMg + PreopHb + 
+#      PreopAPTT + BMI + CPB + CRP + Albumin + Mg + ReliableART.S + 
+#      ReliableART.D + SpO2 + dBili + dK + dPLT + dHb, family = binomial(link = "logit"), 
+#    data = DataForLogistic)
+
+model <-  glm(formula = AFLogical ~ Age + Weight + Urgency + LogisticEUROScore + 
+                NYHAGrade + EjectionFractionCategory + PreOpNa + PreopUrea + 
+                PreopCreat + PreOpCRP + PreOpAlb + PreopMg + PreopHb + PreopPLT + 
+                PreopAPTT + CPB + CRP + Albumin + Bilirubin + Mg + Platelets + 
+                ReliableART.S + ReliableART.D + dBili + dCRP + dHb, family = binomial(link = "logit"),  data = DataForLogistic)
 summary( model )
 
-LogisticProbility <- predict(object= model , newdata = DataForLogistic , type = c( "response") )
-
+LogisticProbility <- matrix(0 , dim(DataForLogistic)[1],1)
 for(i in 1:dim(LogisticProbility)[1]){
   DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
-  model <- (glm(formula = AFLogical ~ 
-                  (ProcDetails == 'CABG' ) + Age + Gender + AdditiveEUROScore + 
-                  SCTSLogisticEuroSCORE + PreOpNa + PreopUrea + PreopCreat + 
-                  PreOpAlb + PreopPLT + PreopAPTT + CPB + CRP + Mg + WBC + 
-                  Hb + Platelets
-                 , family=binomial(link='logit') , data=DataForLogistic[-i , ]))
+  model <- glm(formula = AFLogical ~ Age + Weight + Urgency + LogisticEUROScore + 
+                 NYHAGrade + EjectionFractionCategory + PreOpNa + PreopUrea + 
+                 PreopCreat + PreOpCRP + PreOpAlb + PreopMg + PreopHb + PreopPLT + 
+                 PreopAPTT + CPB + CRP + Albumin + Bilirubin + Mg + Platelets + 
+                 ReliableART.S + ReliableART.D + dBili + dCRP + dHb, family = binomial(link = "logit"),  data = DataForLogistic[-i,])
+  LogisticProbility[i,] <- predict(object= model , newdata = DataForLogistic[i , ] , type = c( "response") )
+}
+
+
+PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,MasterData$AFLogical == 1))
+BC_CalculateAreaUnderCurve(PerformanceSweep)
+
+
+LogisticProbility <- matrix(0 , dim(DataForLogistic)[1],1)
+for(i in 1:dim(LogisticProbility)[1]){
+  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
+  model <-  glm(formula = AFLogical ~  
+                  LogisticEUROScore + 
+                  Urea + 
+                  PreOpAlb + 
+                  PreopBili +
+                  Hb + 
+                  PreopHb + 
+                  Urgency + 
+                  Platelets +
+                  PreopPLT +
+                  WBC +
+                  Mg +
+                  CRP+
+                  SpO2 ,
+                family = binomial(link = "logit"), data = DataForLogistic[-i,])
   LogisticProbility[i,] <- predict(object= model , newdata = DataForLogistic[i , ] , type = c( "response") )
 }
 
@@ -394,7 +609,7 @@ x11(20,14)
 grid.arrange(ROCplot2 , NPVPPVPlot2 + xlim(( 1-0.2) , 1) , nrow= 2)
 
 x11(20,14)
-EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(LogisticProbility , MasterData$AFLogical == 1), BinWidth = 0.05))
+EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(LogisticProbility , MasterData$AFLogical == 1), BinWidth = 0.1))
 print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Emperical Probabilities'))
 
 #### Bayes Linear Bayes ####
@@ -523,3 +738,9 @@ lines(1- PerformanceSweep4[,2] , PerformanceSweep4[,1] , type ='l' , col = 'purp
 
 abline(0,1)
 abline(v = 0.5)
+
+
+
+FC_StepWiseForwardAUC( c(PreoperativeIndices) , MasterData)
+FC_StepWiseForwardAUC( c(PostOpIndexes) , MasterData)
+FC_StepWiseForwardAUC( c(PreoperativeIndices , PostOpIndexes ) , MasterData)

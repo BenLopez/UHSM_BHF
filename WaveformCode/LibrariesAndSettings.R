@@ -42,7 +42,9 @@ packages<-c("ggplot2",
             'matrixStats',
             'gridExtra',
             'GGally',
-            'lattice')
+            'lattice',
+            'pROC',
+            'mice')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -77,6 +79,8 @@ library(gridExtra)
 library(rmutil)
 library(GGally)
 library(lattice)
+library(pROC)
+library(mice)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
@@ -106,5 +110,6 @@ source('BayesLinearBayesForecastingSourceFunctions.R')
 source('PreOpModelSourceFunctions.R')
 source('ForwardModellingSourceFunctions.R')
 source('CriticalValueEmulationsSourceFunctions.R')
+source('StepWiseModelSelectionSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

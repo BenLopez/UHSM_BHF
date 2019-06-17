@@ -506,6 +506,7 @@ DP_StripTime <- function(X){
   output <- strptime(X ,  format = "%d/%m/%Y %H:%M")
   if(is.na(output)){output <- strptime(X ,  format = "%d/%m/%Y %H:%M:%S")}
   if(is.na(output)){output <- strptime(X ,  format = "%Y-%m-%d %H:%M:%S")}
+  if(is.na(output)){output <- strptime(X ,  format = "%Y-%m-%d")}
   }
 return(output)    
 } 
@@ -698,6 +699,21 @@ DP_RestructureBioChem <- function(BioChemIndex2017){
     NewData[[i]] <- setNames(list(1 , 1) , c('TimeSeriesData' , 'MetaData'))
     NewData[[i]]$TimeSeriesData <-  data.frame(time = as.POSIXct(DP_StripTime(BioChemIndex2017$PostOpUsandEsTime[grepl(uniquenames[i] , BioChemIndex2017$NewPseudoId) ]) ) , tsdata <- BioChemIndex2017[grepl(uniquenames[i] , BioChemIndex2017$NewPseudoId)  , 15:22] ) 
     NewData[[i]]$MetaData <- data.frame(BioChemIndex2017[which(grepl(uniquenames[i] , BioChemIndex2017$NewPseudoId))[1]  , -c(15:22)])
+  }
+  NewData <- setNames(NewData , uniquenames)
+  return(NewData)
+}
+DP_RestructureFlow <- function(FlowIndex2017){
+  listoftsvariables <- names(FlowIndex2017)[c(11,12,17,18,19,20:46)]
+  
+  uniquenames <- unique(FlowIndex2017$NewPseudoId)
+  uniquenames <- uniquenames[!is.na(uniquenames)]
+  
+  NewData <- list()
+  for( i in 1:length(uniquenames) ){
+    NewData[[i]] <- setNames(list(1 , 1) , c('TimeSeriesData' , 'MetaData'))
+    NewData[[i]]$TimeSeriesData <-  data.frame(time = as.POSIXct(DP_StripTime(FlowIndex2017$Result.DT[grepl(uniquenames[i] , FlowIndex2017$NewPseudoId) ]) ) , tsdata <- FlowIndex2017[grepl(uniquenames[i] , FlowIndex2017$NewPseudoId)  , c(11,12,17,18,19,20:46)] ) 
+    #NewData[[i]]$MetaData <- data.frame(FlowIndex2017[which(grepl(uniquenames[i] , FlowIndex2017$NewPseudoId))[1]  , -c(15:22)])
   }
   NewData <- setNames(NewData , uniquenames)
   return(NewData)

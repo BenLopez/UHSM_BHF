@@ -1075,7 +1075,6 @@ BC_PerformanceSweep <- function(GlobalProbCalibrationStruct , thresholds = seq(0
   }
   return(output) 
 }
-
 BC_PlotsCreateROC <- function( output ){
   p1<- ggplot(data.frame(Sensitivity = output[,1] , OneMinusSpecificity = (1-output[,2])  ) , aes(OneMinusSpecificity , Sensitivity)) +
     geom_point(color = 'blue')
@@ -1086,4 +1085,7 @@ BC_PlotsCreateNPVPPV <- function( output ){
   p1<- ggplot(data.frame(PPV = output[,3] , NPV = (output[,4])  ) , aes(NPV , PPV)) +
     geom_point(color = 'blue')
   return(p1)
+}
+BC_CalculateAreaUnderCurve <- function(PerformanceSweep){
+  return(trapz(rev(1-PerformanceSweep[,2]) , rev(PerformanceSweep[,1])))
 }

@@ -15,10 +15,30 @@ POM_CreateDefaultSetofCovForPatIndex <- function(){
 POM_CreateDefaultSetofCovForDet <- function(){
   return(c("LogisticEUROScore" ,
            "AdditiveEUROScore" ,
-           "SCTSLogisticEuroSCORE"))
+           "SCTSLogisticEuroSCORE",
+           "EjectionFractionCategory",
+           "NYHAGrade",
+           "AnginaGrade",
+           "Urgency"))
+}
+POM_CreateDefaultSetofCovForFLow <- function(){
+  return(c("HR" ,
+           "ReliableART.S",
+           "ReliableART.M",
+           "ReliableART.D",
+           "CVP",
+           "SpO2"))
 }
 POM_CreateDefaultSetofCov <- function(){
-  listofcovariates <- c('Age'  , 'CPB' ,  'AdditiveEUROScore' , 'PreOpNa', 'PreopUrea' ,'PreOpCRP', 'PreOpAlb' , 'PreopBili' , 'PreopCreat' )
+  listofcovariates <- c('Age'  ,
+                        'CPB' ,
+                        'AdditiveEUROScore' ,
+                        'PreOpNa',
+                        'PreopUrea' ,
+                        'PreOpCRP',
+                        'PreOpAlb' ,
+                        'PreopBili' ,
+                        'PreopCreat' )
   return(listofcovariates)
 }
 POM_CreateDataStructure <- function(PatIndex2017 , DetIndex2017 , BioChemIndex2017, SetofCovariatesPatientIndex = POM_CreateDefaultSetofCovForPatIndex(), SetofCovariatesDetIndex = POM_CreateDefaultSetofCovForDet()){
@@ -221,6 +241,21 @@ POM_ExtractPostOpFromHaem <- function(HaemIndex2017){
   }
   return(PostopHaemDataMatrix)
 }
+POM_ExtractPostOpFromFlow<- function(FlowIndex2017){
+  PostopFlowDataMatrix <- matrix(0 , length(FlowIndex2017) , length(POM_CreateDefaultSetofCovForFLow()))
+  for(i in 1:length(FlowIndex2017)){
+  if(!is.na(FlowIndex2017[[i]]$TimeSeriesData$CVP[1])){  
+    if(FlowIndex2017[[i]]$TimeSeriesData$CVP[1] == '---'){
+      FlowIndex2017[[i]]$TimeSeriesData$CVP[1] = NA
+    }
+  }  
+    PostopFlowDataMatrix[i ,] <- as.numeric(FlowIndex2017[[i]]$TimeSeriesData[1 , names(FlowIndex2017[[i]]$TimeSeriesData)%in%POM_CreateDefaultSetofCovForFLow() ])
+  }
+  rownames(PostopFlowDataMatrix) <- names(FlowIndex2017)
+  colnames(PostopFlowDataMatrix) <- POM_CreateDefaultSetofCovForFLow()
+  return(PostopFlowDataMatrix)
+}
+
 POM_ExtractPostOpFromFluids<- function(FluidsIndex2017){
   PostopFluidsDataMatrix <- matrix(0 , length(FluidsIndex2017) , 1)
   for(i in 1:length(FluidsIndex2017)){
@@ -258,10 +293,8 @@ for(ii in 1:dim(MasterPreOpData)[2]){
 }
 POM_SampledImputation <- function(MasterPreOpData){
   for(ii in 1:dim(MasterPreOpData)[2]){
-    if(is.numeric(MasterPreOpData[, ii]) ){
       if(sum(is.na(MasterPreOpData[, ii]))> 0){
       MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- sample(x = MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii] , size = sum(is.na(MasterPreOpData[, ii])) , replace = T )
-      }
       }
   }
   return(MasterPreOpData)
@@ -275,4 +308,32 @@ POM_RemoveOutliers <- function(MasterPreOpData , threshold = 5){
      }
   }
   return(MasterPreOpData)
+}
+POM_ExtraPostOpScores <- function(PostOpScoresIndex2017){
+  output <- matrix(NA , length(PostOpScoresIndex2017) , 3)
+  for(ii in 1:length(PostOpScoresIndex2017)){
+    output[ii,] <- as.numeric(PostOpScoresIndex2017[[ii]][1 , c(2:4)])
+  }
+  colnames(output) <- names(PostOpScoresIndex2017[[1]][1 , c(2:4)]) 
+  rownames(output) <- names(PostOpScoresIndex2017)
+  return(output)
+}
+POM_TreatmentBeforeAFib <- function(FluidsIndex2017 , PatIndex2017){
+  output <- matrix(NA , length(FluidsIndex2017) , 3)
+
+  colnames(output) <- c('Noradrenaline' , 'Dopamine' , 'Adrenaline')
+  rownames(output) <- names(FluidsIndex2017)
+  
+  NoradrenalineIndicies <- which(grepl('Noradrenaline' , names( FluidsIndex2017$`z1026-1-1-1`$TimeSeriesData)))
+  DopanineIndicies <- which(grepl('Dopamine' , names( FluidsIndex2017$`z1026-1-1-1`$TimeSeriesData)))
+  adremalineIndicies <- which(grepl('Adrenaline' , names( FluidsIndex2017$`z1026-1-1-1`$TimeSeriesData)))
+  
+  for(ii in 1:length(FluidsIndex2017)){
+    output[ii,1] = sum(FluidsIndex2017[[ii]]$TimeSeriesData[1,NoradrenalineIndicies] , na.rm = T) > 0
+    output[ii,2] = sum(FluidsIndex2017[[ii]]$TimeSeriesData[1,DopanineIndicies] , na.rm = T) > 0
+    output[ii,3] = sum(FluidsIndex2017[[ii]]$TimeSeriesData[1,adremalineIndicies] , na.rm = T) > 0
+    
+  }
+  
+  return(output)
 }
