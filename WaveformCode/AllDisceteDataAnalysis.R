@@ -96,6 +96,8 @@ MasterData$SCTSLogisticEuroSCORE <- MasterData$SCTSLogisticEuroSCORE
 MasterData$CRP <- log(MasterData$CRP)
 MasterData$PreOpCRP <- log(MasterData$PreOpCRP)
 
+MasterData$RACE <- log(MasterData$RACE)
+MasterData$logCASUS <- log(MasterData$logCASUS)
 
 MasterData$PreopBili <- log(MasterData$PreopBili)
 MasterData$Bilirubin <- log(MasterData$Bilirubin)
@@ -114,6 +116,7 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$dPLT <- MasterData$Platelets - MasterData$PreopPLT
   MasterData$dHb <- MasterData$Hb - MasterData$PreopHb 
   MasterData$dAPTT <- MasterData$APTT - MasterData$PreopAPTT
+  MasterData$dWBC <- MasterData$WBC - MasterData$PreopWBC
 }
 
 MasterData <- POM_RemoveOutliers(MasterPreOpData = MasterData)
@@ -299,14 +302,14 @@ counter <- counter + 1
 
 DataForLogistic <- data.frame(MasterData[  , c(1,PreoperativeIndices)])
 for(i in 2:dim(DataForLogistic)[2]){
-  model <- (glm(formula = as.formula(paste0("AFLogical ~" , names(DataForLogistic)[i]) )
+  model <- (glm(formula = as.formula(paste0("AFLogical ~" , names(DataForLogistic)[i] , '+ LogisticEUROScore + ProcDetails') )
                 ,family=binomial(link='logit') , data=DataForLogistic))
 # odds ratio
 # print( names(DataForLogistic)[i] )
   print(exp(coef(model)[2]))
   print( exp(confint(model)[2,] ))  
   print( summary( model )$coefficients )
-  print(auc(model$y, predict(model , DataForLogistic ,  type = c( "response")) ) )
+  #print(auc(model$y, predict(model , DataForLogistic ,  type = c( "response")) ) )
 }
 
 MasterData$ProcDetails <- as.factor(MasterData$ProcDetails)
@@ -478,17 +481,30 @@ NamesofPostOperativePredictors <- c('CPB',
                                    'Adrenaline')
 PostOpIndexes <- which(names(MasterData) %in% NamesofPostOperativePredictors)
 
+NamesofPreOperativePredictors <- names(MasterData)[PostOpIndexes ]
+counter <- 1
+tteststruct <- matrix(0 , length( PostOpIndexes[2:length(PostOpIndexes)]) , 1)
+for(i in PostOpIndexes[2:length(PostOpIndexes)]){
+  if(!is.numeric(MasterData[MasterData$AFLogical == 0 , i])){next}
+  BC_PlotCompareSingleHists(MasterData[MasterData$AFLogical == 0 , i] , MasterData[MasterData$AFLogical == 1 , i] , main =  names(MasterData)[i])
+  
+  print(names(MasterData)[i])
+  print(t.test(MasterData[MasterData$AFLogical == 1 , i] , MasterData[MasterData$AFLogical == 0 , i]))
+  print(sqrt(var(MasterData[MasterData$AFLogical == 1 , i] , na.rm = T)))
+  print(sqrt(var(MasterData[MasterData$AFLogical == 0 , i] , na.rm = T)))
+  tteststruct[counter] <- (t.test(MasterData[MasterData$AFLogical == 0 , i] , MasterData[MasterData$AFLogical == 1 , i])$p.value)
+  counter <- counter + 1
+}
+
 # difference transforms
 {
-MasterData$dUrea <- abs(MasterData$dUrea)
-MasterData$dK <-abs(MasterData$dK)
-MasterData$dCreat <- abs(MasterData$dCreat)
-MasterData$dNa <- abs(MasterData$dNa)
-MasterData$PT <- abs(DP_NormaliseData(MasterData$PT ))
-MasterData$WBC <- abs(DP_NormaliseData(MasterData$WBC ))
-MasterData$Bilirubin <- abs(DP_NormaliseData(MasterData$Bilirubin ))
-MasterData$Albumin <- abs(DP_NormaliseData(MasterData$Albumin ))
-MasterData$K <- abs(DP_NormaliseData(MasterData$K ))
+MasterData$dUrea <- abs(DP_NormaliseData(MasterData$dUrea) )
+MasterData$dK <-abs(DP_NormaliseData(MasterData$dK))
+MasterData$dCreat <- abs(DP_NormaliseData(MasterData$dCreat) )
+MasterData$dNa <- abs(DP_NormaliseData(MasterData$dNa) )
+MasterData$dCRP <- abs(DP_NormaliseData(abs(DP_NormaliseData(MasterData$dCRP) )))
+MasterData$dWBC <- abs(DP_NormaliseData(MasterData$dWBC))
+MasterData$dAlb <- abs(DP_NormaliseData(MasterData$dAlb) )
 }
 
 NamesofPreOperativePredictors <- names(MasterData)[PostOpIndexes ]
@@ -524,7 +540,7 @@ model <- (glm(formula = FB_CreateFormula('AFLogical' , c(PreoperativeIndices,Pos
 summary( model )
 
 StepResults2 <- matrix(0 , 100, length(c(PreoperativeIndices,PostOpIndexes)) )
-colnames(StepResults2) <- c(PreoperativeIndices,PostOpIndexes)
+colnames(StepResults2) <- names(MasterData[c(PreoperativeIndices,PostOpIndexes)])
 
 for(ii in 1:100){
 DataForLogistic <- POM_SampledImputation(data.frame(MasterData[  ,  ]))
@@ -534,59 +550,39 @@ stepoutput <- stepAIC(model)
 StepResults2[ii,] <- apply(as.matrix(names(MasterData[c(PreoperativeIndices,PostOpIndexes)])) , 1 , function(X){grepl(X ,as.character(stepoutput$formula)[3])} )
 }
 
-#glm(formula = AFLogical ~ Age + Gender + Urgency + LogisticEUROScore + 
-#      PreOpNa + PreopUrea + PreopCreat + PreOpAlb + PreopAPTT + 
-#      BMI + CPB + CRP + Albumin + Mg + Hb + ReliableART.S + dBili + 
-#      dPLT, family = binomial(link = "logit"), data = DataForLogistic)
-#glm(formula = AFLogical ~ Age + Gender + Urgency + LogisticEUROScore + 
-#      PreOpNa + PreopUrea + PreopCreat + PreOpAlb + PreopMg + PreopHb + 
-#      PreopAPTT + BMI + CPB + CRP + Albumin + Mg + ReliableART.S + 
-#      ReliableART.D + SpO2 + dBili + dK + dPLT + dHb, family = binomial(link = "logit"), 
-#    data = DataForLogistic)
+indexesfromstep <- which(names(MasterData) %in% colnames(StepResults2[ , apply(StepResults2 , 2 , function(X){ (sum(X)/length(X))*100 })>50]))
 
-model <-  glm(formula = AFLogical ~ Age + Weight + Urgency + LogisticEUROScore + 
-                NYHAGrade + EjectionFractionCategory + PreOpNa + PreopUrea + 
-                PreopCreat + PreOpCRP + PreOpAlb + PreopMg + PreopHb + PreopPLT + 
-                PreopAPTT + CPB + CRP + Albumin + Bilirubin + Mg + Platelets + 
-                ReliableART.S + ReliableART.D + dBili + dCRP + dHb, family = binomial(link = "logit"),  data = DataForLogistic)
-summary( model )
+tmp <- (cov2cor(cov(StepResults2))[apply(StepResults2 , 2 , function(X){ (sum(X)/length(X))*100 })>50 , ])
 
 LogisticProbility <- matrix(0 , dim(DataForLogistic)[1],1)
 for(i in 1:dim(LogisticProbility)[1]){
   DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
-  model <- glm(formula = AFLogical ~ Age + Weight + Urgency + LogisticEUROScore + 
-                 NYHAGrade + EjectionFractionCategory + PreOpNa + PreopUrea + 
-                 PreopCreat + PreOpCRP + PreOpAlb + PreopMg + PreopHb + PreopPLT + 
-                 PreopAPTT + CPB + CRP + Albumin + Bilirubin + Mg + Platelets + 
-                 ReliableART.S + ReliableART.D + dBili + dCRP + dHb, family = binomial(link = "logit"),  data = DataForLogistic[-i,])
+  model <- glm(formula = AFLogical ~ 
+                 Age + 
+                 Weight +
+                 Urgency + 
+                 LogisticEUROScore +
+                 PreopUrea +
+                 PreopCreat+
+                 PreOpAlb +
+                 PreopPLT +
+                 PreopAPTT+
+                 CPB +
+                 Na +
+                 Urea +
+                 CRP +
+                 Mg +
+                 Hb +
+                 Platelets +
+                 PT +
+                 APTT +
+                 ReliableART.D +
+                 SOFA +
+                 dBili, family = binomial(link = "logit"),  data = DataForLogistic[-i,])
   LogisticProbility[i,] <- predict(object= model , newdata = DataForLogistic[i , ] , type = c( "response") )
 }
 
-
-PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,MasterData$AFLogical == 1))
-BC_CalculateAreaUnderCurve(PerformanceSweep)
-
-
-LogisticProbility <- matrix(0 , dim(DataForLogistic)[1],1)
-for(i in 1:dim(LogisticProbility)[1]){
-  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
-  model <-  glm(formula = AFLogical ~  
-                  LogisticEUROScore + 
-                  Urea + 
-                  PreOpAlb + 
-                  PreopBili +
-                  Hb + 
-                  PreopHb + 
-                  Urgency + 
-                  Platelets +
-                  PreopPLT +
-                  WBC +
-                  Mg +
-                  CRP+
-                  SpO2 ,
-                family = binomial(link = "logit"), data = DataForLogistic[-i,])
-  LogisticProbility[i,] <- predict(object= model , newdata = DataForLogistic[i , ] , type = c( "response") )
-}
+summary(model)
 
 PerformanceSweep <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,MasterData$AFLogical == 1))
 BC_CalculateAreaUnderCurve(PerformanceSweep)
@@ -614,33 +610,36 @@ print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + g
 
 #### Bayes Linear Bayes ####
 
-{ 
+{
 DataForBayes <- POM_SampledImputation(MasterData)
-DataForBayes <- DataForBayes[ , names(MasterData) %in% c('ProcDetails' , 
-                                                         'Age' , 
-                                                         'Gender',
-                                                         'AdditiveEUROScore' , 
-                                                         'SCTSLogisticEuroSCORE',
-                                                         'PreOpNa' , 
+DataForBayes <- DataForBayes[ , names(MasterData) %in% c('Age' , 
+                                                         'Weight',
+                                                         'Urgency',
+                                                         'LogisticEUROScore',
                                                          'PreopUrea' , 
                                                          'PreopCreat' , 
                                                          'PreOpAlb' , 
                                                          'PreopPLT' ,
                                                          'PreopAPTT',
                                                          'CPB' ,
+                                                         'CRP',
+                                                         'Na',
+                                                         'Urea',
                                                          'CRP' ,
                                                          'Mg',
+                                                         'Hb',
                                                          'Platelets',
-                                                         'WBC',
-                                                         'Hb')]
-DataForBayes$ProcDetails <-DataForBayes$ProcDetails == 'CABG'
-DataForBayes$Gender <- DataForBayes$Gender  == 'Female'
-AFLogical <- as.numeric(MasterPreOpData$AFLogical)==2
-
+                                                         'PT',
+                                                         'APTT',
+                                                         'ReliableART.D',
+                                                         'SOFA',
+                                                         'dBili')]
+DataForBayes$Urgency <-DataForBayes$Urgency == 'Urgent'
+AFLogical <- as.numeric(MasterData$AFLogical)==2
 }
 
 
-PosteriorProbability <- BLBC_FitBayesLinearBayesClassifier(Data = as.matrix(DP_RemoveNaRows(DataForBayes) ) , Labels = AFLogical[DP_FindNARows(DataForBayes)] )
+PosteriorProbability <- BLBC_FitBayesLinearBayesClassifier(Data = as.matrix(DataForBayes) , Labels = MasterData$AFLogical ==1 )
 
 x11()
 BC_PlotCompareSingleHists(PosteriorProbability[AFLogical ==0] ,PosteriorProbability[AFLogical ==1] , main ='Histogram of Logistic Model Output'  , breaks = 20)
@@ -652,7 +651,7 @@ lines(seq(0,1,0.01) , FM_CalculateCDFS(PosteriorProbability[AFLogical ==1] , seq
 abline(v = 0.2)
 title('CDF Analysis')
 
-PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability ,AFLogical[DP_FindNARows(DataForBayes)] == 1))
+PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(PosteriorProbability ,AFLogical[DataForBayes] == 1))
 ROCplot <- BC_PlotsCreateROC(PerformanceSweep3) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
 NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep3) + geom_vline(xintercept =( 1-0.19)) + geom_hline(yintercept = 0.19)+  ggtitle('PPV vs NPV Curves')
 
@@ -665,82 +664,103 @@ x11(20,14)
 EmpericalProbabilityStructure3 <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability , MasterData$AFLogical == 1), BinWidth = 0.05))
 print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure3) + ggtitle('Emperical Probabilities'))
 
-plot(1- PerformanceSweep2[,2] , PerformanceSweep2[,1] , type ='l' , col ='blue')
-lines(1- PerformanceSweep[,2] , PerformanceSweep[,1] , type ='l' , col = 'red')
-lines(1- PerformanceSweep3[,2] , PerformanceSweep3[,1] , type ='l' , col = 'green')
-abline(0,1)
-abline(v = 0.3)
-abline(h = 0.6)
+###### AUC Selection Criteria #####
+
+FC_StepWiseForwardAUC( c(PreoperativeIndices) , MasterData)
+
+DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
+model <- glm(formula = AFLogical ~ 
+               LogisticEUROScore+
+               PreopUrea +
+               PreOpAlb +
+               (Urgency == 'Urgent') +
+               PreopAPTT +
+               PreopCreat +
+               Weight +
+               PreopBili +
+               PreopHb +
+               PreOpK +
+               PreOpCRP
+               , family = binomial(link = "logit"),  data = DataForLogistic)
+summary(model)
+
+LogisticProbility <- predict(model , DataForLogistic , type = c('response'))
+
+PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,DataForLogistic$AFLogical == 1))
+ROCplot <- BC_PlotsCreateROC(PerformanceSweep3) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
+NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep3) + geom_vline(xintercept =( 1-0.19)) + geom_hline(yintercept = 0.19)+  ggtitle('PPV vs NPV Curves')
+
+BC_CalculateAreaUnderCurve(PerformanceSweep3)
 
 
-#### Gaussian Process Classfier #####
+FC_StepWiseForwardAUC( c(PostOpIndexes) , MasterData)
 
-library('kernlab')
+DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
+model <- glm(formula = AFLogical ~ 
+               logCASUS +
+               Urea +
+               CPB +
+               CRP +
+               Mg +
+               dPLT +
+               Noradrenaline +
+               Creatinine +
+               Hb +
+               dPT +
+               ReliableART.M
+             , family = binomial(link = "logit"),  data = DataForLogistic)
+summary(model)
 
-GaussianLogistic <- LogisticProbility
-for(i in 1:dim(DataForBayes)[1]){  
-  
-  DataForBayes <- POM_SampledImputation(MasterData)
-  DataForBayes <- DataForBayes[ , names(MasterData) %in% c('ProcDetails' , 
-                                                           'Age' , 
-                                                           'Gender',
-                                                           'AdditiveEUROScore' , 
-                                                           'SCTSLogisticEuroSCORE',
-                                                           'PreOpNa' , 
-                                                           'PreopUrea' , 
-                                                           'PreopCreat' , 
-                                                           'PreOpAlb' , 
-                                                           'PreopPLT' ,
-                                                           'PreopAPTT',
-                                                           'CPB' ,
-                                                           'CRP' ,
-                                                           'Mg',
-                                                           'Platelets',
-                                                           'WBC',
-                                                           'Hb')]
-  DataForBayes$ProcDetails <-DataForBayes$ProcDetails == 'CABG'
-  DataForBayes$Gender <- DataForBayes$Gender  == 'Female'
-  AFLogical <- as.numeric(MasterPreOpData$AFLogical)==2
-  
-foo <- gausspr(DataForBayes[-i,], as.factor(AFLogical[-i]) )
-GaussianLogistic[i] <- predict(foo , DataForBayes[i,], type = c( "probabilities"))[,2]
-DP_WaitBar(i/dim(DataForBayes)[1])
-}
+LogisticProbility <- predict(model , DataForLogistic , type = c('response'))
 
-foo <- gausspr(DataForBayes, as.factor(AFLogical) )
-GaussianLogistic2 <- predict(foo , DataForBayes, type = c( "probabilities"))[,2]
+PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,DataForLogistic$AFLogical == 1))
+ROCplot <- BC_PlotsCreateROC(PerformanceSweep3) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
+NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep3) + geom_vline(xintercept =( 1-0.19)) + geom_hline(yintercept = 0.19)+  ggtitle('PPV vs NPV Curves')
 
-
-x11()
-BC_PlotCompareSingleHists(GaussianLogistic2[MasterData$AFLogical ==0] , GaussianLogistic2[MasterData$AFLogical ==1] , main ='Histogram of Logistic Model Output'  )
-t.test(GaussianLogistic2[MasterData$AFLogical ==0] ,  GaussianLogistic2[MasterData$AFLogical ==1])
-
-PerformanceSweep4 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(GaussianLogistic2 ,AFLogical[DP_FindNARows(DataForBayes)] == 1))
-ROCplot <- BC_PlotsCreateROC(PerformanceSweep4) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
-NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep4) + geom_vline(xintercept =( 1-0.19)) + geom_hline(yintercept = 0.19)+  ggtitle('PPV vs NPV Curves')
-
-BC_CalculateAreaUnderCurve(PerformanceSweep4)
-
+BC_CalculateAreaUnderCurve(PerformanceSweep3)
 
 x11(20,14)
 grid.arrange(ROCplot , NPVPPVPlot + xlim(( 1-0.2) , 1) , nrow= 2)
 
+FC_StepWiseForwardAUC( c(PreoperativeIndices , PostOpIndexes ) , MasterData)
 
+DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
+model <- glm(formula = AFLogical ~ 
+               LogisticEUROScore+
+               logCASUS+
+               Urea +
+               dK +
+               Albumin +
+               PreopCreat +
+               PreopUrea+
+               Weight +
+               PreopBili +
+               PreopHb +
+               PreOpK +
+               PreOpCRP +
+               dPT +
+               Mg +
+               dNa +
+               ReliableART.M +
+               Gender +
+               Urgency +
+               Hb +
+               PreOpAlb +
+               dBili +
+               APTT +
+               CPB +
+               PreOpCRP
+             , family = binomial(link = "logit"),  data = DataForLogistic)
+summary(model)
+
+LogisticProbility <- predict(model , DataForLogistic , type = c('response'))
+
+PerformanceSweep3 <- BC_PerformanceSweep(GlobalProbCalibrationStruct = cbind(LogisticProbility ,DataForLogistic$AFLogical == 1))
+ROCplot <- BC_PlotsCreateROC(PerformanceSweep3) + ggtitle('ROC Curves') + geom_abline(intercept = 0 , slope = 1)
+NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep3) + geom_vline(xintercept =( 1-0.19)) + geom_hline(yintercept = 0.19)+  ggtitle('PPV vs NPV Curves')
+
+BC_CalculateAreaUnderCurve(PerformanceSweep3)
 
 x11(20,14)
-EmpericalProbabilityStructure3 <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(GaussianLogistic , MasterData$AFLogical == 1), BinWidth = 0.05))
-print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure3) + ggtitle('Emperical Probabilities'))
+grid.arrange(ROCplot , NPVPPVPlot + xlim(( 1-0.2) , 1) , nrow= 2)
 
-plot(1- PerformanceSweep2[,2] , PerformanceSweep2[,1] , type ='l' , col ='blue')
-lines(1- PerformanceSweep[,2] , PerformanceSweep[,1] , type ='l' , col = 'red')
-lines(1- PerformanceSweep3[,2] , PerformanceSweep3[,1] , type ='l' , col = 'green')
-lines(1- PerformanceSweep4[,2] , PerformanceSweep4[,1] , type ='l' , col = 'purple')
-
-abline(0,1)
-abline(v = 0.5)
-
-
-
-FC_StepWiseForwardAUC( c(PreoperativeIndices) , MasterData)
-FC_StepWiseForwardAUC( c(PostOpIndexes) , MasterData)
-FC_StepWiseForwardAUC( c(PreoperativeIndices , PostOpIndexes ) , MasterData)

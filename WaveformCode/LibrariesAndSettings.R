@@ -44,7 +44,8 @@ packages<-c("ggplot2",
             'GGally',
             'lattice',
             'pROC',
-            'mice')
+            'mice',
+            'shiny')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -81,6 +82,7 @@ library(GGally)
 library(lattice)
 library(pROC)
 library(mice)
+library(shiny)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)
@@ -111,5 +113,6 @@ source('PreOpModelSourceFunctions.R')
 source('ForwardModellingSourceFunctions.R')
 source('CriticalValueEmulationsSourceFunctions.R')
 source('StepWiseModelSelectionSourceFunctions.R')
+source('PriorElicitationRhythmSourceFunctions.R')
 print('Libraries, data options and source functions loaded.')
 

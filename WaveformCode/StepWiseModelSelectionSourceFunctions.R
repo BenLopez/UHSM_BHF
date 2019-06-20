@@ -9,6 +9,7 @@ FB_CreateFormula <- function(y , x , DataForLogistic){
 }
 FB_CalulateCrossValidatedProbilities<- function( formulaformodel ,PreoperativeIndices, MasterData){
   LogisticProbility <- matrix(0,length(MasterData$AFLogical),1)
+  set.seed(1)
   for(i in 1:dim(LogisticProbility)[1]){
     DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  , c(1,PreoperativeIndices)]))
     model <- glm(formula = formulaformodel , family = binomial(link = "logit"), data = DataForLogistic[-i,])
@@ -45,7 +46,7 @@ for(ii in 1:length(VariabesOutModel)){
   print(InitialAUC[ii,j])
 }
 
-if(  round(max(InitialAUC[,j]) , 2) >= round(AUCTop , 2) ){
+if(  round(max(InitialAUC[,j]) , 3) >= round(AUCTop , 3) ){
   maxindex <- which.max(InitialAUC[,j])
   VariabesInModel <- c(VariabesInModel, VariabesOutModel[maxindex])
   VariabesOutModel <- VariabesOutModel[-maxindex]
@@ -53,7 +54,7 @@ if(  round(max(InitialAUC[,j]) , 2) >= round(AUCTop , 2) ){
   print(names(MasterData)[VariabesInModel])
   next
   }
-if(  round(max(InitialAUC[,j]) , 2) < round(AUCTop , 2) ){
+if(  round(max(InitialAUC[,j]) , 3) < round(AUCTop , 3) ){
   print(names(MasterData)[VariabesInModel])
   break
 }

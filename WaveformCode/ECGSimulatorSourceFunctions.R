@@ -81,7 +81,6 @@ ECGSim_WrapperSingleBeat_m2 <- function(x , t_observation){
   return(Baseline + RA*ECGSim_Gaussian( t_observation , Rcen , Rwidth ) +
            QA*ECGSim_Gaussian( t_observation , Qcen , Qwidth  ) +
            SA*ECGSim_Gaussian( t_observation , Scen , Swidth  ) +
-           PA*ECGSim_Gaussian(t_observation , Scen , Swidth ) +
            PAL*ECGSim_Gaussian(t_observation , PcenL , PwidthL ) +
            PAR*ECGSim_Gaussian(t_observation , PcenR , PwidthR ) +
            TAR*ECGSim_Gaussian(t_observation , TcenR , TwidthR ) +

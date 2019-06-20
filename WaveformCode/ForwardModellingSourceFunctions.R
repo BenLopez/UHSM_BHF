@@ -368,7 +368,6 @@ FM_EvalulateCDFEstimate <-function(x , X){
   b <- X[2]*FM_cdflaplace(x =x , mu = X[5] , sigma = X[8] , alpha = X[10] ) 
   return(a + b)
 }
-
 FM_ExtractActiveOutputs <- function(y , x){
   
   NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
@@ -379,4 +378,16 @@ FM_ExtractActiveOutputs <- function(y , x){
   seq(min(x[NonZeroLogical]) , max(x[NonZeroLogical]) , (max(x[NonZeroLogical]) - min(x[NonZeroLogical]))/length(x) )
   return(seq(min(x[NonZeroLogical]) , max(x[NonZeroLogical]) , (max(x[NonZeroLogical]) - min(x[NonZeroLogical]))/length(x) )[1:201])
   
+}
+FM_SampleGMMBigeminy <- function(X , N = 250 ){
+  output <- matrix(0 , N , 1)
+  for(i in 1:N){
+    if(mod(i , 2) == 1){
+      output[i , ] <- rnorm(1 , mean = X[4] , sd = (X[7]) )
+    }  
+    if(mod(i , 2) == 0){
+      output[i , ] <- rnorm(1 , mean = X[6] , sd = (X[9]) )
+    }  
+  }
+  return(output)
 }

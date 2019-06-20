@@ -153,10 +153,10 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   epsilon <- y - H%*%BetaHat
   
   SigmaHat <- 1/( sizeh[1] - sizeh[2] -1 ) * t(epsilon)%*%epsilon
-  SigmaHat <- as.numeric(SigmaHat - median(EmulatorSettings$w(x)[EmulatorSettings$w(x) !=0]))
+  SigmaHat <- as.numeric(SigmaHat - median(EmulatorSettings$w(x)[EmulatorSettings$w(x) !=0] ))
 
-  Var_D <- solve(SigmaHat*KXX + EmulatorSettings$w(x)%*%diag(sizeh[1]))
-  Cov_XstarD <- SigmaHat*KXstarX
+  Var_D <- solve(as.numeric(SigmaHat)*KXX + EmulatorSettings$w(x)%*%diag(sizeh[1]))
+  Cov_XstarD <- as.numeric(SigmaHat)*KXstarX
 
   E_z_y <- Hstar%*%BetaHat +  Cov_XstarD%*%Var_D%*%epsilon
   
@@ -167,7 +167,7 @@ BE_BayesLinearEmulatorLSEstimates<- function(xstar , EmulatorSettings = BE_Creat
   V_z_y <- 0  
   }
   
-  return(list(E_D_fX = E_z_y , V_D_fX = V_z_y))  
+  return(list(E_D_fX = E_z_y , V_D_fX = V_z_y , E_D_MX = Hstar%*%BetaHat))  
 }
 
 BE_BayesLinearEmulatorLSEstimatesBatchMode<- function(xstar , EmulatorSettings = BE_CreateDefaultEmulationClass()){
