@@ -85,62 +85,7 @@ ECGSim_WrapperSingleBeat_m2 <- function(x , t_observation){
            PAR*ECGSim_Gaussian(t_observation , PcenR , PwidthR ) +
            TAR*ECGSim_Gaussian(t_observation , TcenR , TwidthR ) +
            TAL*ECGSim_Gaussian(t_observation , TcenL , TwidthL ) )
-}  
-ECGSim_LeftPwave <- function(x , t_observation){
-  
-  Baseline <- x[1]
-  Rcen <- x[2]
-  Rwidth <- x[3]
-  RA <- x[4]
-  Qcen <- x[5]
-  Qwidth <- x[6]
-  QA <- x[7]
-  Scen <-   x[8]
-  Swidth <- x[9]
-  SA <- x[10]
-  PcenL <- x[11]
-  PwidthL <- x[12]
-  PAL <- x[13]
-  PcenR <- x[14]
-  PwidthR <- x[15]
-  PAR <- x[16]
-  TcenL <- x[17]
-  TwidthL <- x[18]
-  TAL <- x[19]
-  TcenR <- x[20]
-  TwidthR <- x[21]
-  TAR <- x[22]
-
-  return(PAL*ECGSim_Gaussian(t_observation , PcenL , PwidthL ))
-} 
-ECGSim_RightPwave <- function(x , t_observation){
-  
-  Baseline <- x[1]
-  Rcen <- x[2]
-  Rwidth <- x[3]
-  RA <- x[4]
-  Qcen <- x[5]
-  Qwidth <- x[6]
-  QA <- x[7]
-  Scen <-   x[8]
-  Swidth <- x[9]
-  SA <- x[10]
-  PcenL <- x[11]
-  PwidthL <- x[12]
-  PAL <- x[13]
-  PcenR <- x[14]
-  PwidthR <- x[15]
-  PAR <- x[16]
-  TcenL <- x[17]
-  TwidthL <- x[18]
-  TAL <- x[19]
-  TcenR <- x[20]
-  TwidthR <- x[21]
-  TAR <- x[22]
-  
-  return(PAR*ECGSim_Gaussian(t_observation , PcenR , PwidthR ))
-}
-
+}           
 ECGSim_QSSimulator <-function( X , t ){
   Baseline <- X[1]
   P_Cen    <- X[2]
