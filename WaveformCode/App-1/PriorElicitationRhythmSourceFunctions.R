@@ -175,9 +175,9 @@ PER_CreateECGAFib <- function( t , t_observation , RRTimes ){
 PER_CreateECGReg <- function( t , t_observation , RRTimes ){
   
   output <- matrix(0 , length(t_observation) , 1)  
-  
+
+  X_Sim <- rep(0 , 22)
   for(i in 1:length(RRTimes)){  
-    X_Sim <- rep(0 , 18)
     X_Sim[1] <- 0 # Baseline
     X_Sim[2] <- t[i] #Rceb
     X_Sim[3] <- 0.01 #Rwidth
@@ -204,3 +204,30 @@ PER_CreateECGReg <- function( t , t_observation , RRTimes ){
   }
   return(output)
 }
+PER_CreatePwaveECGXReg <- function(t = 1 , X1 =6 , X2 =6 , X3 = 0.125 , X4 = 0.125 , X5 =0.02 , X6 =0.02){
+  X_Sim <- rep(0 , 22)
+  X_Sim[1] <- 0 # Baseline
+  X_Sim[2] <- t #Rceb
+  X_Sim[3] <- 0.01 #Rwidth
+  X_Sim[4] <- 164 #RA
+  X_Sim[5] <- t - 0.02 #Qcen
+  X_Sim[6] <- 0.01 #Qwidth
+  X_Sim[7] <- -23 #QA
+  X_Sim[8] <- t + 0.02 #Scen
+  X_Sim[9] <- 0.012 #Swidth
+  X_Sim[10] <- -30 #SA
+  X_Sim[11] <- t - X3 # PcenL
+  X_Sim[12] <- X5 # PWidthL
+  X_Sim[13] <- X1  #PAL
+  X_Sim[14] <- t - X4 #PcenR
+  X_Sim[15] <- X6 #PenR
+  X_Sim[16] <- X2  #PAR
+  X_Sim[17] <- t + 0.23 #TcenL
+  X_Sim[18] <- 0.05 #TwidthL
+  X_Sim[19] <- 20 #TwidthL
+  X_Sim[20] <- t + 0.24 #TcenR
+  X_Sim[21] <- 0.04 #TwidthR
+  X_Sim[22] <- 18 #TAR
+  return(X_Sim)
+}
+
