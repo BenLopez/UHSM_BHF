@@ -123,6 +123,8 @@ MasterData <- POM_RemoveOutliers(MasterPreOpData = MasterData)
 
 MasterData$ProcDetails <- as.factor(MasterData$ProcDetails)
 
+PerentageMissing <- (apply(MasterData , 2 , function(X){sum(is.na (X)) } )/apply(MasterData , 2 , function(X){length(X) } ))*100
+
 }
 
 
@@ -692,7 +694,6 @@ NPVPPVPlot <- BC_PlotsCreateNPVPPV(PerformanceSweep3) + geom_vline(xintercept =(
 
 BC_CalculateAreaUnderCurve(PerformanceSweep3)
 
-
 FC_StepWiseForwardAUC( c(PostOpIndexes) , MasterData)
 
 DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData))
@@ -738,7 +739,7 @@ model <- glm(formula = AFLogical ~
                PreopHb +
                PreOpK +
                PreOpCRP +
-               dPT +
+               Platelets +
                Mg +
                dNa +
                ReliableART.M +
@@ -749,7 +750,8 @@ model <- glm(formula = AFLogical ~
                dBili +
                APTT +
                CPB +
-               PreOpCRP
+               PreOpCRP +
+               WBC
              , family = binomial(link = "logit"),  data = DataForLogistic)
 summary(model)
 
