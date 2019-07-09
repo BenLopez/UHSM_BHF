@@ -24,11 +24,15 @@ for( i in 1:length(outputstruct)){
 }
 }
 
-BC_PlotPairs(unique(SetOfNonImplausibleSets[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),]))
-BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000,] , PriorNonImplausibleSetRegular[1:1000,] , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] , alpha = 0.1)  
+SetOfNonImplausibleSets <- unique( SetOfNonImplausibleSets )
 
-#BC_PlotCompareTwoHists(PriorNonImplausibleSetRegularyIreRegular[1:1000,]  , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] )
-#BC_PlotCompareTwoHists(PriorNonImplausibleSetRegular[1:1000,] , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),])
+BC_PlotCompareTwoHists(SetOfNonImplausibleSets , SetOfNonImplausibleSets)
+BC_PlotPairs(SetOfNonImplausibleSets , alpha = 0.01)
+
+BC_PlotCompareTwoHists(PriorNonImplausibleSetRegularyIreRegular[1:1000,]  , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] )
+BC_PlotCompareTwoHists(PriorNonImplausibleSetRegular[1:1000,] , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),])
 
 
-             
+BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000,]  , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] , alpha = 0.05)
+BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegular[1:1000,] , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] , alpha = 0.05)
+

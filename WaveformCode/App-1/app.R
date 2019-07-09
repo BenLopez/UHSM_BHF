@@ -9,7 +9,7 @@
 {
   ui <-fluidPage(title = 'Heart-Rhythm Models Elicitation Tool',
                  tabsetPanel( navbarMenu(title = 'Rhythms',
-                                         tabPanel(title = 'Home' ,
+                                         {tabPanel(title = 'Home' ,
                                                   wellPanel(tags$h1('Model Description')),
                                                   wellPanel(tags$h2('Bigeminy')),
                                                   tags$p('Bigeminy is a heart rhythm in which there are repeated beats, one long and one short. The model for bigeminy is a mixtures model of two Gaussian distribtutions. The probability density function (pdf) is given by'),
@@ -17,9 +17,16 @@
                                                   withMathJax(tags$p('Here $$\\Phi(RR , \\mu , \\sigma)$$ is a Gaussian probability density function, evaluated at RR, with mean and standard deviation given by $$(\\mu , \\sigma).$$  ') ),
                                                   withMathJax(tags$p('The four parameters  $$(\\mu_{(1)} , \\sigma_{(1)} , \\mu_{(2)} , \\sigma_{(2)})$$ control the average and the range of RR-times for the short and long beats. The first two control the average and range for the short beats and the second two the average and range of the second beat.')),
                                                   imageOutput(outputId = 'BigeminyDensity'),
-                                                  wellPanel(tags$h2('Primature Atrial Complexes (PACs)'))
-                                         ),
-                                         tabPanel(title = 'Regular', 
+                                                  wellPanel(tags$h2('PACs')),
+                                                  tags$p('Premature-atrial-complexes (PACs), are heartbeats that arise within the atria of the heart which are outside the NSR. PACs are early (that is, premature) electrical impulses that are generated within the cardiac atria, but not from the sinus node. PACs momentarily interrupt the normal sinus rhythm with a fast beat followed by a compensatory pause. The model for PACs is a mixture of three Gaussian distributions. One compnent is the fast beats, one the normal and one the slow.'),
+                                                  withMathJax(tags$p('$$f(RR , x) = \\frac{(1-\\pi_{(1)})}{2}\\Phi(RR , \\mu_{(1)} , \\sigma_{(1)}) + \\pi_{(1)}\\Phi(RR , \\mu_{(2)} , \\sigma_{(2)})+ \\frac{(1-\\pi_{(1)})}{2}\\Phi(RR , \\mu_{(3)} , \\sigma_{(3)}).$$')),
+                                                  tags$p('The first compent defines the distribution of the fast beats. The second component the distrbution of the normal beats and the third the distribution of the slow beats. The seven parameters to control the RR-times dstribution for PAcs are then'),
+                                                  withMathJax(tags$p('$$(\\pi_{(1)} ,  \\mu_{(1)} ,  \\mu_{(2)} ,  \\mu_{(3)} , \\sigma_{(1)} , \\sigma_{(2)} , \\sigma_{(3)}).$$')),
+                                                  tags$p('The first parameter controls the proportion of PACs to normal beats. The second to fourth control the average speed of the fast, normal and slow beats. The fith to seventh control the width of the fast, normal and slow beats.'),
+                                                  imageOutput(outputId = 'PACsDensity'),
+                                                  wellPanel(tags$h2('Regular'))
+                                                  )},# Front page
+                                         {tabPanel(title = 'Regular', 
                                                   wellPanel(tags$h1('Regular')) ,
                                                   fluidRow(
                                                     column(4 , wellPanel(sliderInput(inputId = "Reg_pi1" , 
@@ -84,8 +91,8 @@
                                                   tags$hr(),
                                                   fluidRow(actionButton(inputId = 'Reg_UpdateECG' , label = 'Update')),
                                                   fluidRow(plotOutput( outputId = 'Reg_ECG', inline = F))
-                                         ),
-                                         tabPanel(title = 'Bigeminy', 
+                                         )},# Regular
+                                         {tabPanel(title = 'Bigeminy', 
                                                   wellPanel(tags$h1('Bigeminy')) ,
                                                   fluidRow(
                                                     column(4 , wellPanel(sliderInput(inputId = "mu1" , 
@@ -120,8 +127,8 @@
                                                   tags$hr(),
                                                   fluidRow(actionButton(inputId = 'UpdateECG' , label = 'Update')),
                                                   fluidRow(plotOutput( outputId = 'ECG', inline = F))
-                                         ),
-                                         tabPanel(title = 'PACs', 
+                                         )},# Bigeminy
+                                         {tabPanel(title = 'PACs', 
                                                   wellPanel(tags$h1('PACs')) ,
                                                   fluidRow(
                                                     column(4 , wellPanel(sliderInput(inputId = "PAC_pi1" , 
@@ -186,7 +193,8 @@
                                                   tags$hr(),
                                                   fluidRow(actionButton(inputId = 'PACs_UpdateECG' , label = 'Update')),
                                                   fluidRow(plotOutput( outputId = 'PACs_ECG', inline = F))
-                                         ),tabPanel(title = 'Atrial Fibrillation', 
+                                         )},# PACs
+                                         {tabPanel(title = 'Atrial Fibrillation', 
                                                     wellPanel(tags$h1('Atrial Fibrillation')) ,
                                                     fluidRow(
                                                       column(4 , wellPanel(sliderInput(inputId = "AFib_pi1" , 
@@ -251,7 +259,8 @@
                                                     tags$hr(),
                                                     fluidRow(actionButton(inputId = 'AFib_UpdateECG' , label = 'Update')),
                                                     fluidRow(plotOutput( outputId = 'AFib_ECG', inline = F))
-                                         ),  tabPanel(
+                                         )},# AFib
+                                         {tabPanel(
                                            title = 'P-waves' , 
                                            wellPanel(tags$h1('P-wave Model')),
                                            fluidRow(
@@ -294,7 +303,7 @@
                                              ) ),
                                              column(4 , plotOutput( outputId = 'Pwave_RRDenisty' ))
                                            ) 
-                                         )                                         )
+                                         )  }                                        )
                  )
   )
   
@@ -304,7 +313,17 @@
     {
       output$BigeminyDensity <- renderImage({
         
-        list(src = 'WWW\\BigeminyRRTimesDistribution.png',
+        list(src = 'www/BigeminyRRTimesDistribution.png',
+             contentType = 'image/png',
+             width = 400,
+             height = 400,
+             alt = "This is alternate text")
+      }, deleteFile = FALSE)
+    }
+    {
+      output$PACsDensity <- renderImage({
+        
+        list(src = 'www/PACsRRTimesDistribution.png',
              contentType = 'image/png',
              width = 400,
              height = 400,

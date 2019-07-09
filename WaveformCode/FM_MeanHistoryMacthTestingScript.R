@@ -26,7 +26,6 @@ source('FM_CreateMeanPWavePriors.R')
 {
   PatientID <- DP_choosepatient( listAllPatients )
 
-  
   MetaData <- DP_ExtractPatientRecordforIndex( PatIndex2017 = PatIndex2017 , PatientCode = PatientID )
   if(!DP_CheckIfAFPatient(MetaData)){next}
   if(!DP_CheckECGreducedfilesprocessed(path , PatientID , Filestoprocess = 'ECGII_reduced')){next}
@@ -179,7 +178,7 @@ source('FM_CreateMeanPWavePriors.R')
 
 
 {
-StartBeat <- 30501
+StartBeat <- 32001
 rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
 RRtimes <-  RPeakData$RRCombined[rangeofbeats,3]
 mm <- FM_EmulatorEstimate( Y = RRtimes )
