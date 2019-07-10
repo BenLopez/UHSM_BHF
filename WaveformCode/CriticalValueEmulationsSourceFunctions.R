@@ -32,7 +32,13 @@ CTEm_CreateTrainingSet <- function(x,PriorNonImplausibleSetTotal,F_total,f_total
     F_X = F_total[ ii , ]
     MD_X = MD_Total[ ii , ]
     f_X = f_total[ ii , ]
-    outputstruct[ii,] = CTEm_CalculateImThreshold( x , X , F_X , MD_X , f_X , N = N , numberofrepeats = numberofrepeats)
+    outputstruct[ii,] = CTEm_CalculateImThreshold( x = x ,
+                                                   X =  X ,
+                                                   F_X =  F_X , 
+                                                   MD_X = MD_X ,
+                                                   f_X =  f_X ,
+                                                   N = N ,
+                                                   numberofrepeats = numberofrepeats)
     DP_WaitBar(ii/numberofsimulations)
   }  
   

@@ -1,6 +1,6 @@
 
 numberofsimulations = 1100
-numberofrepeats = 5000
+numberofrepeats = 1000
 precomputedfolderpath <- DP_SelectPrecomputedFolder()
 
 if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath,'EmulatingCriticalThresholdData.RData') ){
@@ -9,9 +9,11 @@ if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath,'EmulatingCriticalThre
   X <- EmulatingCriticalThresholdData[[2]]
 }else{
   outputstruct <- CTEm_CreateTrainingSet( x = xTotal,
-                                          PriorNonImplausibleSetTotal = PriorNonImplausibleSetTotal,
-                                          F_total = F_total,f_total = f_total,MD_Total = MD_Total  ,
-                                          numberofsimulations = numberofsimulations,
+                                          PriorNonImplausibleSetTotal = PriorNonImplausibleSetTotal ,
+                                          F_total = F_total ,
+                                          f_total = f_total ,
+                                          MD_Total = MD_Total ,
+                                          numberofsimulations = numberofsimulations ,
                                           c = c , 
                                           l = l , 
                                           N = n ,

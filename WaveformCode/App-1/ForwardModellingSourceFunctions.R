@@ -229,7 +229,8 @@ FM_CalculateCDFS  <- function(RRtimes , xx = seq(0.25 , 2 , 0.01)){
   if(length(xx) > 10000){
     Lookupinputs <- seq(min(xx) , max(xx) , (max(xx) - min(xx))/9999 )
     LookupValues <- FM_CalculateCDFS( RRtimes = RRtimes , xx = Lookupinputs  )
-    LookupPoints <- round(xx/ ( (max(xx) - min(xx))/9999 )) + 1
+    tmp <-  ( (max(xx) - min(xx))/9999 )
+    LookupPoints <- round( xx / tmp) + 1
     output <- LookupValues[LookupPoints]
     return(output)
   }
