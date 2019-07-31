@@ -39,6 +39,11 @@
     
     PriorNonImplausibleSetRegular[, 10]<- runif(numberofsamples , 0 , 1)
     
+    if(UseAnnotatedData == 1){
+      
+      PriorNonImplausibleSetRegular <- unique(rbind(PriorNonImplausibleSetRegular , FM_GetNonImplausibleSetsFromlabelledDataset()))
+    
+    }
       
   }
   
@@ -62,8 +67,8 @@
     f_xreg <- t(apply(cbind(PriorNonImplausibleSetRegular , xreg) , 1 , function(X){FM_EvaluateDenistyEstimate(  X[11:211] , X[1:10]) }))
     F_xreg <- t(apply(cbind(PriorNonImplausibleSetRegular , xreg) , 1 , function(X){FM_EvalulateCDFEstimate(X[11:211] , X[1:10] ) }))
     
-    MD_Reg <- matrix(0 , numberofsamples , length(x))
-    for( i in 1:numberofsamples){
+    MD_Reg <- matrix(0 , dim(F_xreg)[1] , length(x))
+    for( i in 1:dim(F_xreg)[1]){
       MD_Reg[i , ] <- MDFunction( F_xreg[i , ] , PriorNonImplausibleSetRegular[i , ] )
     }
   }
@@ -180,7 +185,7 @@
   f_total <- t(apply(PriorNonImplausibleSetTotal , 1 , function(X){FM_EvaluateDenistyEstimate(x , X) }))
   F_total <- t(apply(PriorNonImplausibleSetTotal , 1 , function(X){FM_EvalulateCDFEstimate(x , X) }))
   
-  xTotal<- t(apply(PriorNonImplausibleSetTotal , 1 , function(X){FM_ExtractActiveOutputs(X , x)} ))
+  xTotal<- t(apply(F_total , 1 , function(X){FM_ExtractActiveOutputs(X , x)} ))
   f_total <- t(apply(cbind(PriorNonImplausibleSetTotal , xTotal) , 1 , function(X){FM_EvaluateDenistyEstimate(  X[11:211] , X[1:10]) }))
   F_total <- t(apply(cbind(PriorNonImplausibleSetTotal , xTotal) , 1 , function(X){FM_EvalulateCDFEstimate(X[11:211] , X[1:10] ) }))
   

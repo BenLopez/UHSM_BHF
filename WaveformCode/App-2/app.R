@@ -7,7 +7,7 @@
   DP_ChooseDataReps()
   FilestoProcess <- DP_ChooseECGstoProcess() 
   HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter() 
-  listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
+  #listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
   set.seed( 1 )
 }
 
@@ -17,7 +17,7 @@
                  tags$h1('ECG Examination Script'),
                  selectInput(inputId = 'PatinetId' ,
                              label = 'Select patient to view' , 
-                             choices = listAllPatients ,selected = 'z1007' ),
+                             choices = listAllPatients , selected = listAllPatients[[1]]  ),
                  uiOutput(outputId = 'Slider'),
                  #sliderInput(inputId = "SelectTime" , 
                  #           label = 'Select a Time' , 
@@ -33,7 +33,7 @@
                  #plotOutput(outputId = 'ECGII'  ) ,
                  #plotOutput(outputId = 'ECGIII'  ) ,
                  fluidRow(title = 'RRTimes',plotOutput(outputId = 'RRTimesPlot'  ))
-)
+  )
   
   # Actions
   server <- function( input , output ){
@@ -48,25 +48,33 @@
     }
     
     {
-     output$title <- renderText(paste0(input$PatinetId  , '   ' , timetoview() )) 
+      output$title <- renderText(paste0(input$PatinetId  , '   ' , timetoview() )) 
     }
-     output$Slider <- renderUI({
-       sliderInput(inputId = "SelectTime" , 
-                              label = 'Select a Time' , 
-                              min = min(RPeaksStruct()$RRCombined$t) ,
-                              step = 10,
-                              max = max(RPeaksStruct()$RRCombined$t) ,
-                              value = RPeaksStruct()$RRCombined$t[1000] ,
-                              width = 1440)
-     })
-     # Time to view
-     {
-       timetoview <- reactive( input$SelectTime )
-     }
+    output$Slider <- renderUI({
+      sliderInput(inputId = "SelectTime" , 
+                  label = 'Select a Time' , 
+                  min = min(RPeaksStruct()$RRCombined$t) ,
+                  step = 10,
+                  max = max(RPeaksStruct()$RRCombined$t) ,
+                  value = RPeaksStruct()$RRCombined$t[1000] ,
+                  width = 1440)
+    })
+    # Time to view
+    {
+      timetoview <- reactive( input$SelectTime )
+    }
     # RR Times plot
     output$RRTimesPlot <- renderPlot({
-      RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeaksStruct() , MetaData = MetaData() )
-      RRPlot <- BC_PlotAddViewingRegionLines(RRPlot , c(timetoview() , timetoview() + 10))
+      
+      if(nrow(MetaData()) ==0){
+        RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeaksStruct() ,
+                                            MetaData = DP_CreateDummyMetaData(PatIndex2017 , input$PatinetId))
+        RRPlot <- BC_PlotAddViewingRegionLines(RRPlot , c(timetoview() , timetoview() + 10))  
+      }else{
+        #RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeaksStruct() , MetaData = DP_CreateDummyMetaData(PatIndex2017 , input$PatinetId))
+        RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeaksStruct() , MetaData = MetaData() )
+        RRPlot <- BC_PlotAddViewingRegionLines(RRPlot , c(timetoview() , timetoview() + 10))
+      }
       print(RRPlot)
     },width = 1500,height = 178 )
     # ECGI Times plot

@@ -27,7 +27,12 @@ POM_CreateDefaultSetofCovForFLow <- function(){
            "ReliableART.M",
            "ReliableART.D",
            "CVP",
-           "SpO2"))
+           "SpO2",
+           "Lac",
+           "FiO26num",
+           "ArtPO2",
+           "IABP2",
+           "GCSnum"))
 }
 POM_CreateDefaultSetofCov <- function(){
   listofcovariates <- c('Age'  ,
@@ -196,15 +201,26 @@ POM_ExtractPreOpFromHaem <- function(HaemIndex2017){
   
   return(HaemDataMatrix)
 }
-POM_ExtractAFMedication <- function(FluidsIndex2017){
-  DidoxinLogical <- matrix(0 , length(FluidsIndex2017) , 1)
-  AmiodaroneLogical <- matrix(0 , length(FluidsIndex2017) , 1)   
-  for(i in 1:length(FluidsIndex2017)){
+#POM_ExtractAFMedication <- function(FluidsIndex2017){
+#  DidoxinLogical <- matrix(0 , length(FluidsIndex2017) , 1)
+#  AmiodaroneLogical <- matrix(0 , length(FluidsIndex2017) , 1)   
+#  for(i in 1:length(FluidsIndex2017)){
+#    
+#    DidoxinLogical[i,] <-   sum(!is.na(FluidsIndex2017[[i]]$TimeSeriesData$Digoxin..)) > 0
+#    AmiodaroneLogical[i,] <- sum(!is.na(FluidsIndex2017[[i]]$TimeSeriesData[ , which(grepl('Amiodarone', names(FluidsIndex2017[[i]]$TimeSeriesData) ))]))>0
+#  }
+#  outputstruct <- data.frame(NewPseudoId = names(FluidsIndex2017) , DidoxinLogical = DidoxinLogical , AmiodaroneLogical = AmiodaroneLogical)
+#  return(outputstruct)
+#}
+POM_ExtractAFMedication <- function(AllDataStructure){
+  DidoxinLogical <- matrix(0 , length(AllDataStructure) , 1)
+  AmiodaroneLogical <- matrix(0 , length(AllDataStructure) , 1)   
+  for(i in 1:length(AllDataStructure)){
     
-    DidoxinLogical[i,] <-   sum(!is.na(FluidsIndex2017[[i]]$TimeSeriesData$Digoxin..)) > 0
-    AmiodaroneLogical[i,] <- sum(!is.na(FluidsIndex2017[[i]]$TimeSeriesData[ , which(grepl('Amiodarone', names(FluidsIndex2017[[i]]$TimeSeriesData) ))]))>0
+    DidoxinLogical[i,] <-   sum(!is.na(AllDataStructure[[i]]$timeseriesvariables$Digoxin..)) > 0
+    AmiodaroneLogical[i,] <- sum(!is.na(AllDataStructure[[i]]$timeseriesvariables[ , which(grepl('Amiodarone', names(AllDataStructure[[i]]$timeseriesvariables) ))]))>0
   }
-  outputstruct <- data.frame(NewPseudoId = names(FluidsIndex2017) , DidoxinLogical = DidoxinLogical , AmiodaroneLogical = AmiodaroneLogical)
+  outputstruct <- data.frame(NewPseudoId = names(AllDataStructure) , DidoxinLogical = DidoxinLogical , AmiodaroneLogical = AmiodaroneLogical)
   return(outputstruct)
 }
 POM_ExtractPostOpFromBioChem <- function(BioChemIndex2017){
@@ -241,23 +257,28 @@ POM_ExtractPostOpFromHaem <- function(HaemIndex2017){
   }
   return(PostopHaemDataMatrix)
 }
-POM_ExtractPostOpFromFlow<- function(FlowIndex2017){
+POM_ExtractPostOpFromFlow<- function(FlowIndex2017 , PatIndex2017){
   PostopFlowDataMatrix <- matrix(0 , length(FlowIndex2017) , length(POM_CreateDefaultSetofCovForFLow()))
+  
   for(i in 1:length(FlowIndex2017)){
-  if(!is.na(FlowIndex2017[[i]]$TimeSeriesData$CVP[1])){  
-    if(FlowIndex2017[[i]]$TimeSeriesData$CVP[1] == '---'){
-      FlowIndex2017[[i]]$TimeSeriesData$CVP[1] = NA
-    }
-  }  
+    PatientRecord <- PatIndex2017[ PatIndex2017$NewPseudoId == names(FlowIndex2017)[i], ]
+    dayvector <- abs(difftime(DP_StripTime(PatientRecord$FirstITUEntry) ,FlowIndex2017[[i]]$TimeSeriesData$time , units= 'hours')) < 24
+      
+    FlowIndex2017[[i]]$TimeSeriesData[ , dayvector]
+
+    FlowIndex2017[[i]]$TimeSeriesData$CVP[FlowIndex2017[[i]]$TimeSeriesData$CVP == '---'] = NA
+    FlowIndex2017[[i]]$TimeSeriesData$CVP[FlowIndex2017[[i]]$TimeSeriesData$CVP == ''] = NA
+    FlowIndex2017[[i]]$TimeSeriesData$CVP <- as.numeric(FlowIndex2017[[i]]$TimeSeriesData$CVP)
+    FlowIndex2017[[i]]$TimeSeriesData$IABP2 <- as.numeric(FlowIndex2017[[i]]$TimeSeriesData$IABP2 == 'Yes')
     PostopFlowDataMatrix[i ,] <- as.numeric(FlowIndex2017[[i]]$TimeSeriesData[1 , names(FlowIndex2017[[i]]$TimeSeriesData)%in%POM_CreateDefaultSetofCovForFLow() ])
   }
   rownames(PostopFlowDataMatrix) <- names(FlowIndex2017)
-  colnames(PostopFlowDataMatrix) <- POM_CreateDefaultSetofCovForFLow()
+  colnames(PostopFlowDataMatrix) <- names(FlowIndex2017[[i]]$TimeSeriesData)[names(FlowIndex2017[[i]]$TimeSeriesData)%in%POM_CreateDefaultSetofCovForFLow()]
   return(PostopFlowDataMatrix)
 }
 
 POM_ExtractPostOpFromFluids<- function(FluidsIndex2017){
-  PostopFluidsDataMatrix <- matrix(0 , length(FluidsIndex2017) , 1)
+  PostopFluidsDataMatrix <- matrix(0 , length(FluidsIndex2017) , 2)
   for(i in 1:length(FluidsIndex2017)){
     
       diff <- FluidsIndex2017[[i]]$TimeSeriesData$Hourly.In - FluidsIndex2017[[i]]$TimeSeriesData$Hourly.Out
@@ -268,9 +289,10 @@ POM_ExtractPostOpFromFluids<- function(FluidsIndex2017){
       timevec <- timevec[!is.na(timevec)] 
       
       PostopFluidsDataMatrix[i ,1] <- c(diff[which(!is.na(diff))[1] ])
+      PostopFluidsDataMatrix[i ,2] <- FluidsIndex2017[[i]]$TimeSeriesData$Filter[1]
   }
   rownames(PostopFluidsDataMatrix) <- names(FluidsIndex2017)
-  colnames(PostopFluidsDataMatrix) <- 'FluidBalance'
+  colnames(PostopFluidsDataMatrix) <- c('FluidBalance', 'CVVHDialysis')
 return(PostopFluidsDataMatrix)
 }
 POM_MeanImputation <- function(MasterPreOpData){
@@ -293,7 +315,7 @@ for(ii in 1:dim(MasterPreOpData)[2]){
 }
 POM_SampledImputation <- function(MasterPreOpData){
   for(ii in 1:dim(MasterPreOpData)[2]){
-      if(sum(is.na(MasterPreOpData[, ii]))> 0){
+      if( (sum(is.na(MasterPreOpData[, ii]))> 0) && (sum(is.na(MasterPreOpData[, ii]))< dim(MasterPreOpData)[2]) ){
       MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- sample(x = MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii] , size = sum(is.na(MasterPreOpData[, ii])) , replace = T )
       }
   }
@@ -334,6 +356,109 @@ POM_TreatmentBeforeAFib <- function(FluidsIndex2017 , PatIndex2017){
     output[ii,3] = sum(FluidsIndex2017[[ii]]$TimeSeriesData[1,adremalineIndicies] , na.rm = T) > 0
     
   }
+  
+  return(output)
+}
+POM_FillEmptyRecords <- function(PatientData){
+  
+  for( i in 2:dim(PatientData)[1] ){
+    
+    PatientData[i,is.na(PatientData[i,])] <- PatientData[i-1,is.na(PatientData[i,])]
+    
+  }
+  return(PatientData)
+}
+POM_FindFirstGoodRecord <- function(PatientData){
+  dayOfRecord <- as.Date.POSIXct(PatientData$time)
+  DayOne <- which((dayOfRecord - dayOfRecord[1]) ==1)
+  
+  #if(sum(!is.na(PatientData$Platelets[DayOne])*!is.na(PatientData$Bilirubin[DayOne])*!is.na(PatientData$Creatinine[DayOne])) == 0 ){
+    output <- PatientData$time[DayOne[length(DayOne)]] #<- PatientData$time[DayOne[1]]
+  #}
+  #if(sum(!is.na(PatientData$Platelets[DayOne])*!is.na(PatientData$Bilirubin[DayOne])*!is.na(PatientData$Creatinine[DayOne])) >= 1 ){
+  #  output <- PatientData$time[which(!is.na(PatientData$Platelets[DayOne])*!is.na(PatientData$Bilirubin[DayOne])*!is.na(PatientData$Creatinine[DayOne])>0)[1]]
+  #}
+  return(output)
+}
+POM_ExtractFirstGoodRecord <- function(PatientData){
+  PatientData <- POM_FillEmptyRecords( PatientData )
+  timestamp <- POM_FindFirstGoodRecord( PatientData )
+  
+  output <- PatientData[which.min(abs(PatientData$time - timestamp)) , ]
+  return(output)
+}
+POM_ExtractFirstRecords <- function(AllDataStructure){
+  output <- matrix(NA , length(AllDataStructure) ,  length(AllDataStructure[[1]]$DiscreteData) + length(names(AllDataStructure[[1]]$timeseriesvariables)) )
+  colnames(output) <- c(names(AllDataStructure[[1]]$DiscreteData) , names(AllDataStructure[[1]]$timeseriesvariables))
+  output <- data.frame(output)
+  for(ii in 1:dim(output)[1]){
+    output[ii,1:(length(AllDataStructure[[1]]$DiscreteData))] <- AllDataStructure[[ii]]$DiscreteData
+    if(nrow(POM_ExtractFirstGoodRecord(PatientData = AllDataStructure[[ii]]$timeseriesvariables))> 0 ){
+      output[ii,(length(AllDataStructure[[1]]$DiscreteData) +1):(length(AllDataStructure[[1]]$DiscreteData)+ length(names(AllDataStructure[[1]]$timeseriesvariables)))] <- POM_ExtractFirstGoodRecord(PatientData = AllDataStructure[[ii]]$timeseriesvariables)
+    }  
+    DP_WaitBar(ii/dim(output)[1])
+  }
+  return(output)
+}
+POM_CategoricalCreateFieldNames <- function(){
+  return(c('VariableNames' , 'n' , 'nNAFib' , 'nAFib' , 'PerNAFib' , 'PerAFib' ,'PValueProp','LO' , 'L_CI' , 'U_CI' , 'PValue' ))
+}
+POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , MasterData , NameofVariable ){
+  
+  CategoricalData <- as.factor(CategoricalData)
+  
+  output <- data.frame(matrix(NA , length(levels(CategoricalData)) , 11 ))
+  output[,1] <- levels(CategoricalData)
+  names(output) <- POM_CategoricalCreateFieldNames()
+  
+  for(i in 1:length(levels(CategoricalData))){
+    # basic analysis  
+    tmp <- as.factor(CategoricalData == levels(CategoricalData)[i] )
+    output[i , 2] <- as.numeric(summary(tmp)[2])
+    output[i , 3] <- as.numeric(summary(tmp[AFLogical == 0])[2])
+    output[i , 4] <- as.numeric(summary(tmp[AFLogical == 1])[2])
+    output[i , 5] <- summary(tmp[AFLogical == 0])[2]/sum(AFLogical == 0)*100
+    output[i , 6] <- summary(tmp[AFLogical == 1])[2]/sum(AFLogical == 1)*100
+    testtmp <- prop.test( c(summary(tmp[AFLogical == 1])[1] ,summary(tmp[AFLogical == 0])[1]) , c(  sum(AFLogical == 1), sum(AFLogical == 0) ))
+    output[i , 7] <- signif(testtmp$p.value , 3)
+    # logistic regression analysis
+  }
+  
+  model <- glm(FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'ProcDetails') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData ) ,
+               family=binomial(link='logit'),
+               data = MasterData)
+  
+  output[ , 8] <- exp(coef(model)[1:length(levels(CategoricalData))])
+  output[ , 9:10] <- exp(confint(model) )[1:length(levels(CategoricalData)),]
+  output[ , 11] <- summary(model)$coefficients[1:length(levels(CategoricalData)),4]  
+  output[ , 2:11] <- signif(output[,2:11] , 4)
+  return(output)
+}
+POM_ContinuousCreateFieldNames <- function(){
+  return(c('VariableNames' , 'n' , 'M-NAF' , 'SD-NAF' , 'M-AF' , 'SD-AF' ,'P-M' , 'LO' , 'L_CI' , 'U_CI' , 'PValue' ))
+}
+POM_ContinuousUnivariateAnalysis <- function(ContinuousData , AFLogical , MasterData , NameofVariable){
+  ContinuousData <- as.numeric(ContinuousData)
+  output <- data.frame(matrix(NA , 1 , length(POM_ContinuousCreateFieldNames()) ))
+  output[,1] <- NameofVariable
+  names(output) <- POM_ContinuousCreateFieldNames()
+  
+  output[,2] <- sum(!is.na(ContinuousData))
+  output[,3] <- mean(ContinuousData[AFLogical ==0] , na.rm = T) 
+  output[,4] <- sqrt(var(ContinuousData[AFLogical ==0] , na.rm = T))
+  output[,5] <- mean(ContinuousData[AFLogical ==1] , na.rm = T) 
+  output[,6] <- sqrt(var(ContinuousData[AFLogical ==1] , na.rm = T))
+  
+  tmptest <- t.test(ContinuousData[AFLogical ==1] , ContinuousData[AFLogical ==0])
+  output[,7] <- tmptest$p.value
+  
+  model <- glm(FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'ProcDetails') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData ) ,
+               family=binomial(link='logit'),
+               data = MasterData)
+  output[ , 8] <- exp(coef(model))[2]
+  output[ , 9:10] <- exp(confint(model) )[2,]
+  output[ , 11] <- summary(model)$coefficients[2,4]  
+  output[ , 2:11] <- signif(output[,2:11] , 4)
   
   return(output)
 }

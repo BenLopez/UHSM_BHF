@@ -1,12 +1,11 @@
-CTEm_CalculateImThreshold <- function(x,X , F_X, MD_X ,f_X, N=500 , numberofrepeats = 100 , c = 5000 , l = 0.005 , p = 0.99){
+CTEm_CalculateImThreshold <- function(x, X , F_X, MD_X ,f_X, N=500 , numberofrepeats = 100 , c = 5000 , l = 0.005 , p = 0.99){
   
   ImplausabilityMatrix <- matrix(0 , numberofrepeats , 4)
   G_0 <- function(N){ FM_SampleGMM( X = X , N) }
   
   for(ii in 1:numberofrepeats){
     RRtimes <- FM_SampleDP(c , l , N , G_0)
-    y <- matrix(FM_CalculateCDFS( RRtimes = RRtimes , xx = x ), dim(x)[1] , dim(x)[2])
-    
+    y <- FM_CalculateCDFS( RRtimes = RRtimes , xx = x )
     
     NonZeroLogical <- matrix(T , length(RRtimes) , 1)
     
@@ -32,7 +31,8 @@ CTEm_CreateTrainingSet <- function(x,PriorNonImplausibleSetTotal,F_total,f_total
     F_X = F_total[ ii , ]
     MD_X = MD_Total[ ii , ]
     f_X = f_total[ ii , ]
-    outputstruct[ii,] = CTEm_CalculateImThreshold( x = x ,
+    xx = as.matrix(x[ii,])
+    outputstruct[ii,] = CTEm_CalculateImThreshold( x = xx ,
                                                    X =  X ,
                                                    F_X =  F_X , 
                                                    MD_X = MD_X ,
@@ -44,7 +44,6 @@ CTEm_CreateTrainingSet <- function(x,PriorNonImplausibleSetTotal,F_total,f_total
   
   return(outputstruct)
 }
-
 CTEm_CreateTrainingSetCDF <- function(xx,x,PriorNonImplausibleSetTotal,F_total,f_total,MD_Total  ,numberofsimulations = 1100, c = 5000 , l = 0.005 , N = 500-19 ,numberofrepeats = 50000){
   outputstruct <- array(0 , c(numberofsimulations , length(xx) , 2) )
   
@@ -53,7 +52,14 @@ CTEm_CreateTrainingSetCDF <- function(xx,x,PriorNonImplausibleSetTotal,F_total,f
     F_X = F_total[ ii , ]
     MD_X = MD_Total[ ii , ]
     f_X = f_total[ ii , ]
-    outputstruct[ii,,] = CTEm_CalculateImThresholdCDF(xx,x,X ,F_X, MD_X ,f_X, N = N , numberofrepeats = numberofrepeats)
+    xxx = as.matrix(x[ii,])
+    outputstruct[ii,,] = CTEm_CalculateImThresholdCDF(xx,
+                                                      x = xxx,
+                                                      X ,
+                                                      F_X,
+                                                      MD_X ,
+                                                      f_X, 
+                                                      N = N , numberofrepeats = numberofrepeats)
     DP_WaitBar(ii/numberofsimulations)
   }  
   
@@ -66,8 +72,9 @@ CTEm_CalculateImThresholdCDF <- function(xx,x,X , F_X, MD_X ,f_X, N=500 , number
   
   for(ii in 1:numberofrepeats){
     RRtimes <- FM_SampleDP(c , l , N , G_0)
-    y <- matrix(FM_CalculateCDFS( RRtimes = RRtimes , xx = x ), dim(x)[1] , dim(x)[2])
+    y <- FM_CalculateCDFS( RRtimes = RRtimes , xx = x )
     
+    NonZeroLogical <- matrix(T , length(RRtimes) , 1)
     
     #RPeakKDEEstmate <- kde( RRtimes )
     #z <- predict(RPeakKDEEstmate , x = x )

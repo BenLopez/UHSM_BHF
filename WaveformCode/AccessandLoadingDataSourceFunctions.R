@@ -177,6 +177,65 @@ DP_LoadECGReduced <- function(path , subList , numberrep=1 , ECGNum = 1 ){
   
   return(WaveData)  
 }
+
+DP_LoadECGStartReduced <- function(path , subList , numberrep=1 , ECGNum = 1 ){
+  # Function to load ECG data. ECGNum = (1 , 2 , 3) or ('I' , 'II' , 'III')
+  if(ECGNum  == 1 || ECGNum  == 'I' || ECGNum  == 'ECGI')
+  {
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
+    {
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGI data processed.') 
+        break
+      }
+      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGI_reducedstart" , '.RData') ))
+      {
+        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGI_reducedstart" , '.RData'))
+        break 
+      }  
+    }
+  }
+  
+  if(ECGNum  == 2 || ECGNum  == 'II'|| ECGNum  == 'ECGII')
+  {
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
+    {
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGII data processed.') 
+        break
+      }
+      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGII_reducedstart" , '.RData') ))
+      {
+        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGII_reducedstart" , '.RData'))
+        break 
+      }  
+    }
+  }
+  
+  if(ECGNum  == 3 || ECGNum  == 'III'|| ECGNum  == 'ECGIII')
+  {
+    # Load wave form data 
+    for(i in 1:(numberrep+1))
+    {
+      if(i > (numberrep))
+      {
+        stop('Error: No ECGIII data processed.') 
+        break
+      }
+      if(file.exists(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGIII_reducedstart" , '.RData')))
+      {
+        load(paste0(path , '\\' , subList , '\\Zip_out\\' , subList , '_', "ECGIII_reducedstart" , '.RData'))
+        break 
+      }  
+    }
+  }
+  
+  return(WaveData)  
+}
 DP_LoadRpeaksfileECGI <- function(path , PatientsId ){
   load(paste0(path , '\\' , PatientsId , '\\Zip_out\\' , PatientsId , '_RPeaks' , '.RData'))
   return(outputdata$ECGI)
@@ -196,6 +255,13 @@ DP_LoadReducedECGs <- function(path , subList , numberrep=1 , FilestoProcess){
   output = list()
   for(i in 1:length(FilestoProcess)){
     output[[i]] <- DP_LoadECGReduced( path , subList , numberrep , FilestoProcess[i] )
+  }
+  output <- setNames(output , FilestoProcess)
+}
+DP_LoadStartReducedECGs <- function(path , subList , numberrep=1 , FilestoProcess){
+  output = list()
+  for(i in 1:length(FilestoProcess)){
+    output[[i]] <- DP_LoadECGStartReduced( path , subList , numberrep , FilestoProcess[i] )
   }
   output <- setNames(output , FilestoProcess)
 }
@@ -720,7 +786,7 @@ DP_RestructureFlow <- function(FlowIndex2017){
 }
 DP_RestructureFluids <- function(FluidsIndex2017){
   listoftsvariables <- names(FluidsIndex2017)
-  listoftsvariables <- listoftsvariables[-c(1 , 2 , 3, 4 ,5 ,6 ,7 , 8 , 9 , 10 , 187 , 188)]
+  listoftsvariables <- listoftsvariables[-c(1 , 2 , 3, 4 ,5 ,6 ,7 , 8 , 9 , 10 , 187 )]
   listoftsindexes  <-   which(names(FluidsIndex2017) %in% listoftsvariables)
   
   uniquenames <- unique(FluidsIndex2017$NewPseudoId)

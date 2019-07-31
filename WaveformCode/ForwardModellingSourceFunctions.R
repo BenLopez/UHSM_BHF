@@ -96,7 +96,7 @@ FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x 
   #m <- rollmedian( RRtimes , k = 21 , na.pad = T )
   mm <- FM_EmulatorEstimate( RRtimes )
   m <- median(RRtimes)
-  RRtimes <- RRtimes + m - mm + rnorm(length(RRtimes) , 0 , 0.0025 )
+  RRtimes <- RRtimes + m - mm + rnorm(length(RRtimes) , 0 , 0.01 )
   RRtimes <- RRtimes[!is.na(RRtimes)]
   
   y <- matrix(FM_CalculateCDFS( RRtimes = RRtimes , xx = x ) , dim(x)[1] , dim(x)[2])
@@ -225,21 +225,26 @@ FM_EvaluateDenistyEstimate <- function(x , X){
  return(a + b)
 }
 FM_CalculateCDFS  <- function(RRtimes , xx = seq(0.25 , 2 , 0.01)){
-  #if( is.matrix( xx ) ){
-  #  RRtimes <- as.matrix(RRtimes)
-  #  output <- matrix(0 , dim(xx)[1] , dim(xx)[2])
-  #  for(i in 1:dim(xx)[2]){
-  #    output[,i] <-  apply(as.matrix(xx[,i]) , 1, function(X){sum(as.matrix(RRtimes)<= X)} )    
-  #  }
-  #  return(output/length(RRtimes))  
-  #}
-  #if(!is.matrix(xx)){
-  output <- matrix(0 , length(xx) , 1)
-  for(i in 1:length(xx)){
-    output[i] <- sum(RRtimes <= xx[i])/length(RRtimes)   
+  # Look up table for large input length(xx)
+  if(length(xx) > 10000){
+    minxx = min(xx)
+    maxxx = max(xx)
+    rangexx = maxxx - minxx
+    Lookupinputs <- seq(minxx , maxxx , (rangexx)/9999 )
+    LookupValues <- FM_CalculateCDFS( RRtimes = RRtimes , xx = Lookupinputs  )
+    tmp <-  ( (rangexx)/9999 )
+    LookupPoints <- round( (xx - minxx) / tmp) + 1
+    output <- LookupValues[LookupPoints]
+    return(output)
   }
-  return(output)
-  #}
+  # Loop for small input length(xx)
+  if(length(xx) <= 10000){
+    output <- matrix(0 , length(xx) , 1)
+    for(i in 1:length(xx)){
+      output[i] <- sum(RRtimes <= xx[i])/length(RRtimes)   
+    }
+    return(output)
+  }
 }
 FM_SampleGMM <- function( X , N = 250 ){
 
@@ -390,4 +395,35 @@ FM_SampleGMMBigeminy <- function(X , N = 250 ){
     }  
   }
   return(output)
+}
+FM_GetNonImplausibleSetsFromlabelledDataset <- function(){
+  
+  path <- list()
+  numberrep <- 1
+  for(i in 1:numberrep)
+  {
+    path  <- choose.dir( caption  = paste0( "Select folder " ,i,  " containing data repository" ))
+    listAllPatients <- as.matrix(list.dirs(path = path[[i]], full.names = FALSE, recursive = FALSE))
+  }
+  
+  SetOfNonImplausibleSets <- matrix(0 , 0 , 10)
+  
+  for(j in 1:length(listAllPatients)){
+    load(paste0("D:\\nsrdb_outputs\\HMOutput" , listAllPatients[[j]] , '.RData'))
+    for( i in 1:length(outputstruct)){
+      SetOfNonImplausibleSets <-  rbind(SetOfNonImplausibleSets , outputstruct[[i]][[2]]$NonImplausibleSets )
+    }
+  }
+  return(unique( SetOfNonImplausibleSets ))   
+}
+FM_ltafdbExtractStartandEndAF <- function(RPeakData , AFlocations , minutethreshold =5){
+  
+  AFAnotation <- BC_CreateAnnotationFromInference(RPeakData$RRCombined$t , data.frame(Start = AFlocations[,1] , End = AFlocations[,2]))
+  StartandEndAF <- AFD_GetStartEndAF(t = RPeakData$RRCombined$t , logicaltimeseries = (AFAnotation == 1) , minutethreshold = minutethreshold)
+  return(StartandEndAF)
+}
+FM_ltafCheckSegmentisAF <- function(timestamp ,  AFLogical , RPeakData , n = 500){
+  
+  return(AFLogical[ min(which.min(abs(timestamp - RPeakData$RRCombined$t) ) + n , length(AFLogical)) ] ==1)
+  
 }

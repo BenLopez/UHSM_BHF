@@ -287,7 +287,7 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
       StartBeatMat[i] <- StartBeat# HM Heart-rhythm
       
       ReHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegular, 
-                                                       x = x ,
+                                                       x = xreg ,
                                                        F_x = F_xreg ,
                                                        f_x = f_xreg ,  
                                                        MD = MD_Reg , 
@@ -296,7 +296,7 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
                                                        imthreshold = ImThresholdMaxRegular,
                                                        imthreshold2 = ImThresholdMeanRegular)
       ReIreHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegularyIreRegular,
-                                                          x = x ,
+                                                          x = xIrIreg ,
                                                           F_x =  F_x_ReIre,
                                                           f_x = f_x_ReIre,
                                                           MD = MD_ReIre,
@@ -305,7 +305,7 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
                                                           imthreshold  = ImThresholdMaxIrregularlyIrregular,
                                                           imthreshold2 = ImThresholdMeanIrregularlyIrregular)
       ReIreHmTotal <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetTotal,
-                                                          x = x ,
+                                                          x = xTotal ,
                                                           F_x =  F_total, 
                                                           f_x = f_total,  
                                                           MD = MD_Total , 
@@ -313,21 +313,6 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
                                                           Corr_sdhat = Corr_sdhat1, 
                                                           imthreshold  = ImThresholdMaxTotal,
                                                           imthreshold2 = ImThresholdMeanTotal)
-      
-      if(sum((ReIreHmOutput$Implausability[,1] < ImThreshold1[2])&(ReIreHmOutput$Implausability[,2] < ImThreshold1[1])&(ReIreHmOutput$Implausability[,3] < ImThreshold1[3])) > 1){
-        RegularyIrregularLogical2[i] <- T
-        disp('Irregularly-irregular Heart-rhythm')
-      }else{
-        RegularyIrregularLogical2[i] <- F
-      }
-      
-      if(sum((ReHmOutput$Implausability[,1] < ImThreshold2[2])&(ReHmOutput$Implausability[,2] < ImThreshold2[1])&(ReHmOutput$Implausability[,3] < ImThreshold2[3])) > 1){
-        RegularLogical2[i] <- T
-        disp('Regular Heart-rhythm')
-      }else{
-        RegularLogical2[i] <- F
-      }
-      
       
       # HM P-waves
       source('FM_HistoryMatchMeanPWave.R')

@@ -13,20 +13,13 @@
   set.seed(1)
 }
 
-FM_ltafdbExtractStartandEndAF <- function(RPeakData , AFlocations , minutethreshold =5){
-  
-  AFAnotation <- BC_CreateAnnotationFromInference(RPeakData$RRCombined$t , data.frame(Start = AFlocations[,1] , End = AFlocations[,2]))
-  StartandEndAF <- AFD_GetStartEndAF(t = RPeakData$RRCombined$t , logicaltimeseries = (AFAnotation == 1) , minutethreshold = minutethreshold)
-  return(StartandEndAF)
-  }
-
 
 
 DP_ChooseDataReps()
+UseAnnotatedData <- 0
 source('FM_CreateRhythumPriors.R')
 source('CTEm_LoadDataandCreateEmulatorStructures.R')
 source('FM_CreateMeanPWavePriors.R')
-
 
 QSwidth = 12
 {
@@ -273,7 +266,7 @@ QSwidth = 12
 }
 
 
-for(PatientID in listAllPatients[3:length(listAllPatients)] ){
+for(PatientID in listAllPatients[1:length(listAllPatients)] ){
   {
     ECGs <- DP_LoadReducedECGs( path ,  PatientID , FilestoProcess = FilestoProcess  )
     ECGs$ECGII$Value <- 100*ECGs$ECGI$Value
@@ -309,7 +302,7 @@ for(PatientID in listAllPatients[3:length(listAllPatients)] ){
       StartBeatMat[i] <- StartBeat# HM Heart-rhythm
       
       ReHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegular, 
-                                                       x = x ,
+                                                       x = xreg ,
                                                        F_x = F_xreg ,
                                                        f_x = f_xreg ,  
                                                        MD = MD_Reg , 
@@ -318,7 +311,7 @@ for(PatientID in listAllPatients[3:length(listAllPatients)] ){
                                                        imthreshold = ImThresholdMaxRegular,
                                                        imthreshold2 = ImThresholdMeanRegular)
       ReIreHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegularyIreRegular,
-                                                          x = x ,
+                                                          x = xIrIreg ,
                                                           F_x =  F_x_ReIre,
                                                           f_x = f_x_ReIre,
                                                           MD = MD_ReIre,
@@ -327,7 +320,7 @@ for(PatientID in listAllPatients[3:length(listAllPatients)] ){
                                                           imthreshold  = ImThresholdMaxIrregularlyIrregular,
                                                           imthreshold2 = ImThresholdMeanIrregularlyIrregular)
       ReIreHmTotal <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetTotal,
-                                                         x = x ,
+                                                         x = xTotal ,
                                                          F_x =  F_total, 
                                                          f_x = f_total,  
                                                          MD = MD_Total , 
@@ -335,21 +328,6 @@ for(PatientID in listAllPatients[3:length(listAllPatients)] ){
                                                          Corr_sdhat = Corr_sdhat1, 
                                                          imthreshold  = ImThresholdMaxTotal,
                                                          imthreshold2 = ImThresholdMeanTotal)
-      
-      if(sum((ReIreHmOutput$Implausability[,1] < ImThreshold1[2])&(ReIreHmOutput$Implausability[,2] < ImThreshold1[1])&(ReIreHmOutput$Implausability[,3] < ImThreshold1[3])) > 1){
-        RegularyIrregularLogical2[i] <- T
-        disp('Irregularly-irregular Heart-rhythm')
-      }else{
-        RegularyIrregularLogical2[i] <- F
-      }
-      
-      if(sum((ReHmOutput$Implausability[,1] < ImThreshold2[2])&(ReHmOutput$Implausability[,2] < ImThreshold2[1])&(ReHmOutput$Implausability[,3] < ImThreshold2[3])) > 1){
-        RegularLogical2[i] <- T
-        disp('Regular Heart-rhythm')
-      }else{
-        RegularLogical2[i] <- F
-      }
-      
       
       # HM P-waves
       source('FM_HistoryMatchMeanPWave.R')

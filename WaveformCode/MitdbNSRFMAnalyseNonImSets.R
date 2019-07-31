@@ -12,26 +12,14 @@
   listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
   set.seed(1)
 }
-DP_ChooseDataReps()
 
-
-SetOfNonImplausibleSets <- matrix(0 , 0 , 10)
-
-for(j in 1:length(listAllPatients)){
-  load(paste0("D:\\nsrdb_outputs\\HMOutput" , listAllPatients[[j]] , '.RData'))
-for( i in 1:length(outputstruct)){
-  SetOfNonImplausibleSets <-  rbind(SetOfNonImplausibleSets , outputstruct[[i]][[2]]$NonImplausibleSets )
-}
-}
-
-SetOfNonImplausibleSets <- unique( SetOfNonImplausibleSets )
+SetOfNonImplausibleSets <- FM_GetNonImplausibleSetsFromlabelledDataset()
 
 BC_PlotCompareTwoHists(SetOfNonImplausibleSets , SetOfNonImplausibleSets)
 BC_PlotPairs(SetOfNonImplausibleSets , alpha = 0.01)
 
 BC_PlotCompareTwoHists(PriorNonImplausibleSetRegularyIreRegular[1:1000,]  , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] )
 BC_PlotCompareTwoHists(PriorNonImplausibleSetRegular[1:1000,] , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),])
-
 
 BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000,]  , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] , alpha = 0.05)
 BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegular[1:1000,] , unique(SetOfNonImplausibleSets)[sample(1:dim(unique(SetOfNonImplausibleSets))[1] , 1000),] , alpha = 0.05)

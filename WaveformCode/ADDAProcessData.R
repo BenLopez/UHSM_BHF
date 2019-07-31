@@ -1,0 +1,226 @@
+if(!file.exists('MasterData.RData')){
+  MasterData <- POM_ExtractFirstRecords( AllDataStructure )
+}else{
+  load('MasterData.RData')
+}
+
+#### Process Data ####
+# Procedure details 
+
+MasterData$ProcDetails <- DP_AssignSurgeryLabels(MasterData$ProcDetails)
+
+# Create AFLogical
+
+MasterData$ConfirmedFirstNewAF[is.na(MasterData$ConfirmedFirstNewAF)] <- 'NA'
+MasterData$AFLogical = ((!is.na(MasterData$FirstNewAF)) & (MasterData$ConfirmedFirstNewAF != 'CNAF'))
+
+# Remove treated with AFib medication
+
+AFMedication <- POM_ExtractAFMedication(AllDataStructure = AllDataStructure)
+MasterData <- MasterData[-which(  ((MasterData$AFLogical ==0)&(AFMedication$DidoxinLogical == 1)) | ((MasterData$AFLogical ==0)&(AFMedication$AmiodaroneLogical == 1)) ),]
+
+# Remove Pre_op AFib
+
+MasterData <- MasterData[MasterData$Pre_OperativeHeartRhythm != "Atrial fibrillation/flutter" , ]
+
+# Process vasoactive drugs
+{MasterData$NoradrenalineStandardised <- (MasterData$Noradrenaline..80mcg.ml.Volume/((1/80)*60*MasterData$Weight) )
+  MasterData$NoradrenalineStandardised[is.na(MasterData$NoradrenalineStandardised )] <- (MasterData$Noradrenaline..160.mcg.ml.Volume[is.na(MasterData$NoradrenalineStandardised )]/((1/160)*60*MasterData$Weight[is.na(MasterData$NoradrenalineStandardised )]) )
+  MasterData$NoradrenalineStandardised[is.na(MasterData$NoradrenalineStandardised )] <- (MasterData$Noradrenaline..320.mcg.ml.Volume[is.na(MasterData$NoradrenalineStandardised )]/((1/320)*60*MasterData$Weight[is.na(MasterData$NoradrenalineStandardised )]) )
+  MasterData$NoradrenalineStandardised[is.na(MasterData$NoradrenalineStandardised )] <- (MasterData$Noradrenaline..unknown.dose.Volume[is.na(MasterData$NoradrenalineStandardised )]/((1/80)*60*MasterData$Weight[is.na(MasterData$NoradrenalineStandardised )]) )
+  MasterData$NoradrenalineStandardised[is.na(MasterData$NoradrenalineStandardised)] <- 0
+  
+  MasterData$AdrenalineStandardised <- (MasterData$Adrenaline..20mcg.ml.Volume../((1/20)*60*MasterData$Weight) )
+  MasterData$AdrenalineStandardised[is.na(MasterData$AdrenalineStandardised )] <- (MasterData$Adrenaline..40mcg.ml.Volume..[is.na(MasterData$AdrenalineStandardised )]/((1/40)*60*MasterData$Weight[is.na(MasterData$AdrenalineStandardised )]) )
+  MasterData$AdrenalineStandardised[is.na(MasterData$AdrenalineStandardised )] <- (MasterData$Adrenaline..80mcg.ml.Volume..[is.na(MasterData$AdrenalineStandardised )]/((1/80)*60*MasterData$Weight[is.na(MasterData$AdrenalineStandardised )]) )
+  MasterData$AdrenalineStandardised[is.na(MasterData$AdrenalineStandardised )] <- (MasterData$Adrenaline..unknown.dose.Volume[is.na(MasterData$AdrenalineStandardised )]/((1/20)*60*MasterData$Weight[is.na(MasterData$AdrenalineStandardised )]) )
+  MasterData$AdrenalineStandardised[is.na(MasterData$AdrenalineStandardised)] <- 0
+  
+  MasterData$DopamineStandardised <- (MasterData$Dopamine.200mg.50mls..Volume/((1/4000)*60*MasterData$Weight) )
+  MasterData$DopamineStandardised[is.na(MasterData$DopamineStandardised )] <- (MasterData$Dopamine.unknown.dose.Volume[is.na(MasterData$DopamineStandardised )]/((1/4000)*60*MasterData$Weight[is.na(MasterData$DopamineStandardised )]) )
+  MasterData$DopamineStandardised[is.na(MasterData$DopamineStandardised)] <- 0
+  
+  MasterData$MilrinoneStandardised <- (MasterData$Milrinone.10mg.in.50mls.Volume*200)/(60*MasterData$Weight)
+  MasterData$MilrinoneStandardised[is.na(MasterData$MilrinoneStandardised )] <- (MasterData$Milrinone.20mg.in.50mls.Volume[is.na(MasterData$MilrinoneStandardised )]*400)/(60*MasterData$Weight[is.na(MasterData$MilrinoneStandardised )])
+  MasterData$MilrinoneStandardised[is.na(MasterData$MilrinoneStandardised )] <- (MasterData$Milrinone.unknown.dose.Rate[is.na(MasterData$MilrinoneStandardised )]*200)/(60*MasterData$Weight[is.na(MasterData$MilrinoneStandardised )])
+  MasterData$MilrinoneStandardised[is.na(MasterData$MilrinoneStandardised)] <- 0
+
+  MasterData$VasopressinStandardised <- (MasterData$Vasopressin..mL...Volume*0.4)/(60*MasterData$Weight)
+  MasterData$VasopressinStandardised[is.na(MasterData$VasopressinStandardised)] <- 0
+
+  MasterData$DobutamineStandardised <- (MasterData$Dobutamine.250mg.50mls.Volume*5000)/(60*MasterData$Weight)
+  MasterData$DobutamineStandardised[is.na(MasterData$DobutamineStandardised)] <-  (MasterData$Dobutamine.unknown.dose.Volume*5000)/(60*MasterData$Weight)
+  MasterData$DobutamineStandardised[is.na(MasterData$DobutamineStandardised)] <- 0
+  
+}
+
+# Intubation in surgery 
+
+MasterData$IntubatedInSurgury <- abs(DP_StripTime(MasterData$DateTubed) - DP_StripTime(MasterData$FirstITUEntry)) <=0
+
+MasterData$GCSnum[is.na(MasterData$GCSnum) & (MasterData$IntubatedInSurgury == 0)] <- 15
+
+# Fix strings which should be numeric
+
+ListNumericVariables <- c('Age' ,
+                          'Weight' , 
+                          "LogisticEUROScore" ,
+                          'PreOpNa',
+                          'PreOpK',
+                          'PreopMg',
+                          'PreopUrea' ,
+                          'PreOpCRP',
+                          'PreOpAlb' ,
+                          'PreopBili' ,
+                          'PreopCreat',
+                          "PreopHb" ,
+                          "PreopPLT" ,
+                          "PreopWBC",
+                          "PreopPT",
+                          "PreopAPTT",
+                          'CPB',
+                          'Na', 
+                          'K',
+                          'Urea',
+                          'Creatinine',
+                          'CRP',
+                          'Albumin',
+                          'Bilirubin',
+                          'Mg',
+                          'WBC',
+                          'Hb',
+                          'Platelets',
+                          'PT',
+                          'APTT',
+                          'INR',
+                          'Fibrinogen',
+                          'PostOpFluids',
+                          'HR',
+                          "ReliableART.S",
+                          "ReliableART.M",
+                          "ReliableART.D",
+                          "CVP",
+                          "SpO2",
+                          'NoradrenalineStandardised',
+                          'DopamineStandardised',
+                          'AdrenalineStandardised',
+                          'MilrinoneStandardised',
+                          'VasopressinStandardised',
+                          'DobutamineStandardised',
+                          'ArtPO2',
+                          'Lac',
+                          'FiO26num',
+                          'GCSnum')
+
+MasterData$CPB[MasterData$CPB == 'not recorded'] = NA
+MasterData$CPB[is.na(MasterData$CPB)] <- "00:00"
+MasterData$CPB <- as.numeric(difftime(strptime(x = MasterData$CPB ,  format = '%R') ,  sort(strptime(x = MasterData$CPB ,  format = '%R'))[1],units = c('mins') ))
+
+MasterData[ ,names(MasterData) %in% ListNumericVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListNumericVariables ] , 2 , as.numeric )
+
+# Make Factors
+
+ListofCategoricalVariables  <- c('AFlogical',
+                                 'Gender' ,
+                                 'ProcDetails' ,
+                                 "EjectionFractionCategory",
+                                 "NYHAGrade",
+                                 "AnginaGrade",
+                                 "IntubatedInSurgury",
+                                 "Filter",
+                                 "IABP2")
+
+MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] , 2 , as.factor )
+
+
+
+# Outliers
+
+MasterData <- POM_RemoveOutliers(MasterPreOpData = MasterData)
+
+# Calulated variables
+
+{ # Differences
+  MasterData$dMg <- MasterData$Mg - MasterData$PreopMg
+  MasterData$dAlb <- MasterData$Albumin - MasterData$PreOpAlb
+  MasterData$dUrea <- MasterData$Urea - MasterData$PreopUrea
+  MasterData$dNa <- MasterData$Na - MasterData$PreOpNa
+  MasterData$dBili <- MasterData$Bilirubin - MasterData$PreopBili
+  MasterData$dCreat <- MasterData$Creatinine - MasterData$PreopCreat
+  MasterData$dK <-   MasterData$K - MasterData$PreOpK
+  MasterData$dPT <-  MasterData$PT - MasterData$PreopPT
+  MasterData$dCRP <- MasterData$CRP - MasterData$PreOpCRP 
+  MasterData$dPLT <- MasterData$Platelets - MasterData$PreopPLT
+  MasterData$dHb <- MasterData$Hb - MasterData$PreopHb 
+  MasterData$dAPTT <- MasterData$APTT - MasterData$PreopAPTT
+  MasterData$dWBC <- MasterData$WBC - MasterData$PreopWBC
+  
+  MasterData$BMI = MasterData$Weight/(MasterData$Height/100)
+  MasterData$PaO2OverFiO2 <- MasterData$ArtPO2/MasterData$FiO26num
+  MasterData$PAR <- (MasterData$HR*MasterData$CVP)/MasterData$ReliableART.M
+  
+}
+# Post-op risk scores
+
+PostOpRiskScore <- POM_ExtraPostOpScores(PostOpScoresIndex2017 = PostOpScoresIndex2017)
+
+MasterData <- data.frame(MasterData , logCASUS = matrix(NA , dim(MasterData)[1]) ,SOFA = matrix(NA , dim(MasterData)[1]) ,RACE = matrix(NA , dim(MasterData)[1])  )
+MasterData <- MasterData[!is.na(MasterData$PseudoId),] 
+
+for(i in 1:dim(MasterData)[1]){
+  if(!is.na(MasterData$PseudoId[i])){
+    if(sum(MasterData$PseudoId[i] == rownames(PostOpRiskScore))>0){
+      MasterData$logCASUS[i] = PostOpRiskScore[which(MasterData$PseudoId[i] == rownames(PostOpRiskScore)) , 1]
+      MasterData$SOFA[i] = PostOpRiskScore[which(MasterData$PseudoId[i] == rownames(PostOpRiskScore)) , 3]
+      MasterData$RACE[i] = PostOpRiskScore[which(MasterData$PseudoId[i] == rownames(PostOpRiskScore)) , 2]
+    }
+  }
+}
+
+# Transformations
+
+MasterData$LogisticEUROScore <- log(MasterData$LogisticEUROScore)
+MasterData$SCTSLogisticEuroSCORE <- MasterData$SCTSLogisticEuroSCORE
+
+MasterData$CRP <- log(MasterData$CRP)
+MasterData$PreOpCRP <- log(MasterData$PreOpCRP)
+
+MasterData$RACE <- log(MasterData$RACE)
+MasterData$logCASUS <- log(MasterData$logCASUS)
+
+MasterData$PreopBili <- log(MasterData$PreopBili)
+MasterData$Bilirubin <- log(MasterData$Bilirubin)
+
+
+# mis data fixes for odd fields
+{MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == ''] <- NA
+MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Not measured"] <- NA
+
+MasterData$NYHAGrade[MasterData$NYHAGrade == ''] <- NA
+MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Known'] <- NA
+
+MasterData$AnginaGrade[MasterData$AnginaGrade == ''] <- NA
+MasterData$AnginaGrade[MasterData$AnginaGrade == 'Unknown'] <- NA
+
+MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == ' TRUE'] <- 'IntupatedInSurgery'
+MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == 'FALSE'] <- 'NotIntupatedInSurgery'
+MasterData$Filter[MasterData$Filter == ' TRUE'] <- 'CVVHDyalysis(Yes)'
+MasterData$Filter[MasterData$Filter == 'FALSE'] <- 'CVVHDyalysis(No)'
+
+MasterData$IABP2[MasterData$IABP2 == 'No'] <- 'IABP2(No)'
+MasterData$IABP2[MasterData$IABP2 == 'Yes'] <- 'IABP2(Yes)'
+}
+
+
+# difference transforms
+{
+  MasterData$dUrea <- abs(DP_NormaliseData(MasterData$dUrea) )
+  MasterData$dK <-abs(DP_NormaliseData(MasterData$dK))
+  MasterData$dCreat <- abs(DP_NormaliseData(MasterData$dCreat) )
+  MasterData$dNa <- abs(DP_NormaliseData(MasterData$dNa) )
+  MasterData$dCRP <- abs(DP_NormaliseData(abs(DP_NormaliseData(MasterData$dCRP) )))
+  MasterData$dWBC <- abs(DP_NormaliseData(MasterData$dWBC))
+  MasterData$dAlb <- abs(DP_NormaliseData(MasterData$dAlb) )
+}
+
+AFLogical <- MasterData$AFLogical

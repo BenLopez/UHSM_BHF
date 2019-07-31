@@ -102,27 +102,29 @@ FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x 
   y <- matrix(FM_CalculateCDFS( RRtimes = RRtimes , xx = x ) , dim(x)[1] , dim(x)[2])
   
   NonZeroLogical <- matrix(T , length(RRtimes) , 1)
-  #NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
   
-  #if(sum(NonZeroLogical) <= 2){
-  #  NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
-  #}
+  # NonZeroLogical <- c( ((y > 0.03)*(y < 0.97))==1 ) ==1
   
-  #if(sum(NonZeroLogical) <= 2){
-  #  NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
-  #}
+  # if(sum(NonZeroLogical) <= 2){
+  #   NonZeroLogical <- c( ((y > 0.01)*(y < 0.99))==1 ) ==1
+  # }
   
-  StdResidVector <- abs((F_x - y) / MD) 
-  Im2 <- rowMeans(StdResidVector)
-  Im <- apply(StdResidVector , 1 , max)
+  # if(sum(NonZeroLogical) <= 2){
+  #   NonZeroLogical <- c( ((y > 0.001)*(y < 0.999))==1 ) ==1
+  # }
   
-  #Im2 <- colMeans( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} )/ t(MD[ , NonZeroLogical] + 0.0045)  , na.rm = T)
-  #Im <- apply( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} ) / t(MD[ , NonZeroLogical] + 0.0045) , 2 , function(X){max(X , na.rm = T)} )
+  StdResidVector <- abs( ( F_x - y ) / MD) 
+  Im2 <- rowMeans( StdResidVector )
+  Im <- apply( StdResidVector , 1 , max )
+  
+  # Im2 <- colMeans( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} )/ t(MD[ , NonZeroLogical] + 0.0045)  , na.rm = T)
+  # Im <- apply( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} ) / t(MD[ , NonZeroLogical] + 0.0045) , 2 , function(X){max(X , na.rm = T)} )
   
   RPeakKDEEstmate <- kde( RRtimes )
   z <- predict(RPeakKDEEstmate , x = x[which.min(Im2) , ])
   
   LogicalVector <- (Im <= imthreshold)&(Im2 <  imthreshold2)
+  LogicalVector[is.na(LogicalVector)] <- F
   
   #if(sum(LogicalVector) > 1){
   
@@ -144,7 +146,7 @@ FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x 
   #Im3 <- mahalanobis(x = y[NonZeroLogical] , center = F_x[which.min(Im) , NonZeroLogical] , cov = covMattmp  ) 
   #}
   
-  if(sum(LogicalVector) > 1){
+  if(sum(LogicalVector , na.rm=T) > 1){
     return( setNames(list( PriorNonImplausibleSet[LogicalVector,] , cbind(Im[LogicalVector] , Im2[LogicalVector] ) , F_x[LogicalVector ,  ] , y[which.min(Im2) , ]  ) , c('NonImplausibleSets' , 'Implausability' , 'f_x' , 'y'  )  ) )
   }else{
     return( setNames(list( PriorNonImplausibleSet[which.min(Im),] , cbind(min(Im ) , Im2[which.min(Im)] ) , F_x[which.min(Im) ,  ] , y[which.min(Im2),]  ) , c('MinImplausiblePoint' , 'Implausability' , 'f_x' , 'y'  ) ) )
@@ -227,22 +229,45 @@ FM_EvaluateDenistyEstimate <- function(x , X){
 FM_CalculateCDFS  <- function(RRtimes , xx = seq(0.25 , 2 , 0.01)){
   # Look up table for large input length(xx)
   if(length(xx) > 10000){
-    Lookupinputs <- seq(min(xx) , max(xx) , (max(xx) - min(xx))/9999 )
+    minxx = min(xx)
+    maxxx = max(xx)
+    rangexx = maxxx - minxx
+    Lookupinputs <- seq(minxx , maxxx , (rangexx)/9999 )
     LookupValues <- FM_CalculateCDFS( RRtimes = RRtimes , xx = Lookupinputs  )
-    tmp <-  ( (max(xx) - min(xx))/9999 )
-    LookupPoints <- round( xx / tmp) + 1
+    tmp <-  ( (rangexx)/9999 )
+    LookupPoints <- round( (xx - minxx) / tmp) + 1
     output <- LookupValues[LookupPoints]
-    return(output)
+   return(output)
   }
   # Loop for small input length(xx)
   if(length(xx) <= 10000){
-    output <- matrix(0 , length(xx) , 1)
-    for(i in 1:length(xx)){
-      output[i] <- sum(RRtimes <= xx[i])/length(RRtimes)   
-    }
-    return(output)
+  output <- matrix(0 , length(xx) , 1)
+  for(i in 1:length(xx)){
+    output[i] <- sum(RRtimes <= xx[i])/length(RRtimes)   
+  }
+  return(output)
   }
 }
+#FM_CalculateCDFS  <- function(RRtimes , xx = seq(0.25 , 2 , 0.01)){
+  # Look up table for large input length(xx)
+  #if(length(xx) > 10000){
+  #  Lookupinputs <- seq(min(xx) , max(xx) , (max(xx) - min(xx))/9999 )
+  #  LookupValues <- FM_CalculateCDFS( RRtimes = RRtimes , xx = Lookupinputs  )
+  #  tmp <-  ( (max(xx) - min(xx))/9999 )
+  #  LookupPoints <- round( xx / tmp) + 1
+  #  output <- LookupValues[LookupPoints]
+  # return(output)
+  #}
+  # Loop for small input length(xx)
+  #if(length(xx) <= 10000){
+ # output <- matrix(0 , length(xx) , 1)
+#  for(i in 1:length(xx)){
+ #   output[i] <- sum(RRtimes <= xx[i])/length(RRtimes)   
+#  }
+#  return(output)
+  #}
+#}
+
 FM_SampleGMM <- function( X , N = 250 ){
   
   # sample multinomial distribution for mixtures model

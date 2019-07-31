@@ -13,16 +13,14 @@
   set.seed(1)
 }
 
-
 numberofCSVs <- select.list( as.character(c(1:10)) , graphics = TRUE  , preselect = '2' )
-FluidsIndex2017 <- read.csv( choose.files( multi = FALSE ) , stringsAsFactors = FALSE )
+VentEpisodesIndex2017 <- read.csv( choose.files( multi = FALSE ) , stringsAsFactors = FALSE )
 
 if(as.numeric(numberofCSVs) > 1){
   for(i in 2:as.numeric(numberofCSVs) )
   {
-    FluidsIndex2017 <- rbind(FluidsIndex2017, read.csv(choose.files(multi = FALSE), stringsAsFactors = FALSE))
+    VentEpisodesIndex2017 <- rbind(VentEpisodesIndex2017, read.csv(choose.files(multi = FALSE), stringsAsFactors = FALSE))
   }
 }
 
-FluidsIndex2017 <- DP_RestructureFluids( FluidsIndex2017 )
-save(FluidsIndex2017 , file = "C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_06082018\\FluidsMaster.RData")
+save(VentEpisodesIndex2017 , file = "C:\\Users\\Ben\\Desktop\\UHSM_Cardiac_06082018\\VentMaster.RData")
