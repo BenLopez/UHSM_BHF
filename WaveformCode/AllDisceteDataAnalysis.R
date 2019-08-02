@@ -21,7 +21,6 @@
 #
 
 source('ADDAProcessData.R')
-library(xtable)
 #### Begin Data Analysis #####
 
 # Pre_op Catagorical Data Structure
@@ -31,7 +30,22 @@ library(xtable)
                                         "EjectionFractionCategory",
                                         "NYHAGrade" ,
                                         "AnginaGrade",
-                                        'Urgency')
+                                        'Urgency',
+                                        "Active.Endocarditis",
+                                        "HTN",
+                                        "HistoryOfNeurologicalDysfunction",
+                                        "HistoryOfPulmonaryDisease",
+                                        "Diabetes",
+                                        "Thoracic.Aorta",
+                                        "PreviousCardiacSurgery",
+                                        "Recent.MI",
+                                        "PreOpSupport",
+                                        "VentilatedPreOperation",
+                                        "CardiogenicShock_pre_Operation",
+                                        "IntravenousInotropesPriorToAnaesthesia",
+                                        "IntravenousNitratesOrAnyHeparin",
+                                        "ExtracardiacArteriopathy",
+                                        "Planned.Valve.Surgery")
 
 NameofVariable <- NamesofPeropCategoricalVariables[1]
 PreOpCategoricalUnivariateResults <- POM_CategoricalUnivariateAnalysis(CategoricalData = MasterData[ , which(names(MasterData) == NameofVariable)] ,
@@ -185,8 +199,16 @@ PostOpContinuousUnivariateResultsLatex <- xtable(PostOpContinuousUnivariateResul
 
 # LES
 
-# SOFA
+NamesofLogisticEuroScoreVariables <- c( 'Age',
+                                        'Gender',
+                                        'PreopCreat',
+                                        'ProcDetails' ,
+                                        "EjectionFractionCategory",
+                                        "AnginaGrade",
+                                        'Urgency'
+)
 
+# SOFA
 
 NamesofSofaScoreVariables <- c( 'FiO26num',
                                 'ArtPO2',
@@ -210,7 +232,7 @@ IndiciesofSofaScoreVariables <- which(names(MasterData) %in% NamesofSofaScoreVar
 formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesofSofaScoreVariables , MasterData)
 
 DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  ,  ]))
-
+model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
 stepaicoutput <- stepAIC(model)
 model <- (glm(formula = stepaicoutput$formula,family=binomial(link='logit') , data=DataForLogistic))
 summary( model )
@@ -224,11 +246,47 @@ AUCSOFA3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterDat
 
 # Log Casus
 
+NamesofLogCasusScoreVariables <- c( 'FiO26num',
+                                'ArtPO2',
+                                'VentilatedInOpLogical',
+                                'Platelets',
+                                'Creatinine',
+                                'Bilirubin',
+                                'Filter',
+                                'PAR',
+                                'Lac',
+                                'Filter',
+                                'IABP2',
+                                'PaO2OverFiO2'
+)
+
+IndiciesofLogCASUSScoreVariables <- which(names(MasterData) %in% NamesofLogCasusScoreVariables)
+
+formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesofLogCASUSScoreVariables , MasterData)
+
+DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  ,  ]))
+model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
+stepaicoutput <- stepAIC(model)
+model <- (glm(formula = stepaicoutput$formula,family=binomial(link='logit') , data=DataForLogistic))
+summary( model )
+AUClogCASUS1 <- FC_CalculateCrossValidatedROC(formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesofLogCASUSScoreVariables , MasterData)
+
+StepOutput <- FC_StepWiseForwardAUC(IndiciesofLogCASUSScoreVariables , MasterData)
+AUClogCASUS2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutput[[2]] , PreoperativeIndices = IndiciesofLogCASUSScoreVariables , MasterData)
+
+formulaformodel <- FB_CreateFormula('AFLogical' , which(names(MasterData) == 'logCASUS') , MasterData)
+AUClogCASUS3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterData) == 'logCASUS'), MasterData)
+
 
 #### Pre_op Predictive Model #####
 
 
-#### Post_op Predictive Model #####
+NamesofPeropVariables <- c(NamesofPeropCategoricalVariables ,NamesofPreopContinuousVariables )
+IndiciesofPeropVariables <- which(names(MasterData) %in% NamesofPeropVariables)
 
+PreOpStepOutput <- FC_StepWiseForwardAUC(PreoperativeIndices = IndiciesofPeropVariables , MasterData)
+
+
+#### Post_op Predictive Model #####
 
 

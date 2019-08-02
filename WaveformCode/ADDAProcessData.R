@@ -128,7 +128,22 @@ ListofCategoricalVariables  <- c('AFlogical',
                                  "AnginaGrade",
                                  "IntubatedInSurgury",
                                  "Filter",
-                                 "IABP2")
+                                 "IABP2",
+                                 "Active.Endocarditis",
+                                 "HTN",
+                                 "HistoryOfNeurologicalDysfunction",
+                                 "HistoryOfPulmonaryDisease",
+                                 "Diabetes",
+                                 "Thoracic.Aorta",
+                                 "PreviousCardiacSurgery",
+                                 "Recent.MI",
+                                 "PreOpSupport",
+                                 "VentilatedPreOperation",
+                                 "CardiogenicShock_pre_Operation",
+                                 "IntravenousInotropesPriorToAnaesthesia",
+                                 "IntravenousNitratesOrAnyHeparin",
+                                 "ExtracardiacArteriopathy",
+                                 "Planned.Valve.Surgery")
 
 MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] , 2 , as.factor )
 
@@ -192,23 +207,107 @@ MasterData$PreopBili <- log(MasterData$PreopBili)
 MasterData$Bilirubin <- log(MasterData$Bilirubin)
 
 
-# mis data fixes for odd fields
+# Categorical data fixes for odd fields
 {MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == ''] <- NA
 MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Not measured"] <- NA
+MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Good (LVEF > 50%)"] <- "LVEF > 50%"
+MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Fair (LVEF 30-50%)"] <- "LVEF  30-50%"
+MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Poor (LVEF < 30%)"] <- "LVEF < 30%"
+
 
 MasterData$NYHAGrade[MasterData$NYHAGrade == ''] <- NA
 MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Known'] <- NA
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Slight Limitation (II)"] <- 'NYHA(II)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Limiting (I)'] <- 'NYHA(I)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Marked Limitation (III)"] <- 'NYHA(III)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Any Activity or At Rest (IV)"] <- 'NYHA(IV)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "None"] <- 'NYHA(None)'
 
 MasterData$AnginaGrade[MasterData$AnginaGrade == ''] <- NA
 MasterData$AnginaGrade[MasterData$AnginaGrade == 'Unknown'] <- NA
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Strenuous Exertion (I)"   ] <- 'AnginaGrade(I)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Slight Limitation (II)"     ] <- 'AnginaGrade(II)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Marked Limitation (III)"     ] <- 'AnginaGrade(III)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Any Activity or At Rest (IV)"     ] <- 'AnginaGrade(IV)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "No"     ] <- 'AnginaGrade(None)'
+
 
 MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == ' TRUE'] <- 'IntupatedInSurgery'
 MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == 'FALSE'] <- 'NotIntupatedInSurgery'
+
 MasterData$Filter[MasterData$Filter == ' TRUE'] <- 'CVVHDyalysis(Yes)'
 MasterData$Filter[MasterData$Filter == 'FALSE'] <- 'CVVHDyalysis(No)'
 
 MasterData$IABP2[MasterData$IABP2 == 'No'] <- 'IABP2(No)'
 MasterData$IABP2[MasterData$IABP2 == 'Yes'] <- 'IABP2(Yes)'
+
+
+MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == ''] <- NA
+MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'No'] <- 'Active.Endocarditis(No)'
+MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'Yes'] <- 'Active.Endocarditis(Yes)'
+
+MasterData$HTN[MasterData$HTN == ''] <- NA
+MasterData$HTN[MasterData$HTN== 'No'] <- 'HTN(No)'
+MasterData$HTN[MasterData$HTN == 'Yes'] <- 'HTN(Yes)'
+
+
+MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysfunction == ''] <- NA
+MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysfunction== 'No'] <- 'HistoryOfNeurologicalDysfunction(No)'
+MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysfunction == 'Yes'] <- 'HistoryOfNeurologicalDysfunction(Yes)'
+
+MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease == ''] <- NA
+MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease== 'No'] <- 'HistoryOfPulmonaryDisease(No)'
+MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease == 'Yes'] <- 'HistoryOfPulmonaryDisease(Yes)'
+
+MasterData$Diabetes[MasterData$Diabetes == ''] <- NA
+MasterData$Diabetes[MasterData$Diabetes == 'Unknown'] <- NA
+MasterData$Diabetes[MasterData$Diabetes== 'No'] <- 'Diabetes(No)'
+MasterData$Diabetes[MasterData$Diabetes == 'Yes'] <- 'Diabetes(Yes)'
+
+MasterData$Thoracic.Aorta[MasterData$Thoracic.Aorta == ''] <- NA
+MasterData$Thoracic.Aorta[MasterData$Thoracic.Aorta== 'No'] <- 'Thoracic.Aorta(No)'
+MasterData$Thoracic.Aorta[MasterData$Thoracic.Aorta == 'Yes'] <- 'Thoracic.Aorta(Yes)'
+
+MasterData$PreviousCardiacSurgery[MasterData$PreviousCardiacSurgery != ''] <- 'PreviousCardiacSurgery(Yes)'
+MasterData$PreviousCardiacSurgery[MasterData$PreviousCardiacSurgery == ''] <- 'PreviousCardiacSurgery(No)'
+
+MasterData$Recent.MI[MasterData$Recent.MI == ''] <- NA
+MasterData$Recent.MI[MasterData$Recent.MI== 'No'] <- 'Recent.MI(No)'
+MasterData$Recent.MI[MasterData$Recent.MI == 'Yes'] <- 'Recent.MI(Yes)'
+
+MasterData$PreOpSupport[MasterData$PreOpSupport == ''] <- NA
+MasterData$HTN[MasterData$HTN== 'No'] <- 'HTN(No)'
+MasterData$HTN[MasterData$HTN == 'Yes'] <- 'HTN(Yes)'
+
+
+MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation == ''] <- NA
+MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation== 'No'] <- 'VentilatedPreOperation(No)'
+MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation == 'Yes'] <- 'VentilatedPreOperation(Yes)'
+
+
+MasterData$CardiogenicShock_pre_Operation[MasterData$CardiogenicShock_pre_Operation == ''] <- NA
+MasterData$CardiogenicShock_pre_Operation[MasterData$CardiogenicShock_pre_Operation== 'No'] <- 'CardiogenicShock_pre_Operation(No)'
+MasterData$CardiogenicShock_pre_Operation[MasterData$CardiogenicShock_pre_Operation == 'Yes'] <- 'CardiogenicShock_pre_Operation(Yes)'
+
+
+MasterData$IntravenousInotropesPriorToAnaesthesia[MasterData$IntravenousInotropesPriorToAnaesthesia == ''] <- NA
+MasterData$IntravenousInotropesPriorToAnaesthesia[MasterData$IntravenousInotropesPriorToAnaesthesia== 'No'] <- 'IntravenousInotropesPriorToAnaesthesia(No)'
+MasterData$IntravenousInotropesPriorToAnaesthesia[MasterData$IntravenousInotropesPriorToAnaesthesia == 'Yes'] <- 'IntravenousInotropesPriorToAnaesthesia(Yes)'
+
+
+MasterData$IntravenousNitratesOrAnyHeparin[MasterData$IntravenousNitratesOrAnyHeparin == ''] <- NA
+MasterData$IntravenousNitratesOrAnyHeparin[MasterData$IntravenousNitratesOrAnyHeparin== 'No'] <- 'IntravenousNitratesOrAnyHeparin(No)'
+MasterData$IntravenousNitratesOrAnyHeparin[MasterData$IntravenousNitratesOrAnyHeparin == 'Yes'] <- 'IntravenousNitratesOrAnyHeparin(Yes)'
+
+
+MasterData$ExtracardiacArteriopathy[MasterData$ExtracardiacArteriopathy == ''] <- NA
+MasterData$ExtracardiacArteriopathy[MasterData$ExtracardiacArteriopathy== 'No'] <- 'ExtracardiacArteriopathy(No)'
+MasterData$ExtracardiacArteriopathy[MasterData$ExtracardiacArteriopathy == 'Yes'] <- 'ExtracardiacArteriopathy(Yes)'
+
+
+MasterData$Planned.Valve.Surgery[(MasterData$Planned.Valve.Surgery == '') & (MasterData$ProcDetails != 'Valve') ] <- 'None'
+MasterData$Planned.Valve.Surgery[MasterData$Planned.Valve.Surgery == ''] <- NA
+
 }
 
 

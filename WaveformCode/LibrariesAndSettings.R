@@ -45,7 +45,8 @@ packages<-c("ggplot2",
             'lattice',
             'pROC',
             'mice',
-            'shiny')
+            'shiny',
+            'xtable')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -83,6 +84,7 @@ library(lattice)
 library(pROC)
 library(mice)
 library(shiny)
+library(xtable)
 # Load Data
 options(digits = 15)
 options(digits.secs=3)

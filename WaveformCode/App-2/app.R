@@ -7,14 +7,15 @@
   DP_ChooseDataReps()
   FilestoProcess <- DP_ChooseECGstoProcess() 
   HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter() 
-  #listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)
+  if(sum(listAllPatients == 'z1007') > 0){
+  listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)}
   set.seed( 1 )
 }
 
 {
   # User Interface
   ui <-fluidPage(title = 'ECG Examination',
-                 tags$h1('ECG Examination Script'),
+                 tags$h1('UHSM ECG Examination Application'),
                  selectInput(inputId = 'PatinetId' ,
                              label = 'Select patient to view' , 
                              choices = listAllPatients , selected = listAllPatients[[1]]  ),
@@ -47,9 +48,6 @@
       #timetoview <- reactive( min(RPeaksStruct()$RRCombined$t) + (input$SelectTime/100)*rangeoftimes() )
     }
     
-    {
-      output$title <- renderText(paste0(input$PatinetId  , '   ' , timetoview() )) 
-    }
     output$Slider <- renderUI({
       sliderInput(inputId = "SelectTime" , 
                   label = 'Select a Time' , 
@@ -62,6 +60,9 @@
     # Time to view
     {
       timetoview <- reactive( input$SelectTime )
+    }
+    {
+      output$title <- renderText(input$PatinetId) 
     }
     # RR Times plot
     output$RRTimesPlot <- renderPlot({

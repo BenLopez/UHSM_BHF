@@ -2,6 +2,7 @@
   c <- 5000
   l <- 0.005
   n <- 501
+  numberofsamples <- 100000
   
   {
     #numberofsamples <- 100000
@@ -22,7 +23,6 @@
     #PriorNonImplausibleSetRegular[, 10]<- runif(numberofsamples , 0 , 1)
   
     
-    numberofsamples <- 100000
     PriorNonImplausibleSetRegular <- matrix(0 , numberofsamples , 10)
     
     PriorNonImplausibleSetRegular[, 5] <- runif(numberofsamples , 0.4 , 1)
@@ -122,6 +122,13 @@
     f_x_ReIre <- f_x_ReIre[Valid , ]
     F_x_ReIre <- F_x_ReIre[Valid , ]
     
+    if(UseAnnotatedData == 1){
+      load(paste0(precomputedfolderpath , '\\AFNonImplausibleSets.RData'))
+      PriorNonImplausibleSetRegularyIreRegular <- rbind(PriorNonImplausibleSetRegularyIreRegular,AFNonImplausibleSets)
+    }
+    f_x_ReIre <- t(apply(PriorNonImplausibleSetRegularyIreRegular , 1 , function(X){FM_EvaluateDenistyEstimate(x , X) }))
+    F_x_ReIre <- t(apply(PriorNonImplausibleSetRegularyIreRegular , 1 , function(X){FM_EvalulateCDFEstimate(x , X) }))
+  
     xIrIreg <- t(apply(F_x_ReIre , 1 , function(X){FM_ExtractActiveOutputs(X , x)} ))
     f_x_ReIre <- t(apply(cbind(PriorNonImplausibleSetRegularyIreRegular , xIrIreg) , 1 , function(X){FM_EvaluateDenistyEstimate(  X[11:211] , X[1:10]) }))
     F_x_ReIre <- t(apply(cbind(PriorNonImplausibleSetRegularyIreRegular , xIrIreg) , 1 , function(X){FM_EvalulateCDFEstimate(X[11:211] , X[1:10] ) }))
@@ -132,42 +139,43 @@
     }
   }
   
-  BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000,] , PriorNonImplausibleSetRegular[1:1000,]  , alpha = 0.1)  
+  BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[sample(1:dim(PriorNonImplausibleSetRegularyIreRegular)[1] , 1000 ),] , PriorNonImplausibleSetRegular[sample(1:dim(PriorNonImplausibleSetRegular)[1] , 1000 ),]  , alpha = 0.1)  
   }
   
   # Calculate approximate correlation matrix.
-  { SampleMatrix  <-  FM_SampleRealisationsSet( PriorNonImplausibleSet = PriorNonImplausibleSetRegularyIreRegular , N = n , x = xIrIreg  )
-    ME_matrix     <-  SampleMatrix - F_x_ReIre
-    Cov_sdhat1    <-  cov( ME_matrix )
-    Corr_sdhat1   <-  cov2cor( DP_AddNugget(Cov_sdhat1 , 0.00000045) )
+  { #SampleMatrix  <-  FM_SampleRealisationsSet( PriorNonImplausibleSet = PriorNonImplausibleSetRegularyIreRegular , N = n , x = xIrIreg  )
+    #ME_matrix     <-  SampleMatrix - F_x_ReIre
+    #Cov_sdhat1    <-  cov( ME_matrix )
+    #Corr_sdhat1   <-  cov2cor( DP_AddNugget(Cov_sdhat1 , 0.00000045) )
+    Corr_sdhat1   <- 1
     
-    
-    SampleMatrix <- FM_SampleRealisationsSet( PriorNonImplausibleSet =  PriorNonImplausibleSetRegular[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] , N = n , x =  xreg   )
-    ME_matrix <- SampleMatrix - F_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],]
-    Cov_sdhat2 <- cov( ME_matrix )
-    Corr_sdhat2 <- cov2cor( DP_AddNugget(Cov_sdhat2 , 0.00000045) )
+    #SampleMatrix <- FM_SampleRealisationsSet( PriorNonImplausibleSet =  PriorNonImplausibleSetRegular[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] , N = n , x =  xreg   )
+    #ME_matrix <- SampleMatrix - F_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],]
+    #Cov_sdhat2 <- cov( ME_matrix )
+    #Corr_sdhat2 <- cov2cor( DP_AddNugget(Cov_sdhat2 , 0.00000045) )
+    Corr_sdhat2 <- 1
   }
   
   { 
-    ImplausabilityMatrix <-  FM_CalulateImForGroundTruth(x = xIrIreg  , 
-                                                         F_x = F_x_ReIre , 
-                                                         f_x = f_x_ReIre ,  
-                                                         PriorNonImplausibleSet= PriorNonImplausibleSetRegularyIreRegular , 
-                                                         MD = MD_ReIre , 
-                                                         Corr_sdhat = Corr_sdhat1 , 
-                                                         N = n  )
-    ImplausabilityMatrix1 <- FM_CalulateImForGroundTruth(x = xreg  ,
-                                                         F_x = F_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] ,
-                                                         f_x = f_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] ,
-                                                         PriorNonImplausibleSet= PriorNonImplausibleSetRegular[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] ,
-                                                         MD = MD_Reg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],],
-                                                         Corr_sdhat =  Corr_sdhat2 ,
-                                                         N = n  )
+    #ImplausabilityMatrix <-  FM_CalulateImForGroundTruth(x = xIrIreg  , 
+    #                                                     F_x = F_x_ReIre , 
+    #                                                     f_x = f_x_ReIre ,  
+    #                                                     PriorNonImplausibleSet= PriorNonImplausibleSetRegularyIreRegular , 
+    #                                                     MD = MD_ReIre , 
+    #                                                     Corr_sdhat = Corr_sdhat1 , 
+    #                                                     N = n  )
+    #ImplausabilityMatrix1 <- FM_CalulateImForGroundTruth(x = xreg  ,
+    #                                                     F_x = F_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] ,
+    #                                                     f_x = f_xreg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] ,
+    #                                                     PriorNonImplausibleSet= PriorNonImplausibleSetRegular[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],] ,
+    #                                                     MD = MD_Reg[1:dim(PriorNonImplausibleSetRegularyIreRegular)[1],],
+    #                                                     Corr_sdhat =  Corr_sdhat2 ,
+    #                                                     N = n  )
     
-    { 
-      ImThreshold1 <- apply( ImplausabilityMatrix  , 2 , function(X){ quantile(X , 0.99) } )  # 1.05 for 5% model discrepancy
-      ImThreshold2 <- apply( ImplausabilityMatrix1  , 2 , function( X ){ quantile(X , 0.99) } ) 
-    }
+    #{ 
+    #  ImThreshold1 <- apply( ImplausabilityMatrix  , 2 , function(X){ quantile(X , 0.99) } )  # 1.05 for 5% model discrepancy
+    #  ImThreshold2 <- apply( ImplausabilityMatrix1  , 2 , function( X ){ quantile(X , 0.99) } ) 
+    #}
     
   }
   
@@ -197,9 +205,8 @@
 }
 
 
-
 x11()
 p1 <- ggplot(data = data.frame(x=xreg[3,] ,  y = f_xreg[3,]), aes(x , y) ) + geom_line(col = 'blue')+
-      geom_line(data =data.frame(x=xIrIreg[6,] ,  y = FM_EvaluateDenistyEstimate(x , c(PriorNonImplausibleSetRegularyIreRegular[6 , 1:9] , 1 ) )) , aes(x , y), col = 'red') + xlab(TeX('r') ) + ylab(TeX('Density') ) + 
+      geom_line(data =data.frame(x=xIrIreg[6,] ,  y = FM_EvaluateDenistyEstimate(xIrIreg[6,]  , c(PriorNonImplausibleSetRegularyIreRegular[6 , 1:9] , 1 ) )) , aes(x , y), col = 'red') + xlab(TeX('r') ) + ylab(TeX('Density') ) + 
       ggtitle('Regular and Irregularly-irregular Heart-rhythm Distributions')
 print(p1)

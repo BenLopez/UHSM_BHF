@@ -31,7 +31,7 @@ FC_StepWiseForwardAUC <- function(PreoperativeIndices , MasterData){
 InitialAUC <- matrix(0 , length(PreoperativeIndices)[1] , length(PreoperativeIndices)[1])
 for(ii in 1:dim(InitialAUC)[1]){
 formulaformodel <- FB_CreateFormula('AFLogical' , PreoperativeIndices[ii] , MasterData)
-InitialAUC[ii,1] <- FC_CalculateCrossValidatedROC(formulaformodel ,PreoperativeIndices, MasterData)
+InitialAUC[ii,1] <- FC_CalculateCrossValidatedROC(formulaformodel = formulaformodel ,PreoperativeIndices = PreoperativeIndices, MasterData = MasterData)
 print(names(MasterData)[PreoperativeIndices[ii]])
 print(InitialAUC[ii,1])
 }

@@ -315,7 +315,7 @@ for(ii in 1:dim(MasterPreOpData)[2]){
 }
 POM_SampledImputation <- function(MasterPreOpData){
   for(ii in 1:dim(MasterPreOpData)[2]){
-      if( (sum(is.na(MasterPreOpData[, ii]))> 0) && (sum(is.na(MasterPreOpData[, ii]))< dim(MasterPreOpData)[2]) ){
+      if( (sum(is.na(MasterPreOpData[, ii]))> 0) && (sum(is.na(MasterPreOpData[, ii]))< dim(MasterPreOpData)[1]) ){
       MasterPreOpData[is.na(MasterPreOpData[, ii]), ii] <- sample(x = MasterPreOpData[!is.na(MasterPreOpData[, ii]), ii] , size = sum(is.na(MasterPreOpData[, ii])) , replace = T )
       }
   }

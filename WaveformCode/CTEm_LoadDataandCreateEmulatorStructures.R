@@ -1,7 +1,6 @@
 
 numberofsimulations = 1100
 numberofrepeats = 50000
-precomputedfolderpath <- DP_SelectPrecomputedFolder()
 
 if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath,'EmulatingCriticalThresholdData.RData') ){
   load(paste0(precomputedfolderpath , '\\EmulatingCriticalThresholdData.RData'))

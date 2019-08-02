@@ -399,12 +399,9 @@ FM_SampleGMMBigeminy <- function(X , N = 250 ){
 FM_GetNonImplausibleSetsFromlabelledDataset <- function(){
   
   path <- list()
-  numberrep <- 1
-  for(i in 1:numberrep)
-  {
-    path  <- choose.dir( caption  = paste0( "Select folder " ,i,  " containing data repository" ))
-    listAllPatients <- as.matrix(list.dirs(path = path[[i]], full.names = FALSE, recursive = FALSE))
-  }
+  path <- choose.dir( caption  = paste0( "Select folder containing NSR data repository" ))
+  listAllPatients <- as.matrix(list.dirs(path = path[[1]], full.names = FALSE, recursive = FALSE))
+  
   
   SetOfNonImplausibleSets <- matrix(0 , 0 , 10)
   
