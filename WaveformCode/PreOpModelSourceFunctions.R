@@ -428,10 +428,13 @@ POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , Mast
                family=binomial(link='logit'),
                data = MasterData)
   
+  
   output[ , 8] <- exp(coef(model)[1:length(levels(CategoricalData))])
   output[ , 9:10] <- exp(confint(model) )[1:length(levels(CategoricalData)),]
   output[ , 11] <- summary(model)$coefficients[1:length(levels(CategoricalData)),4]  
   output[ , 2:11] <- signif(output[,2:11] , 4)
+  
+  output[1 , 8:11] <- NA
   return(output)
 }
 POM_ContinuousCreateFieldNames <- function(){
@@ -460,5 +463,26 @@ POM_ContinuousUnivariateAnalysis <- function(ContinuousData , AFLogical , Master
   output[ , 11] <- summary(model)$coefficients[2,4]  
   output[ , 2:11] <- signif(output[,2:11] , 4)
   
+  return(output)
+}
+POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 'LogisticEUROScore'){
+  set.seed(1)
+  IndiciesVariables <- which(names(MasterData) %in% NamesofVariables)
+  formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesVariables , MasterData)
+  
+  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  ,  ]))
+  model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
+  stepaicoutput <- stepAIC(model)
+  
+  AUC1 <- FC_CalculateCrossValidatedROC( formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesVariables , MasterData )
+  StepOutputAUC <- FC_StepWiseForwardAUC( IndiciesVariables , MasterData )
+  
+  AUC2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutputAUC[[2]] , PreoperativeIndices = IndiciesVariables , MasterData)
+  
+  formulaformodel <- FB_CreateFormula('AFLogical' , which(names(MasterData) == ControlModel) , MasterData)
+  AUC3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterData) ==ControlModel), MasterData)
+  
+  output <- list(AUC1 , AUC2 , AUC3 , stepaicoutput$formula ,  StepOutputAUC[[2]] )
+  output <- setNames(output , c('AUCAIC' , 'AUCStepAUC' , 'AUCLogisticEuro' , 'ModelAIC' , 'ModelAUC'))
   return(output)
 }

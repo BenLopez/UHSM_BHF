@@ -247,6 +247,7 @@ MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'No'] <- 'Activ
 MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'Yes'] <- 'Active.Endocarditis(Yes)'
 
 MasterData$HTN[MasterData$HTN == ''] <- NA
+MasterData$HTN[MasterData$HTN == 'Unknown'] <- NA
 MasterData$HTN[MasterData$HTN== 'No'] <- 'HTN(No)'
 MasterData$HTN[MasterData$HTN == 'Yes'] <- 'HTN(Yes)'
 
@@ -257,6 +258,7 @@ MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysf
 
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease == ''] <- NA
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease== 'No'] <- 'HistoryOfPulmonaryDisease(No)'
+MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease== 'No '] <- 'HistoryOfPulmonaryDisease(No)'
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease == 'Yes'] <- 'HistoryOfPulmonaryDisease(Yes)'
 
 MasterData$Diabetes[MasterData$Diabetes == ''] <- NA
@@ -276,8 +278,8 @@ MasterData$Recent.MI[MasterData$Recent.MI== 'No'] <- 'Recent.MI(No)'
 MasterData$Recent.MI[MasterData$Recent.MI == 'Yes'] <- 'Recent.MI(Yes)'
 
 MasterData$PreOpSupport[MasterData$PreOpSupport == ''] <- NA
-MasterData$HTN[MasterData$HTN== 'No'] <- 'HTN(No)'
-MasterData$HTN[MasterData$HTN == 'Yes'] <- 'HTN(Yes)'
+MasterData$PreOpSupport[which(MasterData$PreOpSupport != 'No ')] <- 'PreOpSupport(Yes)'
+MasterData$PreOpSupport[MasterData$PreOpSupport== 'No '] <- 'PreOpSupport(No)'
 
 
 MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation == ''] <- NA
@@ -307,7 +309,6 @@ MasterData$ExtracardiacArteriopathy[MasterData$ExtracardiacArteriopathy == 'Yes'
 
 MasterData$Planned.Valve.Surgery[(MasterData$Planned.Valve.Surgery == '') & (MasterData$ProcDetails != 'Valve') ] <- 'None'
 MasterData$Planned.Valve.Surgery[MasterData$Planned.Valve.Surgery == ''] <- NA
-
 }
 
 

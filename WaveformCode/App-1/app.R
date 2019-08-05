@@ -109,7 +109,7 @@
                                                    wellPanel(tags$h1('Bigeminy')) ,
                                                    fluidRow(
                                                      column(4 , wellPanel(sliderInput(inputId = "mu1" , 
-                                                                                      label = '$$ \\mu_{(2)} $$' , 
+                                                                                      label = '$$ \\mu_{(1)} $$' , 
                                                                                       min = 0 ,
                                                                                       step = 0.001,
                                                                                       max = 2 ,
