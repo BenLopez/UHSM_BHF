@@ -465,7 +465,7 @@ POM_ContinuousUnivariateAnalysis <- function(ContinuousData , AFLogical , Master
   
   return(output)
 }
-POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 'LogisticEUROScore'){
+POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 0){
   set.seed(1)
   IndiciesVariables <- which(names(MasterData) %in% NamesofVariables)
   formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesVariables , MasterData)
@@ -475,12 +475,18 @@ POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = '
   stepaicoutput <- stepAIC(model)
   
   AUC1 <- FC_CalculateCrossValidatedROC( formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesVariables , MasterData )
+  
   StepOutputAUC <- FC_StepWiseForwardAUC( IndiciesVariables , MasterData )
-  
   AUC2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutputAUC[[2]] , PreoperativeIndices = IndiciesVariables , MasterData)
+  #StepOutputAUC <- list(NA,NA)
+  #AUC2 <- NA
   
+  if(ControlModel!= 0){
   formulaformodel <- FB_CreateFormula('AFLogical' , which(names(MasterData) == ControlModel) , MasterData)
   AUC3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterData) ==ControlModel), MasterData)
+  }else{
+    AUC3 <- NA
+  }
   
   output <- list(AUC1 , AUC2 , AUC3 , stepaicoutput$formula ,  StepOutputAUC[[2]] )
   output <- setNames(output , c('AUCAIC' , 'AUCStepAUC' , 'AUCLogisticEuro' , 'ModelAIC' , 'ModelAUC'))

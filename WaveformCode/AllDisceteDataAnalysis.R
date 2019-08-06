@@ -207,7 +207,7 @@ source('ADDAProcessData.R')
 
 
 #### Comparison of risk models with models built using underlying parameters ####
-
+{
 # LES
 
 {NamesofLogisticEuroScoreVariables <- c( 'Age',
@@ -233,26 +233,8 @@ source('ADDAProcessData.R')
                                          "Planned.Valve.Surgery"
 )
 
-EuroComparisonOutputs <- POM_GroupComparison(NamesofVariables = NamesofLogisticEuroScoreVariables ,MasterData = MasterData , ConreolModel = 'LogisticEuro')
-
-
-IndiciesofLogisticScoreVariables <- which(names(MasterData) %in% NamesofLogisticEuroScoreVariables)
-
-formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesofLogisticScoreVariables , MasterData)
-
-DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  ,  ]))
-model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
-stepaicoutput <- stepAIC(model)
-model <- (glm(formula = stepaicoutput$formula,family=binomial(link='logit') , data=DataForLogistic))
-summary( model )
-AUCLogistic1 <- FC_CalculateCrossValidatedROC(formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesofLogisticScoreVariables , MasterData)
-
-StepOutputEURO <- FC_StepWiseForwardAUC(IndiciesofLogisticScoreVariables , MasterData)
-AUCLogistic2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutputEURO[[2]] , PreoperativeIndices = IndiciesofLogisticScoreVariables , MasterData)
-
-formulaformodel <- FB_CreateFormula('AFLogical' , which(names(MasterData) == 'LogisticEUROScore') , MasterData)
-AUCLogistic3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterData) == 'LogisticEUROScore'), MasterData)}
-
+EuroComparisonOutputs <- POM_GroupComparison(NamesofVariables = NamesofLogisticEuroScoreVariables ,MasterData = MasterData , ControlModel  = 'LogisticEUROScore')
+}
 
 # SOFA
 
@@ -272,23 +254,9 @@ AUCLogistic3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(Maste
                                  'ReliableART.M',
                                  'PaO2OverFiO2'
 )
-  
-  IndiciesofSofaScoreVariables <- which(names(MasterData) %in% NamesofSofaScoreVariables)
-  
-  formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesofSofaScoreVariables , MasterData)
-  
-  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  ,  ]))
-  model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
-  stepaicoutput <- stepAIC(model)
-  model <- (glm(formula = stepaicoutput$formula,family=binomial(link='logit') , data=DataForLogistic))
-  summary( model )
-  AUCSOFA1 <- FC_CalculateCrossValidatedROC(formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesofSofaScoreVariables , MasterData)
-  
-  StepOutputSOFA <- FC_StepWiseForwardAUC(IndiciesofSofaScoreVariables , MasterData)
-  AUCSOFA2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutputSOFA[[2]] , PreoperativeIndices = IndiciesofSofaScoreVariables , MasterData)}
-
-formulaformodel <- FB_CreateFormula('AFLogical' , which(names(MasterData) == 'SOFA') , MasterData)
-AUCSOFA3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterData) == 'SOFA'), MasterData)
+ 
+SOFAComparisonOutputs <- POM_GroupComparison(NamesofVariables = NamesofSofaScoreVariables ,MasterData = MasterData , ControlModel  = 'SOFA')
+}
 
 # Log Casus
 
@@ -307,33 +275,21 @@ AUCSOFA3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterDat
                                      'GCSnum'
 )
   
-  IndiciesofLogCASUSScoreVariables <- which(names(MasterData) %in% NamesofLogCasusScoreVariables)
-  
-  formulaformodel <- FB_CreateFormula('AFLogical' , IndiciesofLogCASUSScoreVariables , MasterData)
-  
-  DataForLogistic <- POM_SampledImputation(MasterPreOpData = data.frame(MasterData[  ,  ]))
-  model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
-  stepaicoutput <- stepAIC(model)
-  model <- (glm(formula = stepaicoutput$formula,family=binomial(link='logit') , data=DataForLogistic))
-  summary( model )
-  AUClogCASUS1 <- FC_CalculateCrossValidatedROC(formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesofLogCASUSScoreVariables , MasterData)
-  
-  StepOutputlogCASUS <- FC_StepWiseForwardAUC(IndiciesofLogCASUSScoreVariables , MasterData)
-  AUClogCASUS2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutputlogCASUS[[2]] , PreoperativeIndices = IndiciesofLogCASUSScoreVariables , MasterData)
-  
-  formulaformodel <- FB_CreateFormula('AFLogical' , which(names(MasterData) == 'logCASUS') , MasterData)
-  AUClogCASUS3 <- FC_CalculateCrossValidatedROC(formulaformodel ,which(names(MasterData) == 'logCASUS'), MasterData)}
+LogCasusComparisonOutputs <- POM_GroupComparison(NamesofVariables = NamesofLogCasusScoreVariables ,MasterData = MasterData , ControlModel  = 'logCASUS')
+}
 
 #### Group Analysis #####
-
-
-NamesPreOpBleedingVariables <- c('PreOpCRP',
+{
+  NamesPreOpBleedingVariables <- c('PreOpCRP',
                                  'PreopHb',
                                  'PreopPLT',
                                  'PreopWBC',
                                  'PreopPT',
                                  'PreopAPTT'
 )
+PreOpBleedingComparisonOutputs <- POM_GroupComparison(NamesofVariables = NamesPreOpBleedingVariables ,MasterData = MasterData )
+
+
 NamesPreOpCardioVascularVariables <- c('EjectionFractionCategory',
                                        'NYHAGrade',
                                        'AnginaGrade',
@@ -348,17 +304,24 @@ NamesPreOpCardioVascularVariables <- c('EjectionFractionCategory',
                                        'CardiogenicShock_pre_Operation',
                                        'IntravenousInotropesPriorToAnaesthesia',
                                        'IntravenousNitratesOrAnyHeparin',
-                                       'ExtracardiacArteriopathy '
+                                       'ExtracardiacArteriopathy'
 )
+PreOpCardioComparisonOutputs <- POM_GroupComparison(NamesofVariables = NamesPreOpCardioVascularVariables ,MasterData = MasterData )
+
+
 NamesPreOpDemographicVariables <- c('Gender',
                                     'Age',
                                     'Weight',
                                     'BMI'
 )
+PreOpDemographicComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpDemographicVariables ,MasterData = MasterData )
+
 NamesPreOpElectrolytesVariables <- c('PreOpNa',
                                      'PreOpK',
                                      'PreopMg'
 )
+
+PreOpElectrolytesComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpElectrolytesVariables ,MasterData = MasterData )
 NamesPreOpInflamatoryVariables <- c('PreOpCRP',
                                     'PreOpAlb',
                                     'PreopHb',
@@ -367,20 +330,32 @@ NamesPreOpInflamatoryVariables <- c('PreOpCRP',
                                     'PreopPT',
                                     'PreopAPTT'
 )
+PreOpInflamatoryComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpInflamatoryVariables ,MasterData = MasterData )
+
 NamesPreOpLiverVariables <- c('PreOpAlb',
                               'PreopBili'
 )
+PreOpLiverComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpLiverVariables ,MasterData = MasterData )
+
 NamesPreOpOperativeVariables <- c('ProcDetails',
                                   'Urgency',
                                   'Thoracic.Aorta'
 )
+PreOpOperativeComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpOperativeVariables ,MasterData = MasterData )
+
 NamesPreOpRenalVariables <- c('PreopUrea',
                               'PreopCreat'
 )
+PreOpRenalComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpRenalVariables ,MasterData = MasterData )
+
 NamesPreOpRespiratoryVariables <- c('VentilatedPreOperation'
                                     )
-####
-NamesPostOpBleedingVariables <- c('Hb',
+PreOpRespiratoryComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpRespiratoryVariables ,MasterData = MasterData )
+}
+
+#### Post Op Groups
+{
+  NamesPostOpBleedingVariables <- c('Hb',
                                  'Platelets',
                                  'PT',
                                  'APTT',
@@ -391,6 +366,13 @@ NamesPostOpBleedingVariables <- c('Hb',
                                  'dPT',
                                  'dAPTT'
 )
+PostOpBleedingComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpBleedingVariables,NamesPreOpBleedingVariables) ,MasterData = MasterData )
+
+model <-  glm( formula = PostOpBleedingComparisonOutputs$ModelAIC , family=binomial(link='logit') , data=DataForLogistic)
+summary(model)  
+xtable(model)
+
+
 NamesPostOpCardioVascularVariables <- c('IABP2',
                                         'HR',
                                         'ReliableART.S',
@@ -405,6 +387,9 @@ NamesPostOpCardioVascularVariables <- c('IABP2',
                                         'DobutamineStandardised',
                                         'Lac',
                                         'PAR')
+PostOpCardioVascularComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpCardioVascularVariables,NamesPreOpCardioVascularVariables) ,MasterData = MasterData )
+
+
 NamesPostOpElectrolytesVariables <- c('Na',
                                       'K',
                                       'Mg',
@@ -413,6 +398,13 @@ NamesPostOpElectrolytesVariables <- c('Na',
                                       'dMg'
   
 )
+PostOpElectrolytesComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpElectrolytesVariables,NamesPreOpElectrolytesVariables) ,MasterData = MasterData )
+
+model <-  glm( formula = PostOpElectrolytesComparisonOutputs$ModelAIC , family=binomial(link='logit') , data=DataForLogistic)
+summary(model)  
+xtable(model)
+
+
 NamesPostOpInflamatoryVariables <- c('Hb',
                                     'Platelets',
                                     'PT',
@@ -430,32 +422,64 @@ NamesPostOpInflamatoryVariables <- c('Hb',
                                     'dWBC',
                                     'dAlb'
 )
+
+PostOpInflamatoryComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpInflamatoryVariables,NamesPreOpInflamatoryVariables) ,MasterData = MasterData )
+
+model <-  glm( formula = PostOpInflamatoryComparisonOutputs$ModelAIC , family=binomial(link='logit') , data=DataForLogistic)
+summary(model)  
+xtable(model)
+
+
 NamesPostOpLiverVariables <- c('Albumin',
                                'Bilirubin',
                                'dAlb',
                                'dBili')
+PostOpLiverComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpLiverVariables,NamesPreOpLiverVariables) ,MasterData = MasterData )
+
+model <-  glm( formula = PostOpLiverComparisonOutputs$ModelAIC , family=binomial(link='logit') , data=DataForLogistic)
+summary(model)  
+xtable(model)
+
 NamesPostOpNeuroVariables <- c('GCSnum'
                                )
+PostOpNeuroComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpNeuroVariables) ,MasterData = MasterData )
+
+
 NamesPostOpOperativeVariables <- c('CPB',
-                                  'IBA2')
+                                  'IABP2')
+
+PostOpOperativeComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpOperativeVariables,NamesPreOpOperativeVariables) ,MasterData = MasterData )
+
+model <-  glm( formula = PostOpOperativeComparisonOutputs$ModelAIC , family=binomial(link='logit') , data=DataForLogistic)
+summary(model)  
+xtable(model)
+
+
 NamesPostOpRenalVariables <- c('CVVHDyalysis',
                               'Urea',
                               'Creatinine',
                               'dUrea',
                               'dCreat')
+PostOpRenalComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpRenalVariables,NamesPreOpRenalVariables) ,MasterData = MasterData )
+
 NamesPostOpRespiratoryVariables <- c('IntupatedInSurgery',
                                      'SpO2',
                                      'ArtPO2',
                                      'FiO26num',
                                      'PaO2OverFiO2')
 
+PostOpRespiratoryComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpRespiratoryVariables,NamesPreOpRespiratoryVariables) ,MasterData = MasterData )
+}
+}
+
+
 #### Pre_op Predictive Model #####
 
 
-NamesofPeropVariables <- c(NamesofPeropCategoricalVariables ,NamesofPreopContinuousVariables )
-IndiciesofPeropVariables <- which(names(MasterData) %in% NamesofPeropVariables)
+#NamesofPeropVariables <- c(NamesofPeropCategoricalVariables ,NamesofPreopContinuousVariables )
+#IndiciesofPeropVariables <- which(names(MasterData) %in% NamesofPeropVariables)
 
-PreOpStepOutput <- FC_StepWiseForwardAUC(PreoperativeIndices = IndiciesofPeropVariables , MasterData)
+#PreOpStepOutput <- FC_StepWiseForwardAUC(PreoperativeIndices = IndiciesofPeropVariables , MasterData)
 
 
 #### Post_op Predictive Model #####

@@ -317,10 +317,10 @@ MasterData$Planned.Valve.Surgery[MasterData$Planned.Valve.Surgery == ''] <- NA
   MasterData$dUrea <- abs(DP_NormaliseData(MasterData$dUrea) )
   MasterData$dK <-abs(DP_NormaliseData(MasterData$dK))
   MasterData$dCreat <- abs(DP_NormaliseData(MasterData$dCreat) )
-  MasterData$dNa <- abs(DP_NormaliseData(MasterData$dNa) )
-  MasterData$dCRP <- abs(DP_NormaliseData(abs(DP_NormaliseData(MasterData$dCRP) )))
-  MasterData$dWBC <- abs(DP_NormaliseData(MasterData$dWBC))
-  MasterData$dAlb <- abs(DP_NormaliseData(MasterData$dAlb) )
+  MasterData$dNa <- abs( DP_NormaliseData(MasterData$dNa) )
+  MasterData$dCRP <- abs( DP_NormaliseData(abs(DP_NormaliseData(MasterData$dCRP) )))
+  MasterData$dWBC <- abs( DP_NormaliseData(MasterData$dWBC) )
+  MasterData$dAlb <- abs( DP_NormaliseData(MasterData$dAlb) )
 }
 
 AFLogical <- MasterData$AFLogical
