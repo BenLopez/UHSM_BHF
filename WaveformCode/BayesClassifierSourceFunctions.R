@@ -884,9 +884,9 @@ BC_PlotPairsFromThreeVariables <- function( X , Y , Z , alpha = c(0.1,0.1,0.1)  
 }
     }
 
-BC_PlotPairs<- function(X , alpha = 0.01 ){
+BC_PlotPairs<- function(X , alpha = 0.01 ,...){
   x11(20 , 14)
-  pairs( X , col = rgb(1 , 0 , 0 , alpha = alpha) , pch =16) 
+  pairs( X , col = rgb(1 , 0 , 0 , alpha = alpha) , pch =16,...) 
 }
 BC_PlotCompareTwoHists <- function( X , Y ){
   x11(20 , 14)

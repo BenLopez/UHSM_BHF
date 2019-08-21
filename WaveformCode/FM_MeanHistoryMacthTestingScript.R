@@ -16,7 +16,8 @@
 
 UseAnnotatedData <- 1
 source( 'FM_CreateRhythumPriors.R' )
-source( 'CTEm_LoadDataandCreateEmulatorStructures.R' )
+source( 'CTEm_LoadDataandCreateEmulatorStructures.R'  )
+source( 'CTEm_LoadDataandCreateEmulatorStructuresCDF.R' )
 source( 'FM_CreateMeanPWavePriors.R' )
 
 #dovalidationplots = 1
@@ -47,6 +48,8 @@ source( 'FM_CreateMeanPWavePriors.R' )
   meanImRegIre <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
   MulImReg <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
   MulImRegIre <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
+  
+  SecondWaveLogical <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
   
   StartBeatMat <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
   rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
@@ -142,6 +145,11 @@ source( 'FM_CreateMeanPWavePriors.R' )
       }
     }
     
+    if((RegularLogical[i] == 0) & (RegularLogical2[i] ==1) & (RegularyIrregularLogical2[i] == 1) & (RegularyIrregularLogical[i] == 1)){
+    SecondWaveLogical[i] <- FM_DubiousCaseLogic(RRtimes[!is.na(RRtimes)], ReIreHmOutput,ReHmOutput,ObservedIm_xx,EmulatorParametersCDFMean, EmulatorParametersCDFMax , RegularLogical)
+    disp('AFib Clasified in Dubious Case')
+    }
+    
     StartBeat <- StartBeat + numberofBeats
     DP_WaitBar(i / ceil(dim(RPeakData$RRCombined)[1]/numberofBeats))
     #outputstruct[[i]] <- (list(NonImplausibleX , ReHmOutput , ReIreHmOutput , cbind(MaxIm[tmplog] , MeanIm[tmplog])) )
@@ -152,18 +160,27 @@ source( 'FM_CreateMeanPWavePriors.R' )
 
 
 {
-  #RegularyIrregularLogical2 <- ( (meanImRegIre < ImThreshold1[1] )*(minImRegIre <  ImThreshold1[2])*( MulImRegIre <  ImThreshold1[3] ) ) ==1
-  #RegularLogical2 <- ( ( (meanImReg < ImThreshold2[1] )*( minImReg <  ImThreshold2[2])*( MulImReg <  ImThreshold2[3] ) ) ==1)
+  RegularLogical <- (RegularLogical ==1) & (RegularLogical2 ==1) & (RegularyIrregularLogical == 0)&(RegularyIrregularLogical2 == 0)
+  IrregularlyIrregularLogical <- (RegularyIrregularLogical == 1)&(RegularyIrregularLogical2 == 1)&(RegularLogical ==0) & (RegularLogical2 ==0)
+  #Undecided <- (RegularLogical == 0) & (RegularLogical2 ==1) & (RegularyIrregularLogical2 == 1) & (RegularyIrregularLogical == 1)
+  IrregularlyIrregularLogical[SecondWaveLogical == 1] <- 1
+  RegularLogical[SecondWaveLogical == 1] <- 0
+  
+  RegularlyIrregularLogical <- (RegularLogical ==0) &(IrregularlyIrregularLogical ==0)&(Undecided ==0)
   
   
-  RegIrRegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = ((RegularyIrregularLogical*RegularyIrregularLogical2*(RegularLogical ==0)*(RegularLogical2 ==0))==1)  , minutethreshold = 1)
-  RegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = (RegularLogical*RegularLogical2)==1  , minutethreshold = 1)
-  IrtimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = (((RegularyIrregularLogical*RegularyIrregularLogical2) ==0)*((RegularLogical*RegularLogical2)==0)) == 1 , minutethreshold = 1)
+  
+  RegIrRegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = IrregularlyIrregularLogical , minutethreshold = 1)
+  RegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = RegularLogical , minutethreshold = 1)
+  IrtimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = RegularlyIrregularLogical, minutethreshold = 1)
+  #UndecidedtimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = Undecided, minutethreshold = 1)
+  
   
   RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeakData , MetaData = MetaData) + ggtitle( paste0( PatientID , ' RRTimes' ) )
   RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegulartimePoints , fillcolor = 'green')
   RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = IrtimePoints , fillcolor = 'orange')
   RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegIrRegulartimePoints , fillcolor = 'red')
+  #RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = UndecidedtimePoints , fillcolor = 'purple')
   x11(40 , 25)
   RRPlot + ggtitle('PWaves')
   
@@ -174,11 +191,9 @@ source( 'FM_CreateMeanPWavePriors.R' )
   #save(outputstruct , file = paste0("C:\\Users\\Ben\\Documents\\Output Images\\AllPatientAnnotations\\HMOutput" , PatientID , '.RData'))
 }
 
-
-
-
 {
-StartBeat <- 29501
+
+{StartBeat <- 22001
 rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
 RRtimes <-  RPeakData$RRCombined[rangeofbeats,3]
 mm <- FM_EmulatorEstimate( Y = RRtimes )
@@ -210,11 +225,12 @@ ReIreHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = Pri
                                                     #imthreshold2 = ImThreshold1[1]     )
                                                     imthreshold  = ImThresholdMaxIrregularlyIrregular,
                                                     imthreshold2 = ImThresholdMeanIrregularlyIrregular )
-
+}
+  
 x11()
 plot(kdmodel$eval.points , kdmodel$estimate , type ='l')
 
-if(length(ReHmOutput$Implausability) > 4){
+if(length(ReHmOutput$Implausability) > 2){
 tmp <- ReHmOutput$f_x[,]
 #tmp <- ReHmOutput$f_x[(ReHmOutput$Implausability[,1] < ImThreshold2[2]),]
 #plot(x , predict( kdmodel,x = x) , type ='l')
@@ -223,10 +239,11 @@ for(i in 1:dim(tmp)[1]){
   lines(kdmodel$eval.points , FM_EvaluateDenistyEstimate(kdmodel$eval.points  , ReHmOutput$NonImplausibleSets[i,]) , col = rgb(0,0,1 , alpha = 0.1) )
   
 }
-BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[1:500,] , PriorNonImplausibleSetRegular[1:500,] , ReHmOutput$NonImplausibleSets[(ReHmOutput$Implausability[,3] < ImThreshold2[3]) , ] )  
+BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[sample(1:dim(PriorNonImplausibleSetRegularyIreRegular)[1] , 1000 ),] ,
+                               PriorNonImplausibleSetRegular[sample(100000:dim(PriorNonImplausibleSetRegular)[1] , 1000 ),] , ReHmOutput$NonImplausibleSets[ , ] )  
 
 }
-if(length(ReIreHmOutput$Implausability) > 4){
+if(length(ReIreHmOutput$Implausability) > 2){
 tmp <- as.matrix(ReIreHmOutput$f_x)
 #tmp <- ReHmOutput$f_x[(ReHmOutput$Implausability[,1] < ImThreshold2[2]),]
 #plot(kdmodel$eval.points , kdmodel$estimate , type ='l')
@@ -234,12 +251,41 @@ for(i in 1:dim(tmp)[1]){
   #lines(kdmodel$eval.points , FM_EvaluateDenistyEstimate(kdmodel$eval.points  , ReIreHmOutput$NonImplausibleSets[i,]) , col = rgb(0,0,1 , alpha = 0.1) )
   lines(kdmodel$eval.points , FM_EvaluateDenistyEstimate(kdmodel$eval.points , ReIreHmOutput$NonImplausibleSets[i,]) , col = rgb(0,0,1 , alpha = 0.1) )
 }
-BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[1:1000,] , PriorNonImplausibleSetRegular[1:1000,] , ReIreHmOutput$NonImplausibleSets )  
+BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[sample(1:dim(PriorNonImplausibleSetRegularyIreRegular)[1] , 1000 ),] ,
+                               PriorNonImplausibleSetRegular[sample(100000:dim(PriorNonImplausibleSetRegular)[1] , 1000 ),] ,
+                               ReIreHmOutput$NonImplausibleSets )  
 
 }
 
 dovalidationplots = 1
 source('FM_HistoryMatchMeanPWave.R')
+
+
+if( is.null(ReIreHmOutput$MinImplausibility) & is.null(ReHmOutput$MinImplausibility) ){
+
+ReMeanProb <- FM_EvaluateObservedImplausibilityEmulator(Xstar =  ReHmOutput$NonImplausibleSets[,-3] ,
+                                                        Im =  ReHmOutput$Implausability[,2]  ,
+                                                        EmulatorParameters = EmulatorParametersCDFMean ,
+                                                        ObservedIm_xx = ObservedIm_xx)
+IrReMeanProb <- FM_EvaluateObservedImplausibilityEmulator(Xstar =  ReIreHmOutput$NonImplausibleSets[,-3] ,
+                                                          Im =  ReIreHmOutput$Implausability[,2]  ,
+                                                          EmulatorParameters = EmulatorParametersCDFMean ,
+                                                          ObservedIm_xx = ObservedIm_xx)
+ReMaxProb <- FM_EvaluateObservedImplausibilityEmulator(Xstar =  ReHmOutput$NonImplausibleSets[,-3] ,
+                                                       Im =  ReHmOutput$Implausability[,1]  , 
+                                                       EmulatorParameters = EmulatorParametersCDFMax ,
+                                                       ObservedIm_xx = ObservedIm_xx)
+IrReMaxProb <- FM_EvaluateObservedImplausibilityEmulator(Xstar =  ReIreHmOutput$NonImplausibleSets[,-3] ,
+                                                          Im =  ReIreHmOutput$Implausability[,1]  ,
+                                                          EmulatorParameters = EmulatorParametersCDFMax ,
+                                                          ObservedIm_xx = ObservedIm_xx)
+
+x11()
+plot( IrReMaxProb , IrReMeanProb , col = 'red' , xlab = 'Max Im Prob' , ylab = 'Mean Im Prob' , title = 'Second Wave Comparison' , xlim = c(0,1) , ylim =c(0,1))
+points( ReMaxProb , ReMeanProb )
+
+
+}
 
 }
 
@@ -258,7 +304,8 @@ if(is.null(ReIreHmOutput$NonImplausibleSets)){
 BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[1:500,] , PriorNonImplausibleSetRegular[1:500,] , t(matrix(ReIreHmOutput$MinImplausiblePoint , 10, 100)) )  
 BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[1:500,] , PriorNonImplausibleSetRegular[1:500,] , t(matrix(ReHmOutput$MinImplausiblePoint , 10, 100)) )  
     }else{
-BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[1:500,] , PriorNonImplausibleSetRegular[1:500,] , ReIreHmOutput$NonImplausibleSets )  
+BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetRegularyIreRegular[sample(1:dim(PriorNonImplausibleSetRegularyIreRegular)[1] , 1000 ),] ,
+                               PriorNonImplausibleSetRegular[sample(100000:dim(PriorNonImplausibleSetRegular)[1] , 1000 ),], ReIreHmOutput$NonImplausibleSets )  
     }
 
 x11()
@@ -285,10 +332,10 @@ if( !is.null(ReIreHmOutput$NonImplausibleSets)> 4 ){
 }
 
 
-for(PatientID in listAllPatients[1:length(listAllPatients)] ){
+for(PatientID in listAllPatients[30:length(listAllPatients)] ){
   {
     MetaData <- DP_ExtractPatientRecordforIndex( PatIndex2017 = PatIndex2017 , PatientCode = PatientID )
-    if(DP_CheckIfAFPatient(MetaData)){next}
+    if(!DP_CheckIfAFPatient(MetaData)){next}
     if(!DP_CheckECGreducedfilesprocessed(path , PatientID , Filestoprocess = 'ECGII_reduced')){next}
     ECGs <- DP_LoadReducedECGs( path ,  PatientID , FilestoProcess = FilestoProcess  )
     RPeakData <- DP_LoadRpeaksfile( path , PatientID )
@@ -302,6 +349,7 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
     RegularyIrregularLogical <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
     RegularLogical2 <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
     RegularyIrregularLogical2 <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
+    SecondWaveLogical <-  matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
     
     StartBeatMat <- matrix(0 , ceil(dim(RPeakData$RRCombined)[1]/numberofBeats) , 1)
     rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
@@ -376,7 +424,6 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
           RegularLogical[i] = 1
           disp('Pwave Present')
         }
-        
         if(sum(NonImplausibleX[,5] != 0) > 0 & sum(NonImplausibleX[,5] == 0) > 0  ){
           if(ImDiff < -0.5){
             RegularyIrregularLogical[i] = 1
@@ -391,6 +438,11 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
         } 
       }
       
+      if((RegularLogical[i] == 0) & (RegularLogical2[i] ==1) & (RegularyIrregularLogical2[i] == 1) & (RegularyIrregularLogical[i] == 1)){
+        SecondWaveLogical[i] <- FM_DubiousCaseLogic(RRtimes[!is.na(RRtimes)], ReIreHmOutput,ReHmOutput,ObservedIm_xx,EmulatorParametersCDFMean, EmulatorParametersCDFMax , RegularLogical)
+        disp('AFib Clasified in Dubious Case')
+      }
+      
       StartBeat <- StartBeat + numberofBeats
       DP_WaitBar(i / ceil(dim(RPeakData$RRCombined)[1]/numberofBeats))
       outputstruct[[i]] <- (list(NonImplausibleX , ReHmOutput , ReIreHmOutput , cbind(MaxIm[tmplog] , MeanIm[tmplog]) , timemat[i]) )
@@ -402,21 +454,27 @@ for(PatientID in listAllPatients[1:length(listAllPatients)] ){
   
   
   
-  {
-    #RegularyIrregularLogical2 <- ( (meanImRegIre < ImThreshold1[1] )*(minImRegIre <  ImThreshold1[2])*( MulImRegIre <  ImThreshold1[3] ) ) ==1
-    #RegularLogical2 <- ( ( (meanImReg < ImThreshold2[1] )*( minImReg <  ImThreshold2[2])*( MulImReg <  ImThreshold2[3] ) ) ==1)
-    RegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = (RegularLogical*RegularLogical2)==1  , minutethreshold = 1)
-    RegIrRegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = (RegularyIrregularLogical*RegularyIrregularLogical2)==1  , minutethreshold = 1)
-    IrtimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = (((RegularyIrregularLogical*RegularyIrregularLogical2) ==0)*((RegularLogical*RegularLogical2)==0)) == 1 , minutethreshold = 1)
-    
-    RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeakData , MetaData = MetaData) + ggtitle( paste0( PatientID , ' RRTimes' ) )
-    RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegulartimePoints , fillcolor = 'green')
-    RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = IrtimePoints , fillcolor = 'orange')
-    RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegIrRegulartimePoints , fillcolor = 'red')
-    #x11(40 , 25)
-    #RRPlot + ggtitle('PWaves')
-    
-    pdf(file = paste0("D:\\AllPatientAnnotations\\Annotation" , PatientID , '.pdf') )
+{
+  RegularLogical <- (RegularLogical ==1) & (RegularLogical2 ==1) & (RegularyIrregularLogical == 0)&(RegularyIrregularLogical2 == 0)
+  IrregularlyIrregularLogical <- (RegularyIrregularLogical == 1)&(RegularyIrregularLogical2 == 1)&(RegularLogical ==0) & (RegularLogical2 ==0)
+  #Undecided <- (RegularLogical == 0) & (RegularLogical2 ==1) & (RegularyIrregularLogical2 == 1) & (RegularyIrregularLogical == 1)
+  IrregularlyIrregularLogical[SecondWaveLogical == 1] <- 1
+  RegularLogical[SecondWaveLogical == 1] <- 0
+  
+  RegularlyIrregularLogical <- (RegularLogical ==0) &(IrregularlyIrregularLogical ==0)
+  
+  RegIrRegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = IrregularlyIrregularLogical , minutethreshold = 1)
+  RegulartimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = RegularLogical , minutethreshold = 1)
+  IrtimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = RegularlyIrregularLogical, minutethreshold = 1)
+  #UndecidedtimePoints <- ASWF_GetStartEndAF(timemat , logicaltimeseries = Undecided, minutethreshold = 1)
+  
+  
+  RRPlot <- BC_PlotCreateRRTimesPlots(RPeaksStruct = RPeakData , MetaData = MetaData) + ggtitle( paste0( PatientID , ' RRTimes' ) )
+  RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegulartimePoints , fillcolor = 'green')
+  RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = IrtimePoints , fillcolor = 'orange')
+  RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = RegIrRegulartimePoints , fillcolor = 'red')
+  #RRPlot <- BC_plotAddColouredRegions(plotstruct = RRPlot , Locations = UndecidedtimePoints , fillcolor = 'purple')
+  pdf(file = paste0("D:\\AllPatientAnnotations\\Annotation" , PatientID , '.pdf') )
     print(RRPlot)
     dev.off()
     

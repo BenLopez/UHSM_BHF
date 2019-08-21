@@ -1,8 +1,7 @@
 {
   
-  if(!exists('QSwidth')){
-    QSwidth = 12
-  }
+  QSwidth = 11
+
   
   QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGII , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
   if(is.null(QS_Struct$Date) ){
@@ -47,7 +46,7 @@
   tmplog <- ( (MaxIm < MaxImThrehsold)*(MeanIm < MeanImThreshold) ) == 1
   
   NonImplausibleX <- PriorNonImplausibleSet[ tmplog , ]
-  ImplausibleX <- PriorNonImplausibleSet[ ( (MaxIm < MaxImThrehsold)*(MeanIm < MeanImThreshold) ) == 0 , ]
+  ImplausibleX <- PriorNonImplausibleSet[ tmplog == 0 , ]
   
   
   if(length(NonImplausibleX) == 5){

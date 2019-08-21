@@ -532,5 +532,5 @@ BE_BayesLinearEmulatorLSEstimatesMO <- function(xstar , EmulatorSettings = BE_Cr
     V_z_y <- 0  
   }
   
-  return(list(E_D_fX = E_z_y , C_D_fX = V_z_y , SigmaHat = SigmaHat))  
+  return(list( E_D_MX = Hstar%*%BetaHat , E_D_fX = E_z_y , C_D_fX = V_z_y , SigmaHat = SigmaHat))  
 }

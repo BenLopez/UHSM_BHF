@@ -430,7 +430,7 @@ POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , Mast
   
   
   output[ , 8] <- exp(coef(model)[1:length(levels(CategoricalData))])
-  output[ , 9:10] <- exp(confint(model) )[1:length(levels(CategoricalData)),]
+  output[ , 9:10] <- exp(confint(model, trace = FALSE) )[1:length(levels(CategoricalData)),]
   output[ , 11] <- summary(model)$coefficients[1:length(levels(CategoricalData)),4]  
   output[ , 2:11] <- signif(output[,2:11] , 4)
   
@@ -476,8 +476,8 @@ POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 0
   
   AUC1 <- FC_CalculateCrossValidatedROC( formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesVariables , MasterData )
   
-  StepOutputAUC <- FC_StepWiseForwardAUC( IndiciesVariables , MasterData )
-  AUC2 <- FC_CalculateCrossValidatedROC(formulaformodel = StepOutputAUC[[2]] , PreoperativeIndices = IndiciesVariables , MasterData)
+  StepOutputAUC <- FC_StepWiseForwardAUC(PreoperativeIndices =  IndiciesVariables , MasterData =MasterData,matrixforstep = diag(length(IndiciesVariables)) )
+  AUC2 <- StepOutputAUC[[1]]
   #StepOutputAUC <- list(NA,NA)
   #AUC2 <- NA
   
@@ -491,4 +491,10 @@ POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 0
   output <- list(AUC1 , AUC2 , AUC3 , stepaicoutput$formula ,  StepOutputAUC[[2]] )
   output <- setNames(output , c('AUCAIC' , 'AUCStepAUC' , 'AUCLogisticEuro' , 'ModelAIC' , 'ModelAUC'))
   return(output)
+}
+POM_CalulateProbabilitiesFromModel <- function(formula , DataForLogistic){
+  model <- glm(formula = formula
+               , family = binomial(link = "logit"),  data = DataForLogistic)
+  return(LogisticProbility <- predict(model , DataForLogistic , type = c('response')))
+  
 }

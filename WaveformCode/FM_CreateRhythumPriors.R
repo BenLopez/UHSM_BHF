@@ -139,7 +139,8 @@
     }
   }
   
-  BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[sample(1:dim(PriorNonImplausibleSetRegularyIreRegular)[1] , 1000 ),] , PriorNonImplausibleSetRegular[sample(1:dim(PriorNonImplausibleSetRegular)[1] , 1000 ),]  , alpha = 0.1)  
+  BC_PlotPairsFromTwoVariables(PriorNonImplausibleSetRegularyIreRegular[sample(1:dim(PriorNonImplausibleSetRegularyIreRegular)[1] , 1000 ),] ,
+                               PriorNonImplausibleSetRegular[sample(100000:dim(PriorNonImplausibleSetRegular)[1] , 1000 ),]  , alpha = 0.1)  
   }
   
   # Calculate approximate correlation matrix.
