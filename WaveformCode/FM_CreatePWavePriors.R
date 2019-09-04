@@ -80,5 +80,3 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
   }
   
 }
-
-

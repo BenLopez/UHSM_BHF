@@ -501,3 +501,103 @@ FM_DubiousCaseLogic <- function(RRtimes, ReIreHmOutput,ReHmOutput,ObservedIm_xx,
   
   
 }
+FM_CreateAFAnnoation <- function(AnnotationVectors){
+  
+  RegularLogical <- AnnotationVectors[,1]
+  RegularLogical2 <- AnnotationVectors[,2]
+  RegularyIrregularLogical <- AnnotationVectors[,3]
+  RegularyIrregularLogical2 <- AnnotationVectors[,4]
+  SecondWaveLogical<- AnnotationVectors[,5]
+  
+  IrregularlyIrregularLogical <- (RegularyIrregularLogical == 1)&(RegularyIrregularLogical2 == 1)&(RegularLogical ==0) & (RegularLogical2 ==0)
+  #Undecided <- (RegularLogical == 0) & (RegularLogical2 ==1) & (RegularyIrregularLogical2 == 1) & (RegularyIrregularLogical == 1)
+  IrregularlyIrregularLogical[SecondWaveLogical == 1] <- 1
+  
+  return(IrregularlyIrregularLogical)
+  
+}
+FM_ExtractTimeFromHMOutput <- function(outputstruct){
+  
+  j <- 1
+    while(is.null(outputstruct[[j]][[5]]) ){
+  j <- j+1
+    }
+  output <-rep(outputstruct[[j]][[5]] , length(outputstruct) -2 )
+  
+  for(ii in c(1:(length(outputstruct) -2)) ){
+    if(is.null(outputstruct[[ii]][[5]])){
+      next
+    }
+    output[ii]  <- outputstruct[[ii]][[5]]
+  }
+  return(output)
+}
+FM_ExtractNonAFibNonImplausibleSets <- function(PatientID  , PatIndex2017){
+  load(paste0(path ,'\\',PatientID,'\\Zip_out\\', "HMOutput" , PatientID , '.RData'))
+  t <- FM_ExtractTimeFromHMOutput( outputstruct )
+  
+  AnnotationVectors <- outputstruct[[length(outputstruct)]]
+  
+  AFAnnotationHM <- FM_CreateAFAnnoation( AnnotationVectors )[1:(length(outputstruct)-2)]
+  AFAnnotationExpert <- BC_CreateAFAnnotationFomMetaData(t , DP_ExtractPatientRecordforIndex(PatIndex2017 = PatIndex2017,PatientID))
+  
+  RegularLogical <- AnnotationVectors[,1]
+  RegularyIrregularLogical <- AnnotationVectors[,3]
+  
+  
+  NonImplausibleSets <- matrix(0 , 0 , 10)
+  
+  for(i in 1:(length(outputstruct) -2) ){
+    if( !is.null(outputstruct[[i]][[4]]$NonImplausibleSets) |!is.null(outputstruct[[i]][[3]]$NonImplausibleSets ) | !is.null(outputstruct[[i]][[2]]$NonImplausibleSets ) ){
+      if(AFAnnotationExpert[i] == 0 & AFAnnotationHM[i] ==0){    
+        if(RegularLogical[i] == 1 & RegularyIrregularLogical[i] ==0){
+          if(!is.null(outputstruct[[i]][[4]]$NonImplausibleSets))
+          NonImplausibleSets <- unique(rbind(NonImplausibleSets , outputstruct[[i]][[4]]$NonImplausibleSets , outputstruct[[i]][[3]]$NonImplausibleSets , outputstruct[[i]][[2]]$NonImplausibleSets )) 
+        }
+        }
+    }else{
+      disp('No Non-implausible points.')
+  }
+    
+  }
+  return(NonImplausibleSets)
+}
+FM_CalculateEDFPwaves <- function(Xstar , X , E_Beta , V_Beta, numbersamples = 1000, clength = 0.1 , q = 0.99 ){
+  
+  f_x <- PsimulatorFunction(X , Xstar)
+  
+  # Sample data
+  H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction)
+  BetaSample <- rmvnorm(numberofsamples , mean = E_Beta[1:3] , sigma = V_Beta[1:3 , 1:3] )
+  me = t(H%*%t(BetaSample))  
+  
+  Cr <- CF_ExponentialFamily(Xstar , Xstar , clength , 2)
+  V <- as.matrix(ModelDiscrepancy(X , Xstar , PsimulatorFunction))
+  CV <- sqrt(V%*%t(V))*Cr
+  W <- rmvnorm(numberofsamples , mean = rep(0,length(Xstar)) , sigma = CV )
+  z = me + W
+  
+  # Calculate implausibilty
+  
+  ImMatrix <- FM_RemoveDrift(z , Xstar, X , E_Beta, V_Beta)
+  
+  meanIm <- apply(ImMatrix , 1 , mean)
+  maxIm <- apply(ImMatrix , 1, max)
+  
+  outputstructure <- list(quantile(meanIm , q),quantile(maxIm , q) , FM_CalculateCDFS(meanIm , seq(0,2,0.01) ) , FM_CalculateCDFS(maxIm , seq(0,4,0.02) ))
+  outputstructure <- setNames(outputstructure , c('meanthresh' , 'maxthresh' , 'meanEDF' , 'maxEDF'))
+  return(outputstructure)
+}
+
+FM_RemoveDrift <- function(z , Xstar, X , E_Beta, V_Beta){
+  
+  H = PWaveHM_CreateDesignMatrix(Xstar , x=X , PsimulatorFunction)
+  Hinvstruct <- t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + 10*diag(dim(H)[1])  ) 
+  
+  Betas = as.vector(E_Beta) + (Hinvstruct%*%t( z  ))
+  z = z - t(H%*%Betas) 
+  
+  ImMatrix <- (abs(z) / sqrt(ModelDiscrepancy(X , Xstar , PsimulatorFunction)) )
+  return(ImMatrix)
+  
+}

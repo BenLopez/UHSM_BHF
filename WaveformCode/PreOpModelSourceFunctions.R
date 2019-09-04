@@ -360,9 +360,8 @@ POM_TreatmentBeforeAFib <- function(FluidsIndex2017 , PatIndex2017){
   return(output)
 }
 POM_FillEmptyRecords <- function(PatientData){
-  
+  PatientData$K[PatientData$K == ''] = NA
   for( i in 2:dim(PatientData)[1] ){
-    
     PatientData[i,is.na(PatientData[i,])] <- PatientData[i-1,is.na(PatientData[i,])]
     
   }
@@ -424,7 +423,7 @@ POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , Mast
     # logistic regression analysis
   }
   
-  model <- glm(FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'ProcDetails') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData ) ,
+  model <- glm(FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'Valve'), which(names(MasterData) == 'CABG'), which(names(MasterData) == 'Aortic') ,  which(names(MasterData) == 'Complex') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData ) ,
                family=binomial(link='logit'),
                data = MasterData)
   
@@ -474,8 +473,11 @@ POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 0
   model <- (glm(formula = formulaformodel,family=binomial(link='logit') , data=DataForLogistic))
   stepaicoutput <- stepAIC(model)
   
+  if(is.na(all.vars(stepaicoutput$formula)[2])){
+  AUC1 = 0
+  }else{
   AUC1 <- FC_CalculateCrossValidatedROC( formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesVariables , MasterData )
-  
+  }
   StepOutputAUC <- FC_StepWiseForwardAUC(PreoperativeIndices =  IndiciesVariables , MasterData =MasterData,matrixforstep = diag(length(IndiciesVariables)) )
   AUC2 <- StepOutputAUC[[1]]
   #StepOutputAUC <- list(NA,NA)

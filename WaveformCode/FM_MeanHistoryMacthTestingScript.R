@@ -20,10 +20,6 @@ source( 'CTEm_LoadDataandCreateEmulatorStructures.R'  )
 source( 'CTEm_LoadDataandCreateEmulatorStructuresCDF.R' )
 source( 'FM_CreateMeanPWavePriors.R' )
 
-#dovalidationplots = 1
-#rangeofbeats <- 501:(501 + 500)
-#source('FM_HistoryMatchMeanPWave.R')
-
 {
   PatientID <- DP_choosepatient( listAllPatients )
 
@@ -332,10 +328,10 @@ if( !is.null(ReIreHmOutput$NonImplausibleSets)> 4 ){
 }
 
 
-for(PatientID in listAllPatients[30:length(listAllPatients)] ){
+for(PatientID in listAllPatients[125:length(listAllPatients)] ){
   {
     MetaData <- DP_ExtractPatientRecordforIndex( PatIndex2017 = PatIndex2017 , PatientCode = PatientID )
-    if(!DP_CheckIfAFPatient(MetaData)){next}
+    if(DP_CheckIfAFPatient(MetaData)){next}
     if(!DP_CheckECGreducedfilesprocessed(path , PatientID , Filestoprocess = 'ECGII_reduced')){next}
     ECGs <- DP_LoadReducedECGs( path ,  PatientID , FilestoProcess = FilestoProcess  )
     RPeakData <- DP_LoadRpeaksfile( path , PatientID )
@@ -370,7 +366,7 @@ for(PatientID in listAllPatients[30:length(listAllPatients)] ){
       timemat[i] <- PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats[length(rangeofbeats)],1]
       StartBeatMat[i] <- StartBeat
       
-      
+      if(var( RRtimes)==0){next}
       
       # HM Heart-rhythm
       ReHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegular, 
@@ -395,7 +391,15 @@ for(PatientID in listAllPatients[30:length(listAllPatients)] ){
                                                           #imthreshold2 = ImThreshold1[1]     )
                                                           imthreshold  = ImThresholdMaxIrregularlyIrregular,
                                                           imthreshold2 = ImThresholdMeanIrregularlyIrregular )
-      
+      TotalHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetTotal,
+                                                          x = xTotal ,
+                                                          F_x =  F_total, 
+                                                          f_x = f_total,  
+                                                          MD = MD_Total , 
+                                                          RRtimes = RRtimes , 
+                                                          Corr_sdhat = Corr_sdhat1, 
+                                                          imthreshold  = ImThresholdMaxTotal , 
+                                                          imthreshold2 = ImThresholdMeanTotal )
       
       if(sum((ReIreHmOutput$Implausability[,1] < max(ImThresholdMaxIrregularlyIrregular))&(ReIreHmOutput$Implausability[,2] < max(ImThresholdMeanIrregularlyIrregular))) > 1){
         RegularyIrregularLogical2[i] <- T
@@ -445,7 +449,7 @@ for(PatientID in listAllPatients[30:length(listAllPatients)] ){
       
       StartBeat <- StartBeat + numberofBeats
       DP_WaitBar(i / ceil(dim(RPeakData$RRCombined)[1]/numberofBeats))
-      outputstruct[[i]] <- (list(NonImplausibleX , ReHmOutput , ReIreHmOutput , cbind(MaxIm[tmplog] , MeanIm[tmplog]) , timemat[i]) )
+      outputstruct[[i]] <- (list(NonImplausibleX , ReHmOutput , ReIreHmOutput ,TotalHmOutput , timemat[i]) )
       
     }
     
@@ -478,6 +482,8 @@ for(PatientID in listAllPatients[30:length(listAllPatients)] ){
     print(RRPlot)
     dev.off()
     
-    save(outputstruct , file = paste0("D:\\AllPatientAnnotations\\HMOutput" , PatientID , '.RData'))
+  outputstruct[[i+1]] <- cbind(RegularLogical, RegularLogical2, RegularyIrregularLogical,RegularyIrregularLogical2,SecondWaveLogical)
+    
+  save(outputstruct , file = paste0(path ,'\\',PatientID,'\\Zip_out\\', "HMOutput" , PatientID , '.RData'))
   }
 }

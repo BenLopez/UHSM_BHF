@@ -28,10 +28,9 @@
                                                    imageOutput(outputId = 'PACsDensity'),
                                                    wellPanel(tags$h2('Regular')),
                                                    tags$p('Sinus rhythm is any rhythm where the depolarisation begins in the sinus node. Normal sinus rhythm is where all other components of the ECG are also not unusual. The density of the RR-times distribution is given by'),
-                                                   withMathJax(tags$p('$$f(RR , x) = (\\pi_{(1)})\\Phi(RR , \\mu_{(1)} , \\sigma_{(1)}) + \\pi_{(2)}\\Phi(RR , \\mu_{(2)} , \\sigma_{(2)})+ (1 - \\pi_{(1)} - \\pi_{(2)} )\\Phi(RR , \\mu_{(3)} , \\sigma_{(3)}).$$')),
-                                                   withMathJax(tags$p('$$(\\pi_{(1)} ,  \\pi_{(2)}, \\mu_{(1)} ,  \\mu_{(2)} ,  \\mu_{(3)} , \\sigma_{(1)} , \\sigma_{(2)} , \\sigma_{(3)}).$$')),
-                                                   tags$p('The model is restricted so that $$\\mu_{(1)} <  \\mu_{(2)} <  \\mu_{(3)}$$ to make the specification easier. It is the same form as the AF model to give flexibility in the shape of the RR-times distribution. The first two parameters controls the proportion of beats from component one and two. The second to fourth control the average speed of the fast, normal and slow beats. The fith to seventh control the width of the fast, normal and slow beats. The difference between this model and the PACs model is that the number of fast and slow beats are not equal.'),
-                                                   imageOutput(outputId = 'RegularDensity'),
+                                                   withMathJax(tags$p('$$f(RR , x) = P(RR, \\mu ,\\sigma^2, s , k ).$$')),
+                                                   tags$p('Here P is a pearson distribution with expectation, variance, skewness and kurtosis given by'),
+                                                   withMathJax(tags$p('$$(\\mu ,\\sigma^2, s , k).$$')),
                                                    wellPanel(tags$h2('Atrial Fibrillation (AFib)')),
                                                    tags$p('Atrial Fibrillation (AFib) is an abnormal heart rhythm characterized by irregular beating (fluttering or fibrillation) of the atria and irregularly-irregular ventricular contractions.  The density of the RR-times distribtion is given by'),
                                                    withMathJax(tags$p('$$f(RR , x) = (\\pi_{(1)})\\Phi(RR , \\mu_{(1)} , \\sigma_{(1)}) + \\pi_{(2)}\\Phi(RR , \\mu_{(2)} , \\sigma_{(2)})+ (1 - \\pi_{(1)} - \\pi_{(2)} )\\Phi(RR , \\mu_{(3)} , \\sigma_{(3)}).$$')),
@@ -39,312 +38,368 @@
                                                    tags$p('The model is restricted so that $$\\mu_{(1)} <  \\mu_{(2)} <  \\mu_{(3)}$$ to make the specification easier. It is the same form as the Regular model to give flexibility in the shape of the RR-times distribution. The first two parameters controls the proportion of beats from component one and two. The second to fourth control the average speed of the fast, normal and slow beats. The fith to seventh control the width of the fast, normal and slow beats.'),
                                                    imageOutput(outputId = 'AFibDensity')
                                          )},# Front page
+                                         # {tabPanel(title = 'Regular',
+                                         #           wellPanel(tags$h1('Regular')) ,withMathJax(),
+                                         #           fluidRow(
+                                         #             column(4 , wellPanel(sliderInput(inputId = "Reg_pi1" , 
+                                         #                                              label = '$$\\pi_{(1)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 1 ,
+                                         #                                              value = 0 ) ,
+                                         #                                  sliderInput(inputId = "Reg_pi2" , 
+                                         #                                              label = '$$\\pi_{(2)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 1 ,
+                                         #                                              value = 1) ,
+                                         #                                  #sliderInput(inputId = "PAC_pi3" , 
+                                         #                                  #            label = '$$ \\pi_{(3)} $$' , 
+                                         #                                  #           min = 1 ,
+                                         #                                  #            step = 0.001,
+                                         #                                  #            max = 2 ,
+                                         #                                  #            value = 0.1) ,
+                                         #                                  sliderInput(inputId = "Reg_mu1" , 
+                                         #                                              label = '$$\\mu_{(1)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 3 ,
+                                         #                                              value = 0.75) ,
+                                         #                                  sliderInput(inputId = "Reg_mu2" , 
+                                         #                                              label = '$$\\mu_{(2)} - \\mu_{(1)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 0.25 ,
+                                         #                                              value = 0.05),
+                                         #                                  sliderInput(inputId = "Reg_mu3" , 
+                                         #                                              label = '$$\\mu_{(3)} - \\mu_{(2)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 0.25 ,
+                                         #                                              value = 0.05),
+                                         #                                  sliderInput(inputId = "Reg_sigma1" , 
+                                         #                                              label = '$$\\sigma_{(1)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 0.1 ,
+                                         #                                              value = 0.01),
+                                         #                                  sliderInput(inputId = "Reg_sigma2" , 
+                                         #                                              label = '$$\\sigma_{(2)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 0.1 ,
+                                         #                                              value = 0.01 ),
+                                         #                                  sliderInput(inputId = "Reg_sigma3" , 
+                                         #                                              label = '$$\\sigma_{(3)}$$' , 
+                                         #                                              min = 0 ,
+                                         #                                              step = 0.001,
+                                         #                                              max = 0.1 ,
+                                         #                                              value = 0.01 )
+                                         #             ) ),
+                                         #             column(4 , plotOutput( outputId = 'Reg_RRDenisty' , inline = T)),
+                                         #             column(4 , plotOutput( outputId = 'Reg_RRTimes', inline = T))
+                                         #           ),
+                                         #           tags$h2('Simulated ECG'),
+                                         #           tags$hr(),
+                                         #           fluidRow(actionButton(inputId = 'Reg_UpdateECG' , label = 'Update')),
+                                         #           fluidRow(plotOutput( outputId = 'Reg_ECG', inline = F))
+                                         # )},# Regular
                                          {tabPanel(title = 'Regular',
                                                    wellPanel(tags$h1('Regular')) ,withMathJax(),
                                                    fluidRow(
-                                                     column(4 , wellPanel(sliderInput(inputId = "Reg_pi1" , 
-                                                                                      label = '$$\\pi_{(1)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 1 ,
-                                                                                      value = 0 ) ,
-                                                                          sliderInput(inputId = "Reg_pi2" , 
-                                                                                      label = '$$\\pi_{(2)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 1 ,
-                                                                                      value = 1) ,
-                                                                          #sliderInput(inputId = "PAC_pi3" , 
-                                                                          #            label = '$$ \\pi_{(3)} $$' , 
-                                                                          #           min = 1 ,
-                                                                          #            step = 0.001,
-                                                                          #            max = 2 ,
-                                                                          #            value = 0.1) ,
-                                                                          sliderInput(inputId = "Reg_mu1" , 
-                                                                                      label = '$$\\mu_{(1)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 3 ,
-                                                                                      value = 0.75) ,
-                                                                          sliderInput(inputId = "Reg_mu2" , 
-                                                                                      label = '$$\\mu_{(2)} - \\mu_{(1)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.25 ,
-                                                                                      value = 0.05),
-                                                                          sliderInput(inputId = "Reg_mu3" , 
-                                                                                      label = '$$\\mu_{(3)} - \\mu_{(2)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.25 ,
-                                                                                      value = 0.05),
-                                                                          sliderInput(inputId = "Reg_sigma1" , 
-                                                                                      label = '$$\\sigma_{(1)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01),
-                                                                          sliderInput(inputId = "Reg_sigma2" , 
-                                                                                      label = '$$\\sigma_{(2)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01 ),
-                                                                          sliderInput(inputId = "Reg_sigma3" , 
-                                                                                      label = '$$\\sigma_{(3)}$$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01 )
-                                                     ) ),
-                                                     column(4 , plotOutput( outputId = 'Reg_RRDenisty' , inline = T)),
-                                                     column(4 , plotOutput( outputId = 'Reg_RRTimes', inline = T))
-                                                   ),
-                                                   tags$h2('Simulated ECG'),
-                                                   tags$hr(),
-                                                   fluidRow(actionButton(inputId = 'Reg_UpdateECG' , label = 'Update')),
-                                                   fluidRow(plotOutput( outputId = 'Reg_ECG', inline = F))
-                                         )},# Regular
-                                         {tabPanel(title = 'Bigeminy', 
-                                                   wellPanel(tags$h1('Bigeminy')) ,
-                                                   fluidRow(
-                                                     column(4 , wellPanel(sliderInput(inputId = "mu1" , 
-                                                                                      label = '$$ \\mu_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 2 ,
-                                                                                      value = 0.5) ,
-                                                                          sliderInput(inputId = "mu2" , 
-                                                                                      label = '$$ \\mu_{(2)} - \\mu_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 2 ,
-                                                                                      value = 0.2),
-                                                                          sliderInput(inputId = "sigma1" , 
-                                                                                      label = '$$ \\sigma_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01),
-                                                                          sliderInput(inputId = "sigma2" , 
-                                                                                      label = '$$ \\sigma_{(2)} - \\sigma_{(1)}$$' , 
-                                                                                      min = -0.05 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.05 ,
-                                                                                      value = 0 ))),
-                                                     column(4 , plotOutput( outputId = 'RRDenisty' , inline = T)),
-                                                     column(4 , plotOutput( outputId = 'RRTimes', inline = T)
-                                                     )
-                                                   ),
-                                                   tags$h2('Simulated ECG'),
-                                                   tags$hr(),
-                                                   fluidRow(actionButton(inputId = 'UpdateECG' , label = 'Update')),
-                                                   fluidRow(plotOutput( outputId = 'ECG', inline = F))
-                                         )},# Bigeminy
-                                         {tabPanel(title = 'PACs', 
-                                                   wellPanel(tags$h1('PACs')) ,
-                                                   fluidRow(
-                                                     column(4 , wellPanel(sliderInput(inputId = "PAC_pi1" , 
-                                                                                      label = '$$ \\pi_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 1 ,
-                                                                                      value = 0.8) ,
-                                                                          #sliderInput(inputId = "PAC_pi2" , 
-                                                                          #            label = '$$ \\pi_{(2)} $$' , 
+                                                     column(4 , wellPanel(
+                                                                          #sliderInput(inputId = "Reg_pi1" , 
+                                                                          #            label = '$$\\pi_{(1)}$$' , 
                                                                           #            min = 0 ,
                                                                           #            step = 0.001,
                                                                           #            max = 1 ,
-                                                                          #            value = 0.8) ,
+                                                                          #            value = 0 ) ,
+                                                                          #sliderInput(inputId = "Reg_pi2" , 
+                                                                          #            label = '$$\\pi_{(2)}$$' , 
+                                                                          #            min = 0 ,
+                                                                          #            step = 0.001,
+                                                                          #            max = 1 ,
+                                                                          #            value = 1) ,
                                                                           #sliderInput(inputId = "PAC_pi3" , 
                                                                           #            label = '$$ \\pi_{(3)} $$' , 
                                                                           #           min = 1 ,
                                                                           #            step = 0.001,
                                                                           #            max = 2 ,
                                                                           #            value = 0.1) ,
-                                                                          sliderInput(inputId = "PAC_mu1" , 
-                                                                                      label = '$$ \\mu_{(1)} $$' , 
-                                                                                      min = 0 ,
+                                                                          sliderInput(inputId = "Reg_Mean" , 
+                                                                                      label = '$$\\mu$$' , 
+                                                                                      min = 0.4 ,
                                                                                       step = 0.001,
                                                                                       max = 2 ,
-                                                                                      value = 0.6) ,
-                                                                          sliderInput(inputId = "PAC_mu2" , 
-                                                                                      label = '$$ \\mu_{(2)}  - \\mu_{(1)} $$' , 
-                                                                                      min = 0 ,
+                                                                                      value = 1) ,
+                                                                          sliderInput(inputId = "Reg_StandardDeviation" , 
+                                                                                      label = '$$\\sigma$$' , 
+                                                                                      min = 0.00000001 ,
                                                                                       step = 0.001,
-                                                                                      max = 2 ,
-                                                                                      value = 0.1),
-                                                                          sliderInput(inputId = "PAC_mu3" , 
-                                                                                      label = '$$ \\mu_{(3)}  - \\mu_{(2)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 2 ,
-                                                                                      value = 0.1),
-                                                                          sliderInput(inputId = "PAC_sigma1" , 
-                                                                                      label = '$$ \\sigma_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01),
-                                                                          sliderInput(inputId = "PAC_sigma2" , 
-                                                                                      label = '$$ \\sigma_{(2)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01 ),
-                                                                          sliderInput(inputId = "PAC_sigma3" , 
-                                                                                      label = '$$ \\sigma_{(3)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.1 ,
-                                                                                      value = 0.01 )
+                                                                                      max = 0.5 ,
+                                                                                      value = 0.05),
+                                                                          uiOutput(outputId = 'Skewness_Slider'),
+                                                                          #sliderInput(inputId = "Reg_Skewness" , 
+                                                                          #            label = '$$Skewness$$' , 
+                                                                          #            min = -3 ,
+                                                                          #            step = 0.01,
+                                                                          #            max = 3 ,
+                                                                          #            value = 0),
+                                                                          sliderInput(inputId = "Reg_Kurtosis" , 
+                                                                                      label = '$$Kurtosis$$' , 
+                                                                                      min = 1 ,
+                                                                                      step = 0.05,
+                                                                                      max = 100 ,
+                                                                                      value = 1.8)
                                                      ) ),
-                                                     column(4 , plotOutput( outputId = 'PACs_RRDenisty' , inline = T)),
-                                                     column(4 , plotOutput( outputId = 'PACs_RRTimes', inline = T))
-                                                   ),
-                                                   tags$h2('Simulated ECG'),
-                                                   tags$hr(),
-                                                   fluidRow(actionButton(inputId = 'PACs_UpdateECG' , label = 'Update')),
-                                                   fluidRow(plotOutput( outputId = 'PACs_ECG', inline = F))
-                                         )},# PACs
-                                         {tabPanel(title = 'Atrial Fibrillation', 
-                                                   wellPanel(tags$h1('Atrial Fibrillation')) ,
-                                                   fluidRow(
-                                                     column(4 , wellPanel(sliderInput(inputId = "AFib_pi1" , 
-                                                                                      label = '$$ \\pi_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 1 ,
-                                                                                      value = 0.33333) ,
-                                                                          sliderInput(inputId = "AFib_pi2" , 
-                                                                                      label = '$$ \\pi_{(2)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 1 ,
-                                                                                      value = 0.33333) ,
-                                                                          #sliderInput(inputId = "PAC_pi3" , 
-                                                                          #            label = '$$ \\pi_{(3)} $$' , 
-                                                                          #           min = 1 ,
-                                                                          #            step = 0.001,
-                                                                          #            max = 2 ,
-                                                                          #            value = 0.1) ,
-                                                                          sliderInput(inputId = "AFib_mu1" , 
-                                                                                      label = '$$ \\mu_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 2 ,
-                                                                                      value = 0.6) ,
-                                                                          sliderInput(inputId = "AFib_mu2" , 
-                                                                                      label = '$$ \\mu_{(2)}  - \\mu_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 3 ,
-                                                                                      value = 0.5),
-                                                                          sliderInput(inputId = "AFib_mu3" , 
-                                                                                      label = '$$ \\mu_{(3)}  - \\mu_{(2)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 1 ,
-                                                                                      value = 0.5),
-                                                                          sliderInput(inputId = "AFib_sigma1" , 
-                                                                                      label = '$$ \\sigma_{(1)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.3 ,
-                                                                                      value = 0.2),
-                                                                          sliderInput(inputId = "AFib_sigma2" , 
-                                                                                      label = '$$ \\sigma_{(2)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.3 ,
-                                                                                      value = 0.2 ),
-                                                                          sliderInput(inputId = "AFib_sigma3" , 
-                                                                                      label = '$$ \\sigma_{(3)} $$' , 
-                                                                                      min = 0 ,
-                                                                                      step = 0.001,
-                                                                                      max = 0.3 ,
-                                                                                      value = 0.2 )
-                                                     ) ),
-                                                     column(4 , plotOutput( outputId = 'AFib_RRDenisty' , inline = T)),
-                                                     column(4 , plotOutput( outputId = 'AFib_RRTimes', inline = T))
-                                                   ),
-                                                   tags$h2('Simulated ECG'),
-                                                   tags$hr(),
-                                                   fluidRow(actionButton(inputId = 'AFib_UpdateECG' , label = 'Update')),
-                                                   fluidRow(plotOutput( outputId = 'AFib_ECG', inline = F))
-                                         )},# AFib
-                                         {tabPanel(
-                                           title = 'P-waves' , 
-                                           wellPanel(tags$h1('P-wave Model')),
-                                           fluidRow(
-                                             column(4 , wellPanel(sliderInput(inputId = "Pwave_AL" , 
-                                                                              label = 'Choose left P-amplitude' , 
-                                                                              min = -40 ,
-                                                                              step = 0.001,
-                                                                              max = 40 ,
-                                                                              value = 6) ,
-                                                                  sliderInput(inputId = "Pwave_AR" , 
-                                                                              label = 'Choose right P-amplitude' , 
-                                                                              min = -40 ,
-                                                                              step = 0.001,
-                                                                              max = 40 ,
-                                                                              value = 10.21) ,
-                                                                  sliderInput(inputId = "Pwave_LL" , 
-                                                                              label = 'Choose left P-time before R' , 
-                                                                              min =  0.00001 ,
-                                                                              step = 0.001,
-                                                                              max = 0.5 ,
-                                                                              value = 0.225) ,
-                                                                  sliderInput(inputId = "Pwave_LR" , 
-                                                                              label = 'Choose right P-time before R' , 
-                                                                              min = 0.00001 ,
-                                                                              step = 0.001,
-                                                                              max = 0.5 ,
-                                                                              value = 0.175),
-                                                                  sliderInput(inputId = "Pwave_WL" , 
-                                                                              label = 'Choose left P-width' , 
-                                                                              min = 0 ,
-                                                                              step = 0.00001,
-                                                                              max = 0.1 ,
-                                                                              value = 0.03),
-                                                                  sliderInput(inputId = "Pwave_WR" , 
-                                                                              label = 'Choose right P-width' , 
-                                                                              min = 0 ,
-                                                                              step = 0.00001,
-                                                                              max = 0.1 ,
-                                                                              value = 0.03)
-                                             ) ),
-                                             column(4 , plotOutput( outputId = 'Pwave_RRDenisty' ))
-                                           ) 
-                                         )  }, # P-waves
-                                         {tabPanel(
-                                           title = 'Heart-rhythm Discrepancy' , 
-                                           wellPanel(tags$h1('Heart-rhythm Discrepancy')),
-                                           fluidRow(
-                                             column(4 , wellPanel(sliderInput( inputId = "HeartrhythmDisc" , 
-                                                                               label = 'Choose dispersion parameter.' , 
-                                                                               min = 0 ,
-                                                                               step = 1,
-                                                                               max = 10000 ,
-                                                                               value = 5000),
-                                                                  actionButton(inputId = 'HRDis_UpdateRRTimes' , label = 'Update RRtimes')
-                                             ) ),
-                                             
-                                             column(4 , plotOutput( outputId = 'HRDis_RRDenisty' , inline = T)),
-                                             column(4 , plotOutput( outputId = 'HRDis_RRTimes', inline = T))
-                                           ),
+                                                   column(4 , plotOutput( outputId = 'Reg_RRDenisty' , inline = T)),
+                                                   column(4 , plotOutput( outputId = 'Reg_RRTimes', inline = T))
+                                         ),
                                            tags$h2('Simulated ECG'),
                                            tags$hr(),
-                                           fluidRow(actionButton(inputId = 'HRDis_UpdateECG' , label = 'Update')),
-                                           fluidRow(plotOutput( outputId = 'HRDis_ECG', inline = F)))
-                                         })
-                 )
+                                           fluidRow(actionButton(inputId = 'Reg_UpdateECG' , label = 'Update')),
+                                           fluidRow(plotOutput( outputId = 'Reg_ECG', inline = F))
+                 )},# Regular
+                 {tabPanel(title = 'Bigeminy', 
+                           wellPanel(tags$h1('Bigeminy')) ,
+                           fluidRow(
+                             column(4 , wellPanel(sliderInput(inputId = "mu1" , 
+                                                              label = '$$ \\mu_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 2 ,
+                                                              value = 0.5) ,
+                                                  sliderInput(inputId = "mu2" , 
+                                                              label = '$$ \\mu_{(2)} - \\mu_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 2 ,
+                                                              value = 0.2),
+                                                  sliderInput(inputId = "sigma1" , 
+                                                              label = '$$ \\sigma_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.1 ,
+                                                              value = 0.01),
+                                                  sliderInput(inputId = "sigma2" , 
+                                                              label = '$$ \\sigma_{(2)} - \\sigma_{(1)}$$' , 
+                                                              min = -0.05 ,
+                                                              step = 0.001,
+                                                              max = 0.05 ,
+                                                              value = 0 ))),
+                             column(4 , plotOutput( outputId = 'RRDenisty' , inline = T)),
+                             column(4 , plotOutput( outputId = 'RRTimes', inline = T)
+                             )
+                           ),
+                           tags$h2('Simulated ECG'),
+                           tags$hr(),
+                           fluidRow(actionButton(inputId = 'UpdateECG' , label = 'Update')),
+                           fluidRow(plotOutput( outputId = 'ECG', inline = F))
+                 )},# Bigeminy
+                 {tabPanel(title = 'PACs', 
+                           wellPanel(tags$h1('PACs')) ,
+                           fluidRow(
+                             column(4 , wellPanel(sliderInput(inputId = "PAC_pi1" , 
+                                                              label = '$$ \\pi_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 1 ,
+                                                              value = 0.8) ,
+                                                  #sliderInput(inputId = "PAC_pi2" , 
+                                                  #            label = '$$ \\pi_{(2)} $$' , 
+                                                  #            min = 0 ,
+                                                  #            step = 0.001,
+                                                  #            max = 1 ,
+                                                  #            value = 0.8) ,
+                                                  #sliderInput(inputId = "PAC_pi3" , 
+                                                  #            label = '$$ \\pi_{(3)} $$' , 
+                                                  #           min = 1 ,
+                                                  #            step = 0.001,
+                                                  #            max = 2 ,
+                                                  #            value = 0.1) ,
+                                                  sliderInput(inputId = "PAC_mu1" , 
+                                                              label = '$$ \\mu_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 2 ,
+                                                              value = 0.6) ,
+                                                  sliderInput(inputId = "PAC_mu2" , 
+                                                              label = '$$ \\mu_{(2)}  - \\mu_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 2 ,
+                                                              value = 0.1),
+                                                  sliderInput(inputId = "PAC_mu3" , 
+                                                              label = '$$ \\mu_{(3)}  - \\mu_{(2)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 2 ,
+                                                              value = 0.1),
+                                                  sliderInput(inputId = "PAC_sigma1" , 
+                                                              label = '$$ \\sigma_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.1 ,
+                                                              value = 0.01),
+                                                  sliderInput(inputId = "PAC_sigma2" , 
+                                                              label = '$$ \\sigma_{(2)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.1 ,
+                                                              value = 0.01 ),
+                                                  sliderInput(inputId = "PAC_sigma3" , 
+                                                              label = '$$ \\sigma_{(3)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.1 ,
+                                                              value = 0.01 )
+                             ) ),
+                             column(4 , plotOutput( outputId = 'PACs_RRDenisty' , inline = T)),
+                             column(4 , plotOutput( outputId = 'PACs_RRTimes', inline = T))
+                           ),
+                           tags$h2('Simulated ECG'),
+                           tags$hr(),
+                           fluidRow(actionButton(inputId = 'PACs_UpdateECG' , label = 'Update')),
+                           fluidRow(plotOutput( outputId = 'PACs_ECG', inline = F))
+                 )},# PACs
+                 {tabPanel(title = 'Atrial Fibrillation', 
+                           wellPanel(tags$h1('Atrial Fibrillation')) ,
+                           fluidRow(
+                             column(4 , wellPanel(sliderInput(inputId = "AFib_pi1" , 
+                                                              label = '$$ \\pi_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 1 ,
+                                                              value = 0.33333) ,
+                                                  sliderInput(inputId = "AFib_pi2" , 
+                                                              label = '$$ \\pi_{(2)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 1 ,
+                                                              value = 0.33333) ,
+                                                  #sliderInput(inputId = "PAC_pi3" , 
+                                                  #            label = '$$ \\pi_{(3)} $$' , 
+                                                  #           min = 1 ,
+                                                  #            step = 0.001,
+                                                  #            max = 2 ,
+                                                  #            value = 0.1) ,
+                                                  sliderInput(inputId = "AFib_mu1" , 
+                                                              label = '$$ \\mu_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 2 ,
+                                                              value = 0.6) ,
+                                                  sliderInput(inputId = "AFib_mu2" , 
+                                                              label = '$$ \\mu_{(2)}  - \\mu_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 3 ,
+                                                              value = 0.5),
+                                                  sliderInput(inputId = "AFib_mu3" , 
+                                                              label = '$$ \\mu_{(3)}  - \\mu_{(2)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 1 ,
+                                                              value = 0.5),
+                                                  sliderInput(inputId = "AFib_sigma1" , 
+                                                              label = '$$ \\sigma_{(1)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.3 ,
+                                                              value = 0.2),
+                                                  sliderInput(inputId = "AFib_sigma2" , 
+                                                              label = '$$ \\sigma_{(2)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.3 ,
+                                                              value = 0.2 ),
+                                                  sliderInput(inputId = "AFib_sigma3" , 
+                                                              label = '$$ \\sigma_{(3)} $$' , 
+                                                              min = 0 ,
+                                                              step = 0.001,
+                                                              max = 0.3 ,
+                                                              value = 0.2 )
+                             ) ),
+                             column(4 , plotOutput( outputId = 'AFib_RRDenisty' , inline = T)),
+                             column(4 , plotOutput( outputId = 'AFib_RRTimes', inline = T))
+                           ),
+                           tags$h2('Simulated ECG'),
+                           tags$hr(),
+                           fluidRow(actionButton(inputId = 'AFib_UpdateECG' , label = 'Update')),
+                           fluidRow(plotOutput( outputId = 'AFib_ECG', inline = F))
+                 )},# AFib
+                 {tabPanel(
+                   title = 'P-waves' , 
+                   wellPanel(tags$h1('P-wave Model')),
+                   fluidRow(
+                     column(4 , wellPanel(sliderInput(inputId = "Pwave_AL" , 
+                                                      label = 'Choose left P-amplitude' , 
+                                                      min = -40 ,
+                                                      step = 0.001,
+                                                      max = 40 ,
+                                                      value = 6) ,
+                                          sliderInput(inputId = "Pwave_AR" , 
+                                                      label = 'Choose right P-amplitude' , 
+                                                      min = -40 ,
+                                                      step = 0.001,
+                                                      max = 40 ,
+                                                      value = 10.21) ,
+                                          sliderInput(inputId = "Pwave_LL" , 
+                                                      label = 'Choose left P-time before R' , 
+                                                      min =  0.00001 ,
+                                                      step = 0.001,
+                                                      max = 0.5 ,
+                                                      value = 0.225) ,
+                                          sliderInput(inputId = "Pwave_LR" , 
+                                                      label = 'Choose right P-time before R' , 
+                                                      min = 0.00001 ,
+                                                      step = 0.001,
+                                                      max = 0.5 ,
+                                                      value = 0.175),
+                                          sliderInput(inputId = "Pwave_WL" , 
+                                                      label = 'Choose left P-width' , 
+                                                      min = 0 ,
+                                                      step = 0.00001,
+                                                      max = 0.1 ,
+                                                      value = 0.03),
+                                          sliderInput(inputId = "Pwave_WR" , 
+                                                      label = 'Choose right P-width' , 
+                                                      min = 0 ,
+                                                      step = 0.00001,
+                                                      max = 0.1 ,
+                                                      value = 0.03)
+                     ) ),
+                     column(4 , plotOutput( outputId = 'Pwave_RRDenisty' ))
+                   ) 
+                 )  }, # P-waves
+                 {tabPanel(
+                   title = 'Heart-rhythm Discrepancy' , 
+                   wellPanel(tags$h1('Heart-rhythm Discrepancy')),
+                   fluidRow(
+                     column(4 , wellPanel(sliderInput( inputId = "HeartrhythmDisc" , 
+                                                       label = 'Choose dispersion parameter.' , 
+                                                       min = 0 ,
+                                                       step = 1,
+                                                       max = 10000 ,
+                                                       value = 5000),
+                                          actionButton(inputId = 'HRDis_UpdateRRTimes' , label = 'Update RRtimes')
+                     ) ),
+                     
+                     column(4 , plotOutput( outputId = 'HRDis_RRDenisty' , inline = T)),
+                     column(4 , plotOutput( outputId = 'HRDis_RRTimes', inline = T))
+                   ),
+                   tags$h2('Simulated ECG'),
+                   tags$hr(),
+                   fluidRow(actionButton(inputId = 'HRDis_UpdateECG' , label = 'Update')),
+                   fluidRow(plotOutput( outputId = 'HRDis_ECG', inline = F)))
+                 })
+  )
   )
   
   
   server <- function( input , output ){
     # Description page
-    {
+    {{
       output$BigeminyDensity <- renderImage({
         
         list(src = 'www/BigeminyRRTimesDistribution.png',
@@ -354,86 +409,96 @@
              alt = "This is alternate text")
       }, deleteFile = FALSE)
     }
-    {
-      output$PACsDensity <- renderImage({
-        
-        list(src = 'www/PACsRRTimesDistribution.png',
-             contentType = 'image/png',
-             width = 400,
-             height = 400,
-             alt = "This is alternate text")
-      }, deleteFile = FALSE)
-    }
-    {
-      output$RegularDensity <- renderImage({
-        
-        list(src = 'www/RegularRRTimesDistribution.png',
-             contentType = 'image/png',
-             width = 400,
-             height = 400,
-             alt = "This is alternate text")
-      }, deleteFile = FALSE)
-    }
-    {
-      output$AFibDensity <- renderImage({
-        
-        list(src = 'www/AFibRRTimesDistribution.png',
-             contentType = 'image/png',
-             width = 400,
-             height = 400,
-             alt = "This is alternate text")
-      }, deleteFile = FALSE)
-    }
+      {
+        output$PACsDensity <- renderImage({
+          
+          list(src = 'www/PACsRRTimesDistribution.png',
+               contentType = 'image/png',
+               width = 400,
+               height = 400,
+               alt = "This is alternate text")
+        }, deleteFile = FALSE)
+      }
+      {
+        output$RegularDensity <- renderImage({
+          
+          list(src = 'www/RegularRRTimesDistribution.png',
+               contentType = 'image/png',
+               width = 400,
+               height = 400,
+               alt = "This is alternate text")
+        }, deleteFile = FALSE)
+      }
+      {
+        output$AFibDensity <- renderImage({
+          
+          list(src = 'www/AFibRRTimesDistribution.png',
+               contentType = 'image/png',
+               width = 400,
+               height = 400,
+               alt = "This is alternate text")
+        }, deleteFile = FALSE)
+      }}
     # Regular elements
     {
-      X_Reg <- reactive({CreateDefaultX_PACS( max(0,input$Reg_pi1 ) ,
-                                              input$Reg_pi2,
-                                              max(0,(1-input$Reg_pi1 - input$Reg_pi2) ) ,
-                                              input$Reg_mu1 ,
-                                              input$Reg_mu1 + input$Reg_mu2 , 
-                                              input$Reg_mu1 + input$Reg_mu2 + input$Reg_mu3 , 
-                                              input$Reg_sigma1,
-                                              input$Reg_sigma2,
-                                              input$Reg_sigma3) })
+      output$Skewness_Slider <- renderUI({
+        sliderInput(inputId = "Reg_Skewness" , 
+                    label = withMathJax('$$Skewness$$') , 
+                    min = -round(sqrt((input$Reg_Kurtosis -1) - 0.01),2) ,
+                    step = 0.01,
+                    max = +round(sqrt((input$Reg_Kurtosis -1) + 0.01),2) ,
+                    value = 0)
+      })
+      X_Reg <- reactive({c(input$Reg_Mean,
+                           input$Reg_StandardDeviation,
+                           input$Reg_Skewness,
+                           input$Reg_Kurtosis)
+      })
       # PACS RRDensity plot
       output$Reg_RRDenisty <- renderPlot({
-        x <- seq(X_Reg()[4] - (3*X_Reg()[7]),X_Reg()[6] + (3*X_Reg()[9]),0.001)  
-        f_x <- FM_EvaluateDenistyEstimate(x , X_Reg())
+        x <- seq(X_Reg()[1] - (3*X_Reg()[2]),X_Reg()[1] + (3*X_Reg()[2]),0.0001)  
+        f_x <- FM_PearonsRegularDenisty( X_Reg(),x)
         
-        p1_Reg <- ggplot(data.frame(RR = x , f_x = f_x) , aes(RR , f_x)) + geom_line(col = 'blue') +ggtitle('Distribution of RRTimes')
+        p1_Reg <- ggplot(data.frame(RR = x , f_x= log(f_x)) , aes(RR , f_x)) +
+          geom_line(col = 'blue') +ggtitle('Distribution of RRTimes') +
+          xlab('rr')+
+          ylab('log(f(rr))')
         p1_Reg
       },width = 450,height = 450)
-      output$Reg_RRTimes <- renderPlot({
-        
-        RRTimes <- FM_SampleGMM(X_Reg() , 1000)
-        
-        p2_Reg <- ggplot(data.frame(t = cumsum(RRTimes) , RRTimes = RRTimes) , aes(t , RRTimes)) + geom_point(col =rgb(0,0,1,0.1)) + ylim(c(0,2)) +ggtitle('RRTimes')
-        p2_Reg 
-        
-      },width = 450,height = 450)
-      observeEvent( c(input$Reg_UpdateECG , X_Reg()) , {
-        output$Reg_ECG <- renderPlot({
-          
-          
-          RRTimes <- FM_SampleGMM(X_Reg() , 20)
-          t = cumsum(RRTimes[,1])
-          ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
-          p3_Reg <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) + geom_line(col =rgb(0,0,0,0.9) , size = 0.7)
-          p3_Reg <- p3_Reg + theme(
-            panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
-                                            size = 2, linetype = "solid"),
-            panel.grid.major = element_line(size = 1, linetype = 'solid',
-                                            colour = rgb(1,0,0,0.25)), 
-            panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
-                                            colour = rgb(1,0,0,0.25))
-          ) 
-          
-          p3_Reg <-p3_Reg + scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
-          p3_Reg
-        }
-        ,width = 1500,height = 178)
-        
-      }) 
+       output$Reg_RRTimes <- renderPlot({
+         
+         RRTimes <- FM_CleanRRTimes(FM_SamplePearonsRegular(X_Reg() , 1000))
+         
+         p2_Reg <- ggplot(data.frame(t = cumsum(RRTimes) , RRTimes = RRTimes) , aes(t , RRTimes)) + geom_point(col =rgb(0,0,1,0.1)) + ylim(c(0,2)) +ggtitle('RRTimes')
+         p2_Reg 
+         
+       },width = 450,height = 450)
+       observeEvent( c(input$Reg_UpdateECG , X_Reg()) , {
+         output$Reg_ECG <- renderPlot({
+           
+           
+           RRTimes <- FM_CleanRRTimes( FM_SamplePearonsRegular(X_Reg() , 100) )
+           t = cumsum(RRTimes)
+           ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
+           p3_Reg <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) +
+             geom_line(col =rgb(0,0,0,0.9) , size = 0.7) +
+             theme(
+             panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
+                                             size = 2, linetype = "solid"),
+             panel.grid.major = element_line(size = 1, linetype = 'solid',
+                                             colour = rgb(1,0,0,0.25)), 
+             panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
+                                             colour = rgb(1,0,0,0.25))
+           ) 
+           
+           p3_Reg <-p3_Reg + 
+             scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + 
+             scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
+           p3_Reg
+         }
+         ,width = 1500,height = 178)
+         
+       }) 
     }
     # Bigeminy elements
     {X <- reactive({CreateDefaultX(input$mu1 , input$mu1 + input$mu2 , input$sigma1 , max(0.0001,input$sigma1 + input$sigma2 )) })

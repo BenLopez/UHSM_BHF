@@ -1,13 +1,17 @@
 if(!file.exists('MasterData.RData')){
   MasterData <- POM_ExtractFirstRecords( AllDataStructure )
-}else{
+save(MasterData , file = 'MasterData.RData')
+  }else{
   load('MasterData.RData')
 }
 
 #### Process Data ####
 # Procedure details 
 
-MasterData$ProcDetails <- DP_AssignSurgeryLabels(MasterData$ProcDetails)
+MasterData <- MasterData[apply(as.matrix(MasterData$NewPseudoId) , 1 , DP_ExtractOpCodeFromNewPatinetID) == '-1-1-1' , ]
+
+#MasterData$ProcDetails <- DP_AssignSurgeryLabels(MasterData$ProcDetails)
+#MasterData$ProcDetails[MasterData$ProcDetails == 'MCS' | MasterData$ProcDetails == 'PP' | MasterData$ProcDetails == 'SP' | MasterData$ProcDetails == 'Transplant'] = 'Other'
 
 # Create AFLogical
 
@@ -45,8 +49,8 @@ MasterData <- MasterData[MasterData$Pre_OperativeHeartRhythm != "Atrial fibrilla
   MasterData$MilrinoneStandardised[is.na(MasterData$MilrinoneStandardised )] <- (MasterData$Milrinone.unknown.dose.Rate[is.na(MasterData$MilrinoneStandardised )]*200)/(60*MasterData$Weight[is.na(MasterData$MilrinoneStandardised )])
   MasterData$MilrinoneStandardised[is.na(MasterData$MilrinoneStandardised)] <- 0
 
-  MasterData$VasopressinStandardised <- (MasterData$Vasopressin..mL...Volume*0.4)/(60*MasterData$Weight)
-  MasterData$VasopressinStandardised[is.na(MasterData$VasopressinStandardised)] <- 0
+ # MasterData$VasopressinStandardised <- (MasterData$Vasopressin..mL...Volume*0.4)/(60*MasterData$Weight)
+#  MasterData$VasopressinStandardised[is.na(MasterData$VasopressinStandardised)] <- 0
 
   MasterData$DobutamineStandardised <- (MasterData$Dobutamine.250mg.50mls.Volume*5000)/(60*MasterData$Weight)
   MasterData$DobutamineStandardised[is.na(MasterData$DobutamineStandardised)] <-  (MasterData$Dobutamine.unknown.dose.Volume*5000)/(60*MasterData$Weight)
@@ -105,7 +109,6 @@ ListNumericVariables <- c('Age' ,
                           'DopamineStandardised',
                           'AdrenalineStandardised',
                           'MilrinoneStandardised',
-                          'VasopressinStandardised',
                           'DobutamineStandardised',
                           'ArtPO2',
                           'Lac',
@@ -126,7 +129,6 @@ ListofCategoricalVariables  <- c('AFlogical',
                                  "EjectionFractionCategory",
                                  "NYHAGrade",
                                  "AnginaGrade",
-                                 "IntubatedInSurgury",
                                  "Filter",
                                  "IABP2",
                                  "Active.Endocarditis",
@@ -217,23 +219,23 @@ MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Poor
 
 MasterData$NYHAGrade[MasterData$NYHAGrade == ''] <- NA
 MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Known'] <- NA
-MasterData$NYHAGrade[MasterData$NYHAGrade == "Slight Limitation (II)"] <- 'NYHA(II)'
-MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Limiting (I)'] <- 'NYHA(I)'
-MasterData$NYHAGrade[MasterData$NYHAGrade == "Marked Limitation (III)"] <- 'NYHA(III)'
-MasterData$NYHAGrade[MasterData$NYHAGrade == "Any Activity or At Rest (IV)"] <- 'NYHA(IV)'
-MasterData$NYHAGrade[MasterData$NYHAGrade == "None"] <- 'NYHA(None)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Slight Limitation (II)"] <- 'NYHA(O-II)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Limiting (I)'] <- 'NYHA(O-II)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Marked Limitation (III)"] <- 'NYHA(III-IV)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "Any Activity or At Rest (IV)"] <- 'NYHA(III-IV)'
+MasterData$NYHAGrade[MasterData$NYHAGrade == "None"] <- 'NYHA(O-II)'
 
 MasterData$AnginaGrade[MasterData$AnginaGrade == ''] <- NA
 MasterData$AnginaGrade[MasterData$AnginaGrade == 'Unknown'] <- NA
-MasterData$AnginaGrade[MasterData$AnginaGrade == "Strenuous Exertion (I)"   ] <- 'AnginaGrade(I)'
-MasterData$AnginaGrade[MasterData$AnginaGrade == "Slight Limitation (II)"     ] <- 'AnginaGrade(II)'
-MasterData$AnginaGrade[MasterData$AnginaGrade == "Marked Limitation (III)"     ] <- 'AnginaGrade(III)'
-MasterData$AnginaGrade[MasterData$AnginaGrade == "Any Activity or At Rest (IV)"     ] <- 'AnginaGrade(IV)'
-MasterData$AnginaGrade[MasterData$AnginaGrade == "No"     ] <- 'AnginaGrade(None)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Strenuous Exertion (I)"   ] <- 'AnginaGrade(O-II)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Slight Limitation (II)"     ] <- 'AnginaGrade(O-II)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Marked Limitation (III)"     ] <- 'AnginaGrade(III-IV)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "Any Activity or At Rest (IV)"     ] <- 'AnginaGrade(IV-IV)'
+MasterData$AnginaGrade[MasterData$AnginaGrade == "No"     ] <- 'AnginaGrade(O-II)'
 
 
-MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == ' TRUE'] <- 'IntupatedInSurgery'
-MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == 'FALSE'] <- 'NotIntupatedInSurgery'
+#MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == ' TRUE'] <- 'IntupatedInSurgery'
+#MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == 'FALSE'] <- 'NotIntupatedInSurgery'
 
 MasterData$Filter[MasterData$Filter == ' TRUE'] <- 'CVVHDyalysis(Yes)'
 MasterData$Filter[MasterData$Filter == 'FALSE'] <- 'CVVHDyalysis(No)'
@@ -258,6 +260,7 @@ MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysf
 
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease == ''] <- NA
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease== 'No'] <- 'HistoryOfPulmonaryDisease(No)'
+MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease== 'NO '] <- 'HistoryOfPulmonaryDisease(No)'
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease== 'No '] <- 'HistoryOfPulmonaryDisease(No)'
 MasterData$HistoryOfPulmonaryDisease[MasterData$HistoryOfPulmonaryDisease == 'Yes'] <- 'HistoryOfPulmonaryDisease(Yes)'
 
@@ -274,13 +277,14 @@ MasterData$PreviousCardiacSurgery[MasterData$PreviousCardiacSurgery != ''] <- 'P
 MasterData$PreviousCardiacSurgery[MasterData$PreviousCardiacSurgery == ''] <- 'PreviousCardiacSurgery(No)'
 
 MasterData$Recent.MI[MasterData$Recent.MI == ''] <- NA
-MasterData$Recent.MI[MasterData$Recent.MI== 'No'] <- 'Recent.MI(No)'
-MasterData$Recent.MI[MasterData$Recent.MI == 'Yes'] <- 'Recent.MI(Yes)'
+MasterData$Recent.MI[MasterData$Recent.MI == 'No'] <- 'Recent.MI(No)'
+MasterData$Recent.MI[MasterData$Recent.MI == 'No '] <- 'Recent.MI(No)'
+
+MasterData$Recent.MI[MasterData$Recent.MI != 'Recent.MI(No)' & !is.na(MasterData$Recent.MI)] <- 'Recent.MI(Yes)'
 
 MasterData$PreOpSupport[MasterData$PreOpSupport == ''] <- NA
 MasterData$PreOpSupport[which(MasterData$PreOpSupport != 'No ')] <- 'PreOpSupport(Yes)'
 MasterData$PreOpSupport[MasterData$PreOpSupport== 'No '] <- 'PreOpSupport(No)'
-
 
 MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation == ''] <- NA
 MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation== 'No'] <- 'VentilatedPreOperation(No)'
@@ -307,10 +311,60 @@ MasterData$ExtracardiacArteriopathy[MasterData$ExtracardiacArteriopathy== 'No'] 
 MasterData$ExtracardiacArteriopathy[MasterData$ExtracardiacArteriopathy == 'Yes'] <- 'ExtracardiacArteriopathy(Yes)'
 
 
-MasterData$Planned.Valve.Surgery[(MasterData$Planned.Valve.Surgery == '') & (MasterData$ProcDetails != 'Valve') ] <- 'None'
-MasterData$Planned.Valve.Surgery[MasterData$Planned.Valve.Surgery == ''] <- NA
+MasterData$Planned.Valve.Surgery[(MasterData$Planned.Valve.Surgery == '') ] <- 'None'
+MasterData$Planned.Valve.Surgery[!(MasterData$Planned.Valve.Surgery == 'Mitral Valve') & !(MasterData$Planned.Valve.Surgery == "Aortic Valve") & !(MasterData$Planned.Valve.Surgery == "Tricuspid Valve") & !(MasterData$Planned.Valve.Surgery =='None') ] <- 'Multiple'
+
+MasterData$ProcDetails[(MasterData$ProcDetails == 'CABG') & (MasterData$Planned.Valve.Surgery != 'None')] = "CABG and Valve"
+
+MasterData <- cbind(MasterData , DP_AssignSurgeryLabels2(MasterData$ProcDetails , ProcedureDetails ))
+
+MasterData$Complex <- as.vector(MasterData$Complex)
+MasterData$Complex[MasterData$Complex == 'Y'] = 'Procedure Details(Complex)'
+MasterData$Valve <- as.vector(MasterData$Valve)
+MasterData$Valve[MasterData$Valve == 'Y'] = 'Procedure Details(Valve)'
+MasterData$CABG <- as.vector(MasterData$CABG)
+MasterData$CABG[MasterData$CABG == 'Y'] = 'Procedure Details(CABG)'
+MasterData$Aortic <- as.vector(MasterData$Aortic)
+MasterData$Aortic[MasterData$Aortic == 'Y'] = 'Procedure Details(Aortic)'
+MasterData$Other <- as.vector(MasterData$Other)
+MasterData$Other[MasterData$Other == 'Y'] = 'Procedure Details(Other)'
+
+MasterData[MasterData$Other == 'N',]
+
 }
 
+ListofCategoricalVariables  <- c('AFlogical',
+                                 'Gender' ,
+                                 'ProcDetails' ,
+                                 'Valve',
+                                 'CABG',
+                                 'Aortic',
+                                 'Complex',
+                                 'Other',
+                                 "EjectionFractionCategory",
+                                 "NYHAGrade",
+                                 "AnginaGrade",
+                                 "Filter",
+                                 "IABP2",
+                                 "Active.Endocarditis",
+                                 "HTN",
+                                 "HistoryOfNeurologicalDysfunction",
+                                 "HistoryOfPulmonaryDisease",
+                                 "Diabetes",
+                                 "Thoracic.Aorta",
+                                 "PreviousCardiacSurgery",
+                                 "Recent.MI",
+                                 "PreOpSupport",
+                                 "VentilatedPreOperation",
+                                 "CardiogenicShock_pre_Operation",
+                                 "IntravenousInotropesPriorToAnaesthesia",
+                                 "IntravenousNitratesOrAnyHeparin",
+                                 "ExtracardiacArteriopathy",
+                                 "Planned.Valve.Surgery")
+
+MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] , 2 , as.factor )
+
+MasterData$Planned.Valve.Surgery[MasterData$Valve == "Procedure Details(Valve)" & MasterData$Planned.Valve.Surgery == 'None'] <-  "Aortic Valve" 
 
 # difference transforms
 {
@@ -324,3 +378,4 @@ MasterData$Planned.Valve.Surgery[MasterData$Planned.Valve.Surgery == ''] <- NA
 }
 
 AFLogical <- MasterData$AFLogical
+MasterData$Valve[MasterData$Planned.Valve.Surgery != 'None'] <- "Procedure Details(Valve)"

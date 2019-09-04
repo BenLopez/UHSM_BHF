@@ -418,3 +418,68 @@ FM_SampleGMMBigeminy <- function(X , N = 250 ){
   }
   return(output)
 }
+FM_EvaluatePearonsRegularDenisty <- function(X , x){
+  return(dpearson(x , moments = c(X[1],X[2]^2,X[3],X[4])) )
+}
+FM_SamplePearonsRegular <- function(X , N = 250){
+  return(rpearson(N , moments = c(X[1],X[2]^2,X[3],X[4])) )
+}
+FM_CleanRRTimes <- function(RRTimes){
+  RRTimes[RRTimes<0.2] <- 0.2
+  RRTimes[RRTimes> 2] <- 2
+  return(as.matrix(RRTimes))
+}
+
+FM_CreateAFAnnoation <- function(AnnotationVectors){
+  
+  RegularLogical <- AnnotationVectors[,1]
+  RegularLogical2 <- AnnotationVectors[,2]
+  RegularyIrregularLogical <- AnnotationVectors[,3]
+  RegularyIrregularLogical2 <- AnnotationVectors[,4]
+  SecondWaveLogical<- AnnotationVectors[,5]
+  
+  IrregularlyIrregularLogical <- (RegularyIrregularLogical == 1)&(RegularyIrregularLogical2 == 1)&(RegularLogical ==0) & (RegularLogical2 ==0)
+  #Undecided <- (RegularLogical == 0) & (RegularLogical2 ==1) & (RegularyIrregularLogical2 == 1) & (RegularyIrregularLogical == 1)
+  IrregularlyIrregularLogical[SecondWaveLogical == 1] <- 1
+  
+  return(IrregularlyIrregularLogical)
+  
+}
+FM_ExtractTimeFromHMOutput <- function(outputstruct){
+  
+  output <-rep(outputstruct[[1]][[5]] , length(outputstruct) -2 )
+  
+  for(ii in c(1:(length(outputstruct) -2)) ){
+    output[ii]  <- outputstruct[[ii]][[5]]
+  }
+  return(output)
+}
+FM_ExtractNonAFibNonImplausibleSets <- function(PatientID  , PatIndex2017){
+  load(paste0(path ,'\\',PatientID,'\\Zip_out\\', "HMOutput" , PatientID , '.RData'))
+  t <- FM_ExtractTimeFromHMOutput( outputstruct )
+  
+  AnnotationVectors <- outputstruct[[length(outputstruct)]]
+  
+  AFAnnotationHM <- FM_CreateAFAnnoation( AnnotationVectors )[1:(length(outputstruct)-2)]
+  AFAnnotationExpert <- BC_CreateAFAnnotationFomMetaData(t , DP_ExtractPatientRecordforIndex(PatIndex2017 = PatIndex2017,PatientID))
+  
+  RegularLogical <- AnnotationVectors[,1]
+  RegularyIrregularLogical <- AnnotationVectors[,3]
+  
+  
+  NonImplausibleSets <- matrix(0 , 0 , 10)
+  
+  for(i in 1:(length(outputstruct) -2) ){
+    
+    if(!is.null(outputstruct[[i]][[4]]$NonImplausibleSets )){
+      if(AFAnnotationExpert[i] == 0 & AFAnnotationHM[i] ==0){    
+        if(RegularLogical[i] == 1 & RegularyIrregularLogical[i] ==0)
+          NonImplausibleSets <- unique(rbind(NonImplausibleSets , outputstruct[[i]][[4]]$NonImplausibleSets )) 
+      }
+    }else{
+      disp('No Non-implausible points.')
+    }
+    
+  }
+  return(NonImplausibleSets)
+}

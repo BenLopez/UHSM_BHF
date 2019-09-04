@@ -817,6 +817,15 @@ DP_RestructureVent <- function(VentIndex2017){
 DP_ExtractPatientIDFromNewPatinetID <- function( newpatientID ){
   return(  substr(x = newpatientID , start = 1 , stop =  gregexpr( '-' , newpatientID )[[1]][1] -1 )  ) 
 }
+DP_ExtractOpCodeFromNewPatinetID <- function( newpatientID ){
+  return(  substr(x = newpatientID , start = gregexpr( '-' , newpatientID )[[1]][1]  , stop = nchar(newpatientID)) )  
+}
+DP_AssignSurgeryLabels2 <- function(Proc , ProcedureDetails){
+  output <- t( apply(as.matrix(Proc) , 1,function(X){ return(as.matrix(ProcedureDetails[ProcedureDetails$Name %in% X,3:7]) ) } ) )
+  colnames(output) <- c('CABG' , 'Valve' , 'Aortic' , 'Complex' , 'Other') 
+  return(data.frame(output))
+}
+
 DP_AssignSurgeryLabels <- function(Proc){
   Proc2 <- as.matrix(Proc)
   LevelNames <- c('Aortic' , 'Complex' , 'CABG' , 'Transplant' , 'Valve' , 'MCS' , 'SP' , 'PP' , 'Other')
@@ -831,4 +840,7 @@ DP_AssignSurgeryLabels <- function(Proc){
   Proc2[ Proc %in% c('drain removal','Major Sternal Debridement/VAC','exploration secondary to flow issues','Oxygenator removal','pericardial collection drainage','Pericardial Window','Pericardiectomy','removal of chest drain','Removal Of Packs/Secondary Chest Closure','Removal Sternal Wire/Debdridement','Sternal Flap','sternal rewire','Sternal wound flap','Tamponade/Re-Operation For Bleeding',"Surgical Tracheostomy")] <-  LevelNames[8]
   Proc2[ Proc %in% c('Stenting carotid pseudo aneurysm','Leg fasciectomy','embolisation of gi bleed','Laparotomy' , 'Epicardial pacemaker;Other procedure not listed above;','BK amuptation')] <-LevelNames[9]
 return(Proc2)
+}
+DP_ExtractIfEverhadRRT <- function(AllDataStructure){
+  return(as.matrix(lapply(AllDataStructure , function(X){ sum(X$timeseriesvariables$Filter[!is.na(X$timeseriesvariables$Filter)]) > 1})))
 }

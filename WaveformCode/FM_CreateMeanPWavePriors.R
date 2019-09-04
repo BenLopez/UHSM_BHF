@@ -93,3 +93,22 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
 }
 }
 
+
+
+FM_CreateTrainingset <- function(){
+PwaveImplausibilityThresholds <- matrix(0 , 1100 , 2)
+PwaveImplausibilityEDF <- array(0 , c(1100 , 2,201) )
+
+numberofrepitions = 500000
+for(i in 1:1100){
+#for(i in 1:dim( PriorNonImplausibleSet)[1]){
+outputStructure <- FM_CalculateEDFPwaves(Xstar , PriorNonImplausibleSet[i,] , E_Beta , V_Beta, numbersamples = numberofrepitions, clength = 0.1 , q = 0.99 )
+PwaveImplausibilityThresholds[i,1] <- outputStructure[[1]]
+PwaveImplausibilityThresholds[i,2] <- outputStructure[[2]]
+PwaveImplausibilityEDF[i,1,] <- outputStructure[[3]]
+PwaveImplausibilityEDF[i,2,] <- outputStructure[[4]]
+#DP_WaitBar(i/dim( PriorNonImplausibleSet)[1])
+DP_WaitBar(i/1100)
+}
+
+}

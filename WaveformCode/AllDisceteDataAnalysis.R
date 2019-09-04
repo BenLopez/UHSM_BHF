@@ -27,7 +27,10 @@ source('ADDAProcessData.R')
 
 {
   NamesofPeropCategoricalVariables <- c( 'Gender' ,
-                                         'ProcDetails' ,
+                                         'Valve',
+                                         'CABG',
+                                         'Aortic',
+                                         'Complex',
                                          "EjectionFractionCategory",
                                          "NYHAGrade" ,
                                          "AnginaGrade",
@@ -99,8 +102,7 @@ source('ADDAProcessData.R')
   PreOpContinuousUnivariateResultsLatex <- xtable(PreOpContinuousUnivariateResults)
   
   # Post_op Catagorical Data Structure
-  NamesofPostopCategoricalVariables <- c( 'IntubatedInSurgury' ,
-                                          'Filter',
+  NamesofPostopCategoricalVariables <- c(  'Filter',
                                           'IABP2')
   
   
@@ -168,12 +170,10 @@ source('ADDAProcessData.R')
                                         'DopamineStandardised',
                                         'AdrenalineStandardised',
                                         'MilrinoneStandardised',
-                                        'VasopressinStandardised',
                                         'DobutamineStandardised',
                                         'ArtPO2',
                                         'Lac',
                                         'FiO26num',
-                                        'PAR',
                                         'GCSnum',
                                         'PaO2OverFiO2')
   
@@ -213,7 +213,10 @@ source('ADDAProcessData.R')
 {NamesofLogisticEuroScoreVariables <- c( 'Age',
                                          'Gender',
                                          'PreopCreat',
-                                         'ProcDetails' ,
+                                         'Valve',
+                                         'CABG',
+                                         'Aortic',
+                                         'Complex',
                                          "EjectionFractionCategory",
                                          "AnginaGrade",
                                          'Urgency',
@@ -257,7 +260,6 @@ xtable(model)
                                  'DopamineStandardised',
                                  'AdrenalineStandardised',
                                  'MilrinoneStandardised',
-                                 'VasopressinStandardised',
                                  'DobutamineStandardised',
                                  'ReliableART.M',
                                  'PaO2OverFiO2'
@@ -280,7 +282,6 @@ xtable(model)
                                      'Creatinine',
                                      'Bilirubin',
                                      'Filter',
-                                     'PAR',
                                      'Lac',
                                      'Filter',
                                      'IABP2',
@@ -384,9 +385,14 @@ model <-  glm( AFLogical ~  PreOpAlb + PreopBili , family=binomial(link='logit')
 summary(model)  
 xtable(model)
 
-NamesPreOpOperativeVariables <- c('ProcDetails',
+NamesPreOpOperativeVariables <- c('Valve',
+                                  'CABG',
+                                  'Aortic',
+                                  'Complex',
                                   'Urgency',
-                                  'Thoracic.Aorta'
+                                  'Thoracic.Aorta',
+                                  "Planned.Valve.Surgery"
+                                  
 )
 PreOpOperativeComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpOperativeVariables ,MasterData = MasterData )
 
@@ -408,8 +414,8 @@ xtable(model)
 
 NamesPreOpRespiratoryVariables <- c('VentilatedPreOperation'
                                     )
-PreOpRespiratoryComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpRespiratoryVariables ,MasterData = MasterData )
-}
+#PreOpRespiratoryComparisonOutputs  <- POM_GroupComparison(NamesofVariables = NamesPreOpRespiratoryVariables ,MasterData = MasterData )
+#}
 
 #### Post Op Groups
 {
@@ -442,10 +448,8 @@ NamesPostOpCardioVascularVariables <- c('IABP2',
                                         'DopamineStandardised',
                                         'AdrenalineStandardised',
                                         'MilrinoneStandardised',
-                                        'VasopressinStandardised',
                                         'DobutamineStandardised',
-                                        'Lac',
-                                        'PAR')
+                                        'Lac')
 PostOpCardioVascularComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpCardioVascularVariables,NamesPreOpCardioVascularVariables) ,MasterData = MasterData )
 DataForLogistic <- POM_SampledImputation(MasterData)
 model <-  glm( formula = PostOpCardioVascularComparisonOutputs$ModelAUC , family=binomial(link='logit') , data=DataForLogistic)
@@ -504,9 +508,9 @@ model <-  glm( formula = PostOpLiverComparisonOutputs$ModelAUC , family=binomial
 summary(model)  
 xtable(model)
 
-NamesPostOpNeuroVariables <- c('GCSnum'
-                               )
-PostOpNeuroComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpNeuroVariables) ,MasterData = MasterData )
+#NamesPostOpNeuroVariables <- c('GCSnum'
+#                               )
+#PostOpNeuroComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpNeuroVariables) ,MasterData = MasterData )
 
 
 NamesPostOpOperativeVariables <- c('CPB',
@@ -530,24 +534,23 @@ model <-  glm( formula = PostOpRenalComparisonOutputs$ModelAUC , family=binomial
 summary(model)  
 xtable(model)
 
-NamesPostOpRespiratoryVariables <- c('IntupatedInSurgery',
-                                     'SpO2',
+NamesPostOpRespiratoryVariables <- c('SpO2',
                                      'ArtPO2',
-                                     'FiO26num',
+                        model <-  glm( formula = PostOpRespiratoryComparisonOutputs$ModelAUC, family=binomial(link='logit') , data=DataForLogistic)
+summary(model)  
+xtable(model)             'FiO26num',
                                      'PaO2OverFiO2')
 
 PostOpRespiratoryComparisonOutputs <- POM_GroupComparison(NamesofVariables = c(NamesPostOpRespiratoryVariables,NamesPreOpRespiratoryVariables) ,MasterData = MasterData )
-model <-  glm( formula = PostOpRespiratoryComparisonOutputs$ModelAUC, family=binomial(link='logit') , data=DataForLogistic)
-summary(model)  
-xtable(model)
+
 
 }
 }
 }
-}
+
 #### Pre_op Predictive Model #####
 
-NamesofPeropVariables <- c(NamesofPeropCategoricalVariables , NamesofPreopContinuousVariables[-4] )
+{NamesofPeropVariables <- c(NamesofPeropCategoricalVariables , NamesofPreopContinuousVariables[c(-2,-4)] )
 IndiciesofPeropVariables <- which(names(MasterData) %in% NamesofPeropVariables)
 NamesofPeropVariables <- names(MasterData)[IndiciesofPeropVariables]
 
@@ -577,7 +580,7 @@ AUC2 <- FC_CalculateCrossValidatedROC(formulaformodel = PreOpStepOutput[[2]] , P
 
 #### Post_op Predictive Model #####
 
-NamesofPostopVariables <- c(NamesofPostopCategoricalVariables ,NamesofPostopContinuousVariables[-36] )
+NamesofPostopVariables <- c(NamesofPostopCategoricalVariables ,NamesofPostopContinuousVariables[c(-37,-36)] )
 NamesofPostopVariables <- c(NamesofPostopVariables , NamesofPeropVariables)
 IndiciesofPostopVariables <- which(names(MasterData) %in% NamesofPostopVariables)
 NamesofPostopVariables <- names(MasterData)[IndiciesofPostopVariables]
@@ -611,6 +614,7 @@ matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofV
 matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofVariables = NamesofPostopVariables , ModelFormula = PostOpOperativeComparisonOutputs$ModelAUC))
 matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofVariables = NamesofPostopVariables , ModelFormula = PostOpRenalComparisonOutputs$ModelAUC))
 matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofVariables = NamesofPostopVariables , ModelFormula = PostOpRespiratoryComparisonOutputs$ModelAUC))
+#matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofVariables = NamesofPostopVariables , ModelFormula = PreOpStepOutput[[2]]))
 
 #matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofVariables = NamesofPostopVariables , ModelFormula = SOFAComparisonOutputs$ModelAIC))
 #matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofVariables = NamesofPostopVariables , ModelFormula = LogCasusComparisonOutputs$ModelAIC))
@@ -625,6 +629,7 @@ matrixforstep <- rbind( matrixforstep ,  FC_ExtractIndiciesFromFormula( NamesofV
 
 }
 PostOpStepOutput <- FC_StepWiseForwardAUC(PreoperativeIndices = IndiciesofPostopVariables , MasterData , matrixforstep)
+}
 
 ##### Model validation
 {
@@ -656,8 +661,6 @@ xtable(model)
 }
 
 {
-  DataForLogistic$Urgency[DataForLogistic$Urgency != "Urgent" ] <- 'Other'
-  DataForLogistic$ProcDetails[(DataForLogistic$ProcDetails == "CABG" | DataForLogistic$ProcDetails == "Valve") ==0] <- 'Other'
   
   model <- glm(formula = PostOpStepOutput[[2]]
                , family = binomial(link = "logit"),  data = DataForLogistic)
@@ -732,7 +735,7 @@ colnames(PostOpC) <- c('Bleeding' , 'Demograhic' , 'Cardio' , 'Electrolytes' , '
 BC_PlotPairsFromTwoVariables(PostOpModelOutputs[AFLogical ==1,1:9] ,PostOpModelOutputs[sample(which(AFLogical ==0),260),1:9],
                              alpha = 0.1 ,
                              labels = c('Bleeding' , 'Demograhic' , 'Cardio' , 'Electrolytes' , 'Inflamatory' , 'Liver', 'Operative' , 'Renal','Respiratory', 'SOFA', 'PostOpModel'))
-
+Total <- cbind(PreOpModelOutputs[, c(1:8 , 10)] , PostOpModelOutputs[, c(1:8 , 10)])
 x11()
 SampleofPoints<- sample(which(AFLogical ==0),260)
   p5 <- ggplot(data.frame(x = Total[AFLogical ==1,c(9)] , y= Total[AFLogical ==1,c(18)] ) , aes(x , y)) + 
@@ -744,7 +747,6 @@ SampleofPoints<- sample(which(AFLogical ==0),260)
     ylim(0,1)+
     geom_abline(intercept = 0,slope = 1)
 print(p5)
-Total <- cbind(PreOpModelOutputs[, c(1:8 , 10)] , PostOpModelOutputs[, c(1:8 , 10)])
 
 BC_PlotPairsFromTwoVariables(Total[AFLogical ==1,] ,Total[sample(which(AFLogical ==0),260),],
                              alpha = 0.1 , labels = c(c('Bleeding' , 'Demographic' , 'Cardiovascular' , 'Electrolytes' , 'Inflamatory' , 'Liver', 'Operative' , 'Renal') , c('Bleeding'  , 'Cardio' , 'Electrolytes' , 'Inflamatory' , 'Liver', 'Operative' , 'Renal','Respiratory' , 'Post-op Model')))
@@ -754,5 +756,5 @@ BC_PlotPairsFromTwoVariables(Total[AFLogical ==1,] ,Total[sample(which(AFLogical
                                alpha = 0.1 , labels = c(c('Bleeding' , 'Demographic' , 'Cardiovascular' , 'Electrolytes' , 'Inflamatory' , 'Liver', 'Operative' , 'Renal','Pre-op Model') , c('Bleeding' , 'Cardio' , 'Electrolytes' , 'Inflamatory' , 'Liver', 'Operative' , 'Renal','Respiratory','Post-op Model')),
                              horInd = c(10:18),
                              verInd = c(1:9))
-
+}
   
