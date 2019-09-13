@@ -1,4 +1,3 @@
-
 {
 PsimulatorFunction <- function( x , t_observation ){
   
@@ -6,20 +5,21 @@ PsimulatorFunction <- function( x , t_observation ){
   Pwidth <- x[2]
   Pcen2 <- x[3]
   Pwidth2 <- x[4]
-  output <-(ECGSim_Gaussian( x = t_observation , mu = Pcen , sigma = Pwidth ) + ECGSim_Gaussian( x = t_observation , mu = Pcen2 , sigma = Pwidth2 ))
-  
-  return( x[5]*(output /max(output)) )
+  output1 <- (ECGSim_Gaussian( x = t_observation , mu = Pcen , sigma = Pwidth ))
+  output2 <- (ECGSim_Gaussian( x = t_observation , mu = Pcen2 , sigma = Pwidth2 ))
+  return( x[5]*(output1 /max(ECGSim_Gaussian( x = seq(0.5,1,0.5/510) , mu = Pcen , sigma = Pwidth ))) + x[6]*(output1 / max(ECGSim_Gaussian( x = seq(0.5,1,0.5/510) , mu = Pcen2 , sigma = Pwidth2 ))))  
 }
 MDCOmpnent1 <- function(x , t_observation){
   mu <- 0.5*x[1] + 0.5*x[3]
   output <- 1/ECGSim_Gaussian(Xstar , mu , max(abs(1-mu) ,abs(0.5-mu) ) /3 )
   return(output / max(output))
 }
-ModelDiscrepancy <- function(x , t_observation, PsimulatorFunction){
+ModelDiscrepancy <- function(x , t_observation, PsimulatorFunction , eta = 0.01 , alpha = 0.4){
   if(x[5] == 0){
-  return( rep((1.5)/( 0.5 ) + 0.01 , length(t_observation) ) )  
+    return( rep(1, length(t_observation) ) )  
   }else{
-  return( (1.5)/( ((1/x[5])*PsimulatorFunction( x , t_observation )) +  0.5 ) + 5*MDCOmpnent1(x , t_observation)  + 0.01)
+    ff <- PsimulatorFunction(x , t_observation)
+    return( (alpha*abs(ff)) +  ((eta*max(abs(ff)))/(abs(ff) + 1))   )
   }
 }
 CalculateImplausability <- function( t_observation , x ,  z  , mdfun = ModelDiscrepancy){
@@ -53,62 +53,63 @@ PWaveHM_CreateDesignMatrix <- function(t_observation , x , PsimulatorFunction){
 EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
 
 { 
-  Xstar = seq(0.5 ,1 , 0.01)
-  PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( 0.95 , 0.001 , 0.95, 0.001 , 40 ) , b = c(0.55  , 0.05 , 0.55 , 0.05 , -40 ) , numbersamples = 300000 )
-  PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,1] - PriorNonImplausibleSet[,3]) < 0.1 ,  ]
-  PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,2] - PriorNonImplausibleSet[,4]) < 0.02 ,  ]
-  PriorNonImplausibleSet <- PriorNonImplausibleSet[ PriorNonImplausibleSet[,1] < PriorNonImplausibleSet[,3] ,  ]
-  PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,5]) < 8 ,  1:4] <- cbind(rep(PriorNonImplausibleSet[which(abs(PriorNonImplausibleSet[,5]) > 8)[1],1] , sum(abs(PriorNonImplausibleSet[,5]) < 8)) , 
-                                                                               rep(PriorNonImplausibleSet[which(abs(PriorNonImplausibleSet[,5]) > 8)[1],2] , sum(abs(PriorNonImplausibleSet[,5]) < 8)) , 
-                                                                               rep(PriorNonImplausibleSet[which(abs(PriorNonImplausibleSet[,5]) > 8)[1],3] , sum(abs(PriorNonImplausibleSet[,5]) < 8)) , 
-                                                                               rep(PriorNonImplausibleSet[which(abs(PriorNonImplausibleSet[,5]) > 8)[1],4] , sum(abs(PriorNonImplausibleSet[,5]) < 8)))
-  PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,5]) < 8 ,  5] <- 0
-  QSwidth = 10  
   
-  BC_PlotPairsFromTwoVariables(X =PriorNonImplausibleSet[which(PriorNonImplausibleSet[,5]==0)[1:2000],] , Y = PriorNonImplausibleSet[which(PriorNonImplausibleSet[,5]!=0)[1:2000],] , alpha = 0.1 , labels = c('X1' ,'X2'  , 'X3','X4','X5' ) , main = TeX('Prior Non-implausible Sets P-waves'))
-
-  {
-    Hinvstruct <- apply(PriorNonImplausibleSet , 1 , function(X){
-      H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction)
-      return(t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + 10*diag(dim(H)[1])  ) )
-      #return(solve(t(H)%*%H)%*%t(H))
-    })
-    Hstruct <- apply(PriorNonImplausibleSet , 1 , function(X){
-      return(  H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction))
-    })
-    EHstruct <- apply(PriorNonImplausibleSet , 1 , function(X){
-      return(  H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction)%*%E_Beta)
-    })
-    
-    HstructP <- apply(PriorNonImplausibleSet , 1 , function(X){
-      return(  H = PWaveHM_CreateDesignMatrix(Xstar , X , PsimulatorFunction)[ , 1:3] )
-    })
-    ModelDiscrepancyMatrix <- apply(PriorNonImplausibleSet , 1 , function(X){(ModelDiscrepancy(X , Xstar , PsimulatorFunction))} )
-    
+{ 
+  Xstar = seq(0.5 ,1 , 0.5/51)
+  PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( 0.95 , 0.01 , 0.95, 0.01 , 20 , 20 ) , b = c(0.55  , 0.05 , 0.55 , 0.05 , -20 , -20 ) , numbersamples = 5000000 )
+  PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,1] - PriorNonImplausibleSet[,3]) < 0.2 ,  ]
+  PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,2] - PriorNonImplausibleSet[,4]) < 0.03 ,  ]
+  PriorNonImplausibleSet <- PriorNonImplausibleSet[ PriorNonImplausibleSet[,1] < PriorNonImplausibleSet[,3] ,  ]
+  PriorNonImplausibleSet <- PriorNonImplausibleSet[ (abs(PriorNonImplausibleSet[,5]) + abs(PriorNonImplausibleSet[,6])) > 8 ,  1:6]
+  PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(abs(PriorNonImplausibleSet[,5]) - abs(PriorNonImplausibleSet[,6])) < 10  ,  1:6]
+  
+  
     FStruct <- apply(PriorNonImplausibleSet , 1 , function(X){
       return(  PsimulatorFunction(X , Xstar) )
     })
+    PriorNonImplausibleSet <- PriorNonImplausibleSet[apply(abs(FStruct) , 2 , max) > 8 & apply(abs(FStruct) , 2 , max) < 40 , ]
+
+    PriorNonImplausibleSet <- rbind(PriorNonImplausibleSet,t(matrix(c(0.95 , 0.001 , 0.95, 0.001 , 0 , 0) , 6 , 2)) )
+    FStruct <- apply(PriorNonImplausibleSet , 1 , function(X){
+      return(  PsimulatorFunction(X , Xstar) )
+    })
+    PriorNonImplausibleSet <- PriorNonImplausibleSet[DP_FindNARows(t(FStruct) ),]
+    FStruct <- FStruct[,DP_FindNARows(t(FStruct) )]
+    FStruct <- t(FStruct)
+
+    XPwave <- t(apply(FStruct[1:(dim(FStruct)[1] - 2) , ] ,1,  function(X){as.matrix(c(Xstar[which(abs(X)>0.01)[1]],Xstar[which(abs(X)>0.01)[length(which(abs(X)>0.01))]]) ) } ))
+    XPwave <- rbind(XPwave , c(0.5,1),c(0.5,1))
+    XPwave <- t(apply(XPwave , 1 , function(X){seq(from = max(X[1]-0.05,0.5) ,to =  min(X[2]+0.05,1) ,by =  (abs(max(X[1]-0.05,0.5)  - min(X[2]+0.05,1))/51) )[1:51] }))
+  
+    FStruct <- apply(cbind(PriorNonImplausibleSet ,XPwave ) , 1 , function(X){
+      return(  PsimulatorFunction(X[1:6] , X[7:length(X)]) )
+    })
+}
+    {  
+    Hinvstruct <- apply(XPwave , 1 , function(X){
+      H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction)
+      return(t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + 10*diag(dim(H)[1])  ) )
+      #return(solve(t(H)%*%H)%*%t(H))
+    })
+    Hstruct <- apply(XPwave , 1 , function(X){
+      return(  H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction))
+    })
+    EHstruct <- apply(XPwave , 1 , function(X){
+      return(  H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction)%*%E_Beta)
+    })
+    HstructP <- apply(XPwave , 1 , function(X){
+      return(  H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction)[ , 1:3] )
+    })
     
+    ModelDiscrepancyMatrix <- apply(cbind(PriorNonImplausibleSet ,XPwave ) , 1 , function(X){(ModelDiscrepancy(X[1:6] , X[7:length(X)], PsimulatorFunction))} )
     }
 }
 }
+XPwave[is.na(XPwave)] <- 0.5
+
+source('CTEM_BuildPwaveEmulators.R')
 
 
 
-FM_CreateTrainingset <- function(){
-PwaveImplausibilityThresholds <- matrix(0 , 1100 , 2)
-PwaveImplausibilityEDF <- array(0 , c(1100 , 2,201) )
-
-numberofrepitions = 500000
-for(i in 1:1100){
-#for(i in 1:dim( PriorNonImplausibleSet)[1]){
-outputStructure <- FM_CalculateEDFPwaves(Xstar , PriorNonImplausibleSet[i,] , E_Beta , V_Beta, numbersamples = numberofrepitions, clength = 0.1 , q = 0.99 )
-PwaveImplausibilityThresholds[i,1] <- outputStructure[[1]]
-PwaveImplausibilityThresholds[i,2] <- outputStructure[[2]]
-PwaveImplausibilityEDF[i,1,] <- outputStructure[[3]]
-PwaveImplausibilityEDF[i,2,] <- outputStructure[[4]]
-#DP_WaitBar(i/dim( PriorNonImplausibleSet)[1])
-DP_WaitBar(i/1100)
-}
-
-}
+x11(20 , 14)
+pairs( PriorNonImplausibleSet[1:2000,] , col = rgb(0 , 0 , 1 , alpha = 0.05) , pch = 16 ) 

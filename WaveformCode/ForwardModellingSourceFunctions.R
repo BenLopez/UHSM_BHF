@@ -224,6 +224,17 @@ FM_EvaluateDenistyEstimate <- function(x , X){
  b <- X[2]*FM_dlaplace(x =x , mu = X[5] , sigma = X[8] , alpha = X[10] ) 
  return(a + b)
 }
+FM_LookupPoints <- function(Lookupinputs , LookupValues , LookupPoints){
+  Lookupinputs <- as.matrix(Lookupinputs)
+  minxx = min(Lookupinputs)
+  maxxx = max(Lookupinputs)
+  rangexx = maxxx - minxx
+  tmp <-  ( (rangexx)/dim(Lookupinputs)[1] )
+  
+  LookupPoints <- round( (LookupPoints - minxx) / tmp) + 1
+  output <- LookupValues[LookupPoints]
+  return(output)
+}
 FM_CalculateCDFS  <- function(RRtimes , xx = seq(0.25 , 2 , 0.01)){
   # Look up table for large input length(xx)
   if(length(xx) > 10000){
@@ -466,6 +477,27 @@ HREL_SampleECG <- function( X ){
   p3 <-p3 + scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
   return(p3)
 }
+HREL_RegularSampleECG <- function( X ){
+  
+  RRTimes <-  FM_SamplePearonsRegular(X , 100 )
+  t_observation = seq(0.25  , 10 , 0.005)
+  t = cumsum(RRTimes)
+  RRTimes[RRTimes<0.3] <- 0.3
+  RRTimes[RRTimes>2] <- 2
+  ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
+  p3 <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) + geom_line(col =rgb(0,0,0,0.9) , size = 0.7)
+  p3 <- p3 + theme(
+    panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
+                                    size = 2, linetype = "solid"),
+    panel.grid.major = element_line(size = 1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25)), 
+    panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25))
+  ) 
+  
+  p3 <-p3 + scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
+  return(p3)
+}
 FM_EvaluateObservedImplausibilityEmulator <- function(Xstar , Im , EmulatorParameters , ObservedIm_xx){
   
   EmulatorOutput <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Xstar , EmulatorSettings = EmulatorParameters )
@@ -573,13 +605,13 @@ FM_CalculateEDFPwaves <- function(Xstar , X , E_Beta , V_Beta, numbersamples = 1
   
   Cr <- CF_ExponentialFamily(Xstar , Xstar , clength , 2)
   V <- as.matrix(ModelDiscrepancy(X , Xstar , PsimulatorFunction))
-  CV <- sqrt(V%*%t(V))*Cr
+  CV <- DP_AddNugget(sqrt(V%*%t(V))*Cr,  0.00001*diag(diag(sqrt(V%*%t(V))*Cr)))
   W <- rmvnorm(numberofsamples , mean = rep(0,length(Xstar)) , sigma = CV )
   z = me + W
   
   # Calculate implausibilty
   
-  ImMatrix <- FM_RemoveDrift(z , Xstar, X , E_Beta, V_Beta)
+  ImMatrix <- FM_RemoveDriftandCalulateImplausibility(z , Xstar, X , E_Beta, V_Beta)
   
   meanIm <- apply(ImMatrix , 1 , mean)
   maxIm <- apply(ImMatrix , 1, max)
@@ -589,7 +621,7 @@ FM_CalculateEDFPwaves <- function(Xstar , X , E_Beta , V_Beta, numbersamples = 1
   return(outputstructure)
 }
 
-FM_RemoveDrift <- function(z , Xstar, X , E_Beta, V_Beta){
+FM_RemoveDriftandCalulateImplausibility <- function(z , Xstar, X , E_Beta, V_Beta){
   
   H = PWaveHM_CreateDesignMatrix(Xstar , x=X , PsimulatorFunction)
   Hinvstruct <- t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + 10*diag(dim(H)[1])  ) 
@@ -600,4 +632,37 @@ FM_RemoveDrift <- function(z , Xstar, X , E_Beta, V_Beta){
   ImMatrix <- (abs(z) / sqrt(ModelDiscrepancy(X , Xstar , PsimulatorFunction)) )
   return(ImMatrix)
   
+}
+CTEM_CreateTrainingsetPwaves <- function(XPwave,PriorNonImplausibleSet,E_Beta,V_Beta,numbertrainingpoints = 1100,numberofrepitions = 500000,clength = 0.1 , q = 0.99 ){
+  PwaveImplausibilityThresholds <- matrix(0 , numbertrainingpoints , 2)
+  PwaveImplausibilityEDF <- array(0 , c(numbertrainingpoints , 2,201) )
+  
+  for(i in 1:numbertrainingpoints){
+    #for(i in 1:dim( PriorNonImplausibleSet)[1]){
+    outputStructure <- FM_CalculateEDFPwaves(Xstar = XPwave[i,] ,
+                                             X=PriorNonImplausibleSet[i,] , 
+                                             E_Beta , 
+                                             V_Beta, 
+                                             numbersamples = numberofrepitions, 
+                                             clength =clength , 
+                                             q =q )
+    PwaveImplausibilityThresholds[i,1] <- outputStructure[[1]]
+    PwaveImplausibilityThresholds[i,2] <- outputStructure[[2]]
+    PwaveImplausibilityEDF[i,1,] <- outputStructure[[3]]
+    PwaveImplausibilityEDF[i,2,] <- outputStructure[[4]]
+    #DP_WaitBar(i/dim( PriorNonImplausibleSet)[1])
+    DP_WaitBar(i/numbertrainingpoints)
+  }
+  return(setNames(list(PwaveImplausibilityThresholds , PwaveImplausibilityEDF,PriorNonImplausibleSet[1:numbertrainingpoints,] ) , c('Thresholds' , 'EDF','Points') ) )
+}
+FM_EvaluatePearonsRegularDenisty <- function(X , x){
+  return(dpearson(x , moments = c(X[1],X[2]^2,X[3],X[4])) )
+}
+FM_SamplePearonsRegular <- function(X , N = 250){
+  return(rpearson(N , moments = c(X[1],X[2]^2,X[3],X[4])) )
+}
+FM_CalulateDistance <- function(X , ValidVector ){
+  X <- apply( X , 2 , DP_NormaliseData)
+  m <- apply(X[ValidVector,] , 2 , mean)
+  return( apply(X , 1 , function(x){return(sum((x - m )^2))}) ) 
 }

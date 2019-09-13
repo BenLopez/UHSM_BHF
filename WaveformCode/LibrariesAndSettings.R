@@ -46,7 +46,9 @@ packages<-c("ggplot2",
             'pROC',
             'mice',
             'shiny',
-            'xtable')
+            'xtable',
+            'PearsonDS',
+            'gsl')
 check.packages(packages)
 
 library( ggplot2 )#
@@ -85,6 +87,8 @@ library(pROC)
 library(mice)
 library(shiny)
 library(xtable)
+library(PearsonDS)
+
 # Load Data
 options(digits = 15)
 options(digits.secs=3)

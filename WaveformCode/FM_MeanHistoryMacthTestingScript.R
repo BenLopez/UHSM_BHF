@@ -20,6 +20,8 @@ source( 'CTEm_LoadDataandCreateEmulatorStructures.R'  )
 source( 'CTEm_LoadDataandCreateEmulatorStructuresCDF.R' )
 source( 'FM_CreateMeanPWavePriors.R' )
 
+save.image(file = 'ForwardModelling.RData')
+
 {
   PatientID <- DP_choosepatient( listAllPatients )
 
@@ -189,7 +191,8 @@ source( 'FM_CreateMeanPWavePriors.R' )
 
 {
 
-{StartBeat <- 22001
+{
+StartBeat <- 1001
 rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
 RRtimes <-  RPeakData$RRCombined[rangeofbeats,3]
 mm <- FM_EmulatorEstimate( Y = RRtimes )
