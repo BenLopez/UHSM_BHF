@@ -16,6 +16,9 @@
 
 #Functions
 {
+CalculateMeasurementError <- function(F_x , n){
+    return( (F_x*(1-F_x))/n )
+}
 CalculateConjugatePosterior <- function(E_mu , V_mu , X , n , sigma){
   
   x_bar <- mean(X)
@@ -93,7 +96,7 @@ CalculateKolmorgorovtextstatistic <- function(A,B){
 E_mu <- 0
 V_mu <- 1
 sigma <- 5
-n <- 20
+n <- 50
 
 KewnessKurtosisPoints <- BE_SampleLHSinab(a = c(1.8,-10) , b = c(40,10) , 1000)
 KewnessKurtosisPoints <- KewnessKurtosisPoints[KewnessKurtosisPoints[,2] > -sqrt((KewnessKurtosisPoints[,1] -0.9) - 0.01) , ]
@@ -119,14 +122,6 @@ DataforRegression <- data.frame(X1 = KewnessKurtosisPoints[1:100,1], X2 =Kewness
 model = lm( Y~ X1+I(X1^2) + X2 + I(X2^2) +X3+I(X3^2)+X4+I(X4^2),data = DataforRegression)
 summary(model)
 
-x11()
-par(mfrow = c(2,4))
-
-plot(KewnessKurtosisPoints[1:100,1] , BayesPerformance , xlab = 'Prior Kurtosis', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-plot(KewnessKurtosisPoints[1:100,2] , BayesPerformance , xlab = 'Prior Skewness', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-plot(KewnessKurtosisPoints[101:200,1] , BayesPerformance, xlab = 'Observation Kurtosis', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-plot(KewnessKurtosisPoints[101:200,2] , BayesPerformance , xlab = 'Observation Skewness', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-
 
 BayesLinearPerformance <- matrix(0 , 100,1 )
 for(i in 1:100){
@@ -136,12 +131,6 @@ test <- SampleBayesLinear(PriorDist = PearsonsSampler, ObsDist = PearsonsSampler
 BayesLinearPerformance[i] <- var(test , na.rm = T) 
 DP_WaitBar(i/100)
 }
-
-plot(KewnessKurtosisPoints[1:100,1] , BayesLinearPerformance , xlab = 'Prior Kurtosis', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-plot(KewnessKurtosisPoints[1:100,2] , BayesLinearPerformance , xlab = 'Prior Skewness', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-plot(KewnessKurtosisPoints[101:200,1] , BayesLinearPerformance, xlab = 'Observation Kurtosis', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-plot(KewnessKurtosisPoints[101:200,2] , BayesLinearPerformance , xlab = 'Observation Skewness', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
-
 
 DataforRegression <- data.frame(X1 = KewnessKurtosisPoints[1:100,1], X2 =KewnessKurtosisPoints[1:100,2] , X3 =KewnessKurtosisPoints[101:200,1] , X4 =KewnessKurtosisPoints[101:200,2] , Y = BayesLinearPerformance )
 model = lm( Y~ X1+I(X1^2) + X2 + I(X2^2) +X3+I(X3^2)+X4+I(X4^2),data = DataforRegression)
@@ -155,7 +144,6 @@ PriorNonImplausibleSet <- xstar[PriorNonImplausibleSet> 0.000001]
 LB <- -3*(sqrt(var(PriorNonImplausibleSet) ) + sigma)
 UB <- 3*(sqrt(var(PriorNonImplausibleSet) ) + sigma)
 
-
 xstar <- seq( LB , UB , (UB-LB)/201 )
 FStruct <- t(apply(as.matrix(PriorNonImplausibleSet) , 1 , function(X){ dnorm(xstar , mean = X , sd = sigma) } ))
 
@@ -167,5 +155,107 @@ FStruct <- apply(cbind(PriorNonImplausibleSet ,Xred ) , 1 , function(X){
 })
 
 
+MD <- apply(FStruct , 2 , function(X){CalculateMeasurementError(X , n)})
 
+# Create emulator training set 
+numberofsamples <- 100
+numberofsimulations <- 1100
+q = 0.99
+QuantileStruct <- matrix(0 , numberofsimulations , 1)
+
+for(j in 1:numberofsimulations){
+mu <- PriorNonImplausibleSet[j]
+MeanImStruct <- matrix(0 , numberofsamples , 1 )
+for(i in 1:numberofsamples){
+#PearsonsSampler <- function(n , mean , sd){rpearson(n , moments = c(mean,sd^2,KewnessKurtosisPoints[i,2],KewnessKurtosisPoints[i,1]))}
+Y <- rnorm( n = n , mean = mu , sd = sigma )
+z <- FM_CalculateCDFS(Y , Xred[j,] )
+IMMatrix <- abs(z - FStruct[,j])/sqrt(MD[,j])
+MeanImStruct[i] <- mean(IMMatrix)
+}
+QuantileStruct[j] <- quantile(MeanImStruct , q)
+DP_WaitBar(j/numberofsimulations)
+}
+
+MeanImThrehsold <- 2.30
+MeanImThrehsold <- 1.8
+
+
+PriorDist <- rnorm
+ObsDist <- rnorm 
+
+mu <- PriorDist( n = 1 , mean = E_mu , sd = sqrt(V_mu) )
+Y <- ObsDist( n = n , mean = mu , sd = sigma )
+
+z <- t(matrix(FM_CalculateCDFS(Y , Xred ) , dim(Xred)[1] , dim(Xred)[2]))
+IMMatrix <- abs(z - FStruct)/sqrt(MD)
+ImMean <- apply(IMMatrix , 2 , mean)
+
+PosteriorMoments <- CalculateConjugatePosterior(E_mu , V_mu , Y , n , sigma)
+
+
+x11()
+x <- seq(-5 , 5 , 0.01)
+plot(x ,  dnorm(x = x , mean = PosteriorMoments$mu_X , sd = sqrt(PosteriorMoments$V_X))  , type='l', col = 'red', xlab = 'x' , ylab = 'Density')
+lines(x ,   dnorm(x = x , mean = E_mu , sd = sqrt(V_mu) ) , type = 'l' )
+title('Prior and Posterior')
+abline(v = mu)
+
+hist(PriorNonImplausibleSet[ImMean < MeanImThrehsold], add = T , freq = F)
+
+
+HistoryMatchPerformance <- matrix(0 , 100,1 )
+HistoryMatchPerformance2 <- matrix(0 , 100,1 )
+for(i in 1:100){
+
+PearsonsSampler <- function(n , mean , sd){rpearson(n , moments = c(mean,sd^2,KewnessKurtosisPoints[i,2],KewnessKurtosisPoints[i,1]))}
+PearsonsSampler2 <- function(n , mean , sd){rpearson(n , moments = c(mean,sd^2,KewnessKurtosisPoints[100+i,2],KewnessKurtosisPoints[100+i,1]))}
+PriorDist <- PearsonsSampler
+ObsDist <- PearsonsSampler2 
+  
+InSetLogical <- matrix(0 , 100 , 1)
+sizesetlogical <- matrix(0,100,1)
+for(j in 1:100){
+  mu <- PriorDist( n = 1 , mean = E_mu , sd = sqrt(V_mu) )
+  Y <- ObsDist( n = n , mean = mu , sd = sigma )
+  
+  z <- t(matrix(FM_CalculateCDFS(Y , Xred ) , dim(Xred)[1] , dim(Xred)[2]))
+  IMMatrix <- abs(z - FStruct)/sqrt(MD)
+  ImMean <- apply(IMMatrix , 2 , mean)
+  InSetLogical[j] <-  ImMean[which.min( abs(PriorNonImplausibleSet - mu))] < 1.4
+  sizesetlogical[j] <- sum(ImMean < 1.4)/length(ImMean < 1.4)
+}
+  
+HistoryMatchPerformance[i] <- sum(InSetLogical)/length(InSetLogical)
+HistoryMatchPerformance2[i] <- mean(sizesetlogical)
+DP_WaitBar(i/100)
+}
+
+
+x11()
+par(mfrow = c(4,4))
+
+plot(KewnessKurtosisPoints[1:100,1] , BayesPerformance , xlab = 'Prior Kurtosis', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[1:100,2] , BayesPerformance , xlab = 'Prior Skewness', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5) )
+plot(KewnessKurtosisPoints[101:200,1] , BayesPerformance, xlab = 'Observation Kurtosis', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[101:200,2] , BayesPerformance , xlab = 'Observation Skewness', ylab = 'Max EDF Distance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+
+plot(KewnessKurtosisPoints[1:100,1] , BayesLinearPerformance , xlab = 'Prior Kurtosis', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[1:100,2] , BayesLinearPerformance , xlab = 'Prior Skewness', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[101:200,1] , BayesLinearPerformance, xlab = 'Observation Kurtosis', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[101:200,2] , BayesLinearPerformance , xlab = 'Observation Skewness', ylab = 'Sample Adjusted Variance',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+
+plot(KewnessKurtosisPoints[1:100,1] , HistoryMatchPerformance , xlab = 'Prior Kurtosis', ylab = 'Proportion Ground Truth Non-Implausible',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+abline(h = 0.95)
+plot(KewnessKurtosisPoints[1:100,2] , HistoryMatchPerformance , xlab = 'Prior Skewness', ylab = 'Proportion Ground Truth Non-Implausible',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+abline(h = 0.95)
+plot(KewnessKurtosisPoints[101:200,1] , HistoryMatchPerformance, xlab = 'Observation Kurtosis', ylab = 'Proportion Ground Truth Non-Implausible',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+abline(h = 0.95)
+plot(KewnessKurtosisPoints[101:200,2] , HistoryMatchPerformance , xlab = 'Observation Skewness', ylab = 'Proportion Ground Truth Non-Implausible',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+abline(h = 0.95)
+
+plot(KewnessKurtosisPoints[1:100,1] , HistoryMatchPerformance2*length(ImMean < 1.4) , xlab = 'Prior Kurtosis', ylab = 'Size Non-implausible Set',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[1:100,2] , HistoryMatchPerformance2*length(ImMean < 1.4) , xlab = 'Prior Skewness', ylab = 'Size Non-implausible Set',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[101:200,1] , HistoryMatchPerformance2*length(ImMean < 1.4), xlab = 'Observation Kurtosis', ylab = 'Size Non-implausible Set',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
+plot(KewnessKurtosisPoints[101:200,2] , HistoryMatchPerformance2*length(ImMean < 1.4) , xlab = 'Observation Skewness', ylab = 'Size Non-implausible Set',pch = 16 , col = rgb(0,0,1,alpha = 0.5))
 

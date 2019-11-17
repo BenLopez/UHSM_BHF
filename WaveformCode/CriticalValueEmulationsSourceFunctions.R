@@ -90,3 +90,37 @@ CTEm_CalculateImThresholdCDF <- function(xx,x,X , F_X, MD_X ,f_X, N=500 , number
   return(cbind(FM_CalculateCDFS(ImplausabilityMatrix[,1] , xx ) , FM_CalculateCDFS(ImplausabilityMatrix[,2] , xx ) ) )
   
 }
+CTEM_CreateTrainingsetPwaves <- function(XPwave,PriorNonImplausibleSet,E_Beta,V_Beta,numbertrainingpoints = 1100,numberofrepitions = 500000,clength = 0.1 , q = 0.99 ){
+  PwaveImplausibilityThresholds <- matrix(0 , numbertrainingpoints , 2)
+  PwaveImplausibilityEDF <- array(0 , c(numbertrainingpoints , 2,length(seq(0,2,0.005))) )
+  
+  for(i in 1:numbertrainingpoints){
+    #for(i in 1:dim( PriorNonImplausibleSet)[1]){
+    if(i == 1){
+      i <- dim(XPwave)[1]
+      outputStructure <- FM_CalculateEDFPwaves(Xstar = XPwave[i,] ,
+                                               X=PriorNonImplausibleSet[i,] , 
+                                               E_Beta , 
+                                               V_Beta, 
+                                               numbersamples = numberofrepitions, 
+                                               clength =clength , 
+                                               q =q )
+    i <- 1
+}else{
+    outputStructure <- FM_CalculateEDFPwaves(Xstar = XPwave[i,] ,
+                                             X=PriorNonImplausibleSet[i,] , 
+                                             E_Beta , 
+                                             V_Beta, 
+                                             numbersamples = numberofrepitions, 
+                                             clength =clength , 
+                                             q =q )
+}
+        PwaveImplausibilityThresholds[i,1] <- outputStructure[[1]]
+    PwaveImplausibilityThresholds[i,2] <- outputStructure[[2]]
+    PwaveImplausibilityEDF[i,1,] <- outputStructure[[3]]
+    PwaveImplausibilityEDF[i,2,] <- outputStructure[[4]]
+    #DP_WaitBar(i/dim( PriorNonImplausibleSet)[1])
+    DP_WaitBar(i/numbertrainingpoints)
+  }
+  return(setNames(list(PwaveImplausibilityThresholds , PwaveImplausibilityEDF,PriorNonImplausibleSet[1:numbertrainingpoints,] ) , c('Thresholds' , 'EDF','Points') ) )
+}

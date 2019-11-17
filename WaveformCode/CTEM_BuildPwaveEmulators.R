@@ -11,7 +11,7 @@ if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath,'EmulatingCriticalThre
                                                       V_Beta,
                                                       numbertrainingpoints = 1100,
                                                       numberofrepitions = 50000,
-                                                      clength = 0.2 , 
+                                                      clength = 0.03 , 
                                                       q = 0.99 )
   
   Im_Crit <- PwaveOEMTrainingSet[[1]]
@@ -20,7 +20,7 @@ if( DP_CheckfileinPrecomputedfolder(precomputedfolderpath,'EmulatingCriticalThre
 }
 
 
-Training_X = X[1:1000 , ]
+{Training_X = X[1:1000 , ]
 Training_ImCrit = Im_Crit[1:1000 , 1:2]
 Validation_X = X[1001:1100 ,]
 Validation_ImCrit = Im_Crit[1001:1100 , 1:2]
@@ -37,7 +37,7 @@ Validation_ImCrit = Im_Crit[1001:1100 , 1:2]
     H = cbind(as.matrix(1 + 0*X[,1]) , X ) 
     return(H)}
   PwaveEmulatorParametersMean$CorrelationLength <- function(X , n){
-    return(0.2*(apply(X , 2 , max) - apply(X , 2 , min)) )
+    return(0.12*(apply(X , 2 , max) - apply(X , 2 , min)) )
   }
   { 
     Xstar <- Validation_X
@@ -56,7 +56,7 @@ Validation_ImCrit = Im_Crit[1001:1100 , 1:2]
   PwaveEmulatorParametersMax$X <- Training_X
   PwaveEmulatorParametersMax$Y <- Training_ImCrit[,2]
   PwaveEmulatorParametersMax$w <- function(X){
-    return(0.01*diag(dim(as.matrix(X))[1]))
+    return(0.001*diag(dim(as.matrix(X))[1]))
   }
   #PwaveEmulatorParametersMax$MeanFunction <- function(X){
   #  X <- as.matrix(X)
@@ -72,7 +72,7 @@ Validation_ImCrit = Im_Crit[1001:1100 , 1:2]
     return(H)
   }
   PwaveEmulatorParametersMax$CorrelationLength <- function(X , n){
-    return(0.3*(apply(X , 2 , max) - apply(X , 2 , min)) )
+    return(0.15*(apply(X , 2 , max) - apply(X , 2 , min)) )
   }
   {Xstar <- Validation_X
     EmulatorOutput <- BE_BayesLinearEmulatorLSEstimates(xstar = Xstar ,EmulatorSettings = PwaveEmulatorParametersMax  )
@@ -87,5 +87,108 @@ Validation_ImCrit = Im_Crit[1001:1100 , 1:2]
 }
 
 ImThresholdMeanPwave <- BE_BayesLinearEmulatorLSEstimatesBatchMode(xstar = PriorNonImplausibleSet ,EmulatorSettings = PwaveEmulatorParametersMean  )
-ImThresholdMaxPwave <- BE_BayesLinearEmulatorLSEstimatesBatchMode(xstar = PriorNonImplausibleSet ,EmulatorSettings = PwaveEmulatorParametersMax  )
+ImThresholdMaxPwave <- BE_BayesLinearEmulatorLSEstimatesBatchMode(xstar = PriorNonImplausibleSet ,EmulatorSettings = PwaveEmulatorParametersMax  )}
 
+# Observed Implausibility Emulator 
+
+{ObservedIm_rr <- seq(0,2,0.005)
+  ObservedIm_rrmax <- seq(0,6,0.015)
+  
+X <- PwaveOEMTrainingSet[[3]]
+
+Training_X = X[1:1000 , ]
+Training_ImCrit = PwaveOEMTrainingSet[[2]][1:1000 , 1:2, ]
+Validation_X = X[1001:1100 ,]
+Validation_ImCrit = PwaveOEMTrainingSet[[2]][1001:1100 ,1:2 , ]
+
+{ 
+  PWaveEmulatorParametersCDFMean <- BE_CreateDefaultEmulationClass()
+  PWaveEmulatorParametersCDFMean$X <- Training_X
+  PWaveEmulatorParametersCDFMean$Y <- Training_ImCrit[ ,1 , ]
+  PWaveEmulatorParametersCDFMean$w <- function(X){
+    return(0.0001*diag(dim(as.matrix(X))[1]))
+  }
+  PWaveEmulatorParametersCDFMean$MeanFunction <- function(X){
+     X <- as.matrix(X)
+     H = cbind(as.matrix(1 + 0*X[,1]) , X , X^2) 
+      return(H)}
+ PWaveEmulatorParametersCDFMean$CorrelationLength <- function(X , n){
+    return(0.12*(apply(X , 2 , max) - apply(X , 2 , min)) )
+  }
+  {
+    Xstar <- Validation_X
+    EmulatorOutput <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Xstar ,EmulatorSettings =PWaveEmulatorParametersCDFMean  )
+    
+    StdResiduals <- matrix(0 , dim(EmulatorOutput$E_D_fX)[1] , dim(EmulatorOutput$E_D_fX)[2])
+    
+    RsqMean <- 1 - var( (matrix(EmulatorOutput$E_D_fX , length(Validation_ImCrit[ , 1 , ]) , 1 ) -  matrix(Validation_ImCrit[ , 1 , ] , length(Validation_ImCrit[ , 1 , ]) , 1) ) )/var(matrix(Validation_ImCrit[ , 1 , ] , length(Validation_ImCrit[ , 1 , ]) , 1))
+    RsqMean2 <- 1 - var( (matrix(EmulatorOutput$E_D_MX , length(Validation_ImCrit[ ,1  , ]) , 1 ) -  matrix(Validation_ImCrit[ ,1  , ] , length(Validation_ImCrit[ ,1  , ]) , 1) ) )/var(matrix(Validation_ImCrit[ ,1  , ] , length(Validation_ImCrit[ ,1  , ]) , 1))
+    
+    
+    for(i in 1:dim(Validation_ImCrit)[1]){
+      StdResiduals[i,] <-  ( (EmulatorOutput$E_D_fX[i,] -  Validation_ImCrit[ i ,1, ])/diag(sqrt(EmulatorOutput$C_D_fX[i,i]*EmulatorOutput$SigmaHat) ))
+    }  
+    
+    sampleofpoints <- sample(1:dim(StdResiduals)[1] , 100)
+    
+    x11()
+    output <- ggplot( data.frame(Im = 1 - Validation_ImCrit[ sampleofpoints ,1, 100] , StdResids = StdResiduals[sampleofpoints , 100]) , aes(Im , StdResids) ) +
+      geom_point( color = 'blue') + ggtitle('Max Implausibility Validation') + geom_hline( yintercept  = 3)+ geom_hline( yintercept  = -3) +
+      ggtitle(paste0('R Squared = ', round(RsqMax , 3) ,' Variance Standardised Residuals = ', round(var(StdResiduals[sampleofpoints , 100]), 3 ) ) ) +
+      ylab('Standardised Residuals') + xlab('P[Im > p]')
+    
+    
+    print(output)
+    
+    #x11()
+    #plot(xx,(EmulatorOutput$E_D_fX[1,] -  Validation_ImCrit[ 1 ,, 1])/diag(sqrt(EmulatorOutput$C_D_fX[1,1]*EmulatorOutput$SigmaHat) ) , type ='l'  , col = rgb(0,0,1,alpha =0.1) , ylim = c(0,5) , xlab = 'a' , ylab = 'StandardisedResiudals' )
+    #for(i in 2:dim(Validation_ImCrit)[1]){
+    #  lines(xx , (EmulatorOutput$E_D_fX[i,] -  Validation_ImCrit[ i ,, 1])/diag(sqrt(EmulatorOutput$C_D_fX[i,i]*EmulatorOutput$SigmaHat) ), col = rgb(0,0,1,alpha =0.1))
+    #}
+    
+    
+  }
+}
+
+{ 
+  PWaveEmulatorParametersCDFMax <- BE_CreateDefaultEmulationClass()
+  PWaveEmulatorParametersCDFMax$X <- Training_X[ ,]
+  PWaveEmulatorParametersCDFMax$Y <- Training_ImCrit[ , 2 , ]
+  PWaveEmulatorParametersCDFMax$w <- function(X){
+    return(0.001*diag(dim(as.matrix(X))[1]))
+  }
+  PWaveEmulatorParametersCDFMax$MeanFunction <- function(X){
+    X <- as.matrix(X)
+    H = cbind(as.matrix(1 + 0*X[,1]) , X , X^2 ) 
+    return(H)}
+  PWaveEmulatorParametersCDFMax$CorrelationLength <- function(X , n){
+    return( 0.1*( apply(X , 2 , max) - apply(X , 2 , min) ) )
+  }
+  {
+    Xstar <- Validation_X
+    EmulatorOutput <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Xstar ,EmulatorSettings = PWaveEmulatorParametersCDFMax  )
+    
+    RsqMax <- 1 - var( (matrix(EmulatorOutput$E_D_fX , length(Validation_ImCrit[ ,2  , ]) , 1 ) -  matrix(Validation_ImCrit[ ,2  , ] , length(Validation_ImCrit[ ,2  , ]) , 1) ) )/var(matrix(Validation_ImCrit[ ,2  , ] , length(Validation_ImCrit[ ,1  , ]) , 1))
+    RsqMax2 <- 1 - var( (matrix(EmulatorOutput$E_D_MX , length(Validation_ImCrit[ , 2 , ]) , 1 ) -  matrix(Validation_ImCrit[ , 2 , ] , length(Validation_ImCrit[ , 2 , ]) , 1) ) )/var(matrix(Validation_ImCrit[ ,2  , ] , length(Validation_ImCrit[ , 1 , ]) , 1))
+    
+    
+    StdResiduals <- matrix(0 , dim(EmulatorOutput$E_D_fX)[1] , dim(EmulatorOutput$E_D_fX)[2])
+    
+    for(i in 1:dim(Validation_ImCrit)[1]){
+      StdResiduals[i,] <-  ( (EmulatorOutput$E_D_fX[i,] -  Validation_ImCrit[ i ,2, ])/diag(sqrt(EmulatorOutput$C_D_fX[i,i]*EmulatorOutput$SigmaHat) ))
+    }  
+    
+    sampleofpoints <- sample(1:dim(StdResiduals)[1] , 100)
+    
+    x11()
+    output <- ggplot( data.frame(Im = 1 - Validation_ImCrit[ sampleofpoints ,2, 100] , StdResids = StdResiduals[sampleofpoints , 100]) , aes(Im , StdResids) ) +
+      geom_point( color = 'blue') + ggtitle('Max Implausibility Validation') + geom_hline( yintercept  = 3)+ geom_hline( yintercept  = -3) +
+      ggtitle(paste0('R Squared = ', round(RsqMax , 3) ,' Variance Standardised Residuals = ', round(var(StdResiduals[sampleofpoints , 100]), 3 ) ) ) +
+      ylab('Standardised Residuals') + xlab('P[Im > p]')
+    
+    
+    print(output)
+    
+  }
+}
+}

@@ -378,4 +378,6 @@ MasterData$Planned.Valve.Surgery[MasterData$Valve == "Procedure Details(Valve)" 
 }
 
 AFLogical <- MasterData$AFLogical
+MasterData$CICUStay <- abs(DP_StripTime(MasterData$AdmitDateTime) - DP_StripTime( MasterData$DisDateTime) )
+
 MasterData$Valve[MasterData$Planned.Valve.Surgery != 'None'] <- "Procedure Details(Valve)"

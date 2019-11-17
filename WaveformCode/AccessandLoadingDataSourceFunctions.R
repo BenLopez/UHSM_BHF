@@ -844,3 +844,6 @@ return(Proc2)
 DP_ExtractIfEverhadRRT <- function(AllDataStructure){
   return(as.matrix(lapply(AllDataStructure , function(X){ sum(X$timeseriesvariables$Filter[!is.na(X$timeseriesvariables$Filter)]) > 1})))
 }
+DP_CalculateDiagonalElements<- function(A , B){
+  return(rowSums( A*t(B%*%t(A)) ))
+}

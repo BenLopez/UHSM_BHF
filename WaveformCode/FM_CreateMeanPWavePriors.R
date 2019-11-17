@@ -9,17 +9,12 @@ PsimulatorFunction <- function( x , t_observation ){
   output2 <- (ECGSim_Gaussian( x = t_observation , mu = Pcen2 , sigma = Pwidth2 ))
   return( x[5]*(output1 /max(ECGSim_Gaussian( x = seq(0.5,1,0.5/510) , mu = Pcen , sigma = Pwidth ))) + x[6]*(output1 / max(ECGSim_Gaussian( x = seq(0.5,1,0.5/510) , mu = Pcen2 , sigma = Pwidth2 ))))  
 }
-MDCOmpnent1 <- function(x , t_observation){
-  mu <- 0.5*x[1] + 0.5*x[3]
-  output <- 1/ECGSim_Gaussian(Xstar , mu , max(abs(1-mu) ,abs(0.5-mu) ) /3 )
-  return(output / max(output))
-}
-ModelDiscrepancy <- function(x , t_observation, PsimulatorFunction , eta = 0.01 , alpha = 0.4){
+ModelDiscrepancy <- function(x , t_observation, PsimulatorFunction , eta = 0.02 , alpha = 0.1){
   if(x[5] == 0){
-    return( rep(1, length(t_observation) ) )  
+    return( rep(0.25, length(t_observation) ) )  
   }else{
     ff <- PsimulatorFunction(x , t_observation)
-    return( (alpha*abs(ff)) +  ((eta*max(abs(ff)))/(abs(ff) + 1))   )
+    return( (alpha*abs(ff)) +  ((eta*max(abs(ff)))/(abs(ff) + 1)) +0.25  )
   }
 }
 CalculateImplausability <- function( t_observation , x ,  z  , mdfun = ModelDiscrepancy){
@@ -42,9 +37,9 @@ PWaveHM_CreateDesignMatrix <- function(t_observation , x , PsimulatorFunction){
   C = diag(3)
   C[1 , 2] <- -0.95
   C[2 , 1] <- C[1 , 2]
-  C[1 , 3] <- 0.94
+  C[1 , 3] <- 0.9
   C[3 , 1] <- C[1 , 3]
-  C[3 , 2] <- -0.8
+  C[3 , 2] <- -0.85
   C[2 , 3] <- C[3 , 2] 
 
   V_Beta <- ((diag(sqrt(V_Beta) ))%*%t(diag(sqrt(V_Beta) )) )*C}
@@ -56,7 +51,7 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
   
 { 
   Xstar = seq(0.5 ,1 , 0.5/51)
-  PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( 0.95 , 0.01 , 0.95, 0.01 , 20 , 20 ) , b = c(0.55  , 0.05 , 0.55 , 0.05 , -20 , -20 ) , numbersamples = 5000000 )
+  PriorNonImplausibleSet <- BE_SampleLHSinab( a = c( 0.95 , 0.01 , 0.95, 0.01 , 20 , 20 ) , b = c(0.55  , 0.05 , 0.55 , 0.05 , -20 , -20 ) , numbersamples = 1000000 )
   PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,1] - PriorNonImplausibleSet[,3]) < 0.2 ,  ]
   PriorNonImplausibleSet <- PriorNonImplausibleSet[ abs(PriorNonImplausibleSet[,2] - PriorNonImplausibleSet[,4]) < 0.03 ,  ]
   PriorNonImplausibleSet <- PriorNonImplausibleSet[ PriorNonImplausibleSet[,1] < PriorNonImplausibleSet[,3] ,  ]
@@ -67,9 +62,10 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
     FStruct <- apply(PriorNonImplausibleSet , 1 , function(X){
       return(  PsimulatorFunction(X , Xstar) )
     })
-    PriorNonImplausibleSet <- PriorNonImplausibleSet[apply(abs(FStruct) , 2 , max) > 8 & apply(abs(FStruct) , 2 , max) < 40 , ]
+    PriorNonImplausibleSet <- PriorNonImplausibleSet[(apply(abs(FStruct) , 2 , max) > 8) & (apply(abs(FStruct) , 2 , max)) < 40 & (abs(FStruct[1,]) < 4)  , ]
 
-    PriorNonImplausibleSet <- rbind(PriorNonImplausibleSet,t(matrix(c(0.95 , 0.001 , 0.95, 0.001 , 0 , 0) , 6 , 2)) )
+    
+    PriorNonImplausibleSet <- rbind(PriorNonImplausibleSet,t(matrix(c(0.5582675203818015 , 0.0467545697912930 , 0.6674129303324217  ,0.0334750326009201 , 0 , 0) , 6 , 2)) )
     FStruct <- apply(PriorNonImplausibleSet , 1 , function(X){
       return(  PsimulatorFunction(X , Xstar) )
     })
@@ -88,9 +84,15 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
     {  
     Hinvstruct <- apply(XPwave , 1 , function(X){
       H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction)
-      return(t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + 10*diag(dim(H)[1])  ) )
+      return(t(H%*%V_Beta)%*%solve(H%*%V_Beta%*%t(H) + 0.1*diag(dim(H)[1])  ) )
       #return(solve(t(H)%*%H)%*%t(H))
     })
+      
+      HHVBetaStruct <- apply(XPwave , 1 , function(X){
+        H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction)
+        return(H%*%V_Beta )
+        #return(solve(t(H)%*%H)%*%t(H))
+      })
     Hstruct <- apply(XPwave , 1 , function(X){
       return(  H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction))
     })
@@ -101,6 +103,13 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
       return(  H = PWaveHM_CreateDesignMatrix(X , PriorNonImplausibleSet[1,] , PsimulatorFunction)[ , 1:3] )
     })
     
+    VHBeta <- matrix(0, dim(FStruct)[1] , dim(FStruct)[2])
+    
+    for(iii in 1:dim(Betas)[1]){
+      HHInv <- matrix(Hinvstruct[ , iii] , 3 , 51)
+      HH <- matrix(Hstruct[ , iii] , 51 , 3)
+      VHBeta[,iii] <- diag( HH%*%( V_Beta - HHInv%*%matrix(HHVBetaStruct[,iii] , 51 , 3))%*%t(HH) )
+    }
     ModelDiscrepancyMatrix <- apply(cbind(PriorNonImplausibleSet ,XPwave ) , 1 , function(X){(ModelDiscrepancy(X[1:6] , X[7:length(X)], PsimulatorFunction))} )
     }
 }
@@ -108,8 +117,6 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
 XPwave[is.na(XPwave)] <- 0.5
 
 source('CTEM_BuildPwaveEmulators.R')
-
-
 
 x11(20 , 14)
 pairs( PriorNonImplausibleSet[1:2000,] , col = rgb(0 , 0 , 1 , alpha = 0.05) , pch = 16 ) 

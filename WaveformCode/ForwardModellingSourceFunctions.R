@@ -94,8 +94,14 @@ return(EmulatorOutput$E_D_fX)
 FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x ,f_x ,  MD , RRtimes  , Corr_sdhat , imthreshold = 3 , imthreshold2 = 1.6  ){
   # Build kdeestimate for history matching  
   #m <- rollmedian( RRtimes , k = 21 , na.pad = T )
+  
+  if(abs(cor(1:length(RRtimes),RRtimes))>0.1){
   mm <- FM_EmulatorEstimate( RRtimes )
-  m <- median(RRtimes)
+  m <- median(RRtimes)}else{
+    mm <- 0
+    m <- 0
+  }
+  
   RRtimes <- RRtimes + m - mm + rnorm(length(RRtimes) , 0 , 0.01 )
   RRtimes <- RRtimes[!is.na(RRtimes)]
   
@@ -522,10 +528,14 @@ FM_DubiousCaseLogic <- function(RRtimes, ReIreHmOutput,ReHmOutput,ObservedIm_xx,
                                                            Im =  ReIreHmOutput$Implausability[,1]  ,
                                                            EmulatorParameters = EmulatorParametersCDFMax ,
                                                            ObservedIm_xx = ObservedIm_xx)
-  maxIrIrIndex <- which.max(IrReMeanProb + IrReMaxProb)
-  maxRegIndex <- which.max(ReMeanProb + ReMaxProb)
+  if((max(ReMeanProb)<0.01 || max(ReMaxProb)<0.01) & ((max(IrReMaxProb)>0.01 || max(IrReMeanProb)>0.01))){
+    return(TRUE)
+  }
   
-  if( sqrt(sum((c(ReMeanProb[maxRegIndex],ReMaxProb[maxRegIndex]) - c(IrReMeanProb[maxIrIrIndex],IrReMaxProb[maxIrIrIndex]))^2)) > 0.1 & mean(RRtimes) < 0.6 & sum(RegularLogical)>1 ){
+  maxIrIrIndex <- max(IrReMeanProb*IrReMaxProb)
+  maxRegIndex <- max(ReMeanProb*ReMaxProb)
+  
+  if( ((maxIrIrIndex/maxRegIndex) > 2) & sum(RegularLogical)>1 ){
     return(TRUE)
   }else{
     return(FALSE)
@@ -616,7 +626,7 @@ FM_CalculateEDFPwaves <- function(Xstar , X , E_Beta , V_Beta, numbersamples = 1
   meanIm <- apply(ImMatrix , 1 , mean)
   maxIm <- apply(ImMatrix , 1, max)
   
-  outputstructure <- list(quantile(meanIm , q),quantile(maxIm , q) , FM_CalculateCDFS(meanIm , seq(0,2,0.01) ) , FM_CalculateCDFS(maxIm , seq(0,4,0.02) ))
+  outputstructure <- list(quantile(meanIm , q),quantile(maxIm , q) , FM_CalculateCDFS(meanIm , seq(0,2,0.005) ) , FM_CalculateCDFS(maxIm , seq(0,6,0.015) ))
   outputstructure <- setNames(outputstructure , c('meanthresh' , 'maxthresh' , 'meanEDF' , 'maxEDF'))
   return(outputstructure)
 }
@@ -633,28 +643,6 @@ FM_RemoveDriftandCalulateImplausibility <- function(z , Xstar, X , E_Beta, V_Bet
   return(ImMatrix)
   
 }
-CTEM_CreateTrainingsetPwaves <- function(XPwave,PriorNonImplausibleSet,E_Beta,V_Beta,numbertrainingpoints = 1100,numberofrepitions = 500000,clength = 0.1 , q = 0.99 ){
-  PwaveImplausibilityThresholds <- matrix(0 , numbertrainingpoints , 2)
-  PwaveImplausibilityEDF <- array(0 , c(numbertrainingpoints , 2,201) )
-  
-  for(i in 1:numbertrainingpoints){
-    #for(i in 1:dim( PriorNonImplausibleSet)[1]){
-    outputStructure <- FM_CalculateEDFPwaves(Xstar = XPwave[i,] ,
-                                             X=PriorNonImplausibleSet[i,] , 
-                                             E_Beta , 
-                                             V_Beta, 
-                                             numbersamples = numberofrepitions, 
-                                             clength =clength , 
-                                             q =q )
-    PwaveImplausibilityThresholds[i,1] <- outputStructure[[1]]
-    PwaveImplausibilityThresholds[i,2] <- outputStructure[[2]]
-    PwaveImplausibilityEDF[i,1,] <- outputStructure[[3]]
-    PwaveImplausibilityEDF[i,2,] <- outputStructure[[4]]
-    #DP_WaitBar(i/dim( PriorNonImplausibleSet)[1])
-    DP_WaitBar(i/numbertrainingpoints)
-  }
-  return(setNames(list(PwaveImplausibilityThresholds , PwaveImplausibilityEDF,PriorNonImplausibleSet[1:numbertrainingpoints,] ) , c('Thresholds' , 'EDF','Points') ) )
-}
 FM_EvaluatePearonsRegularDenisty <- function(X , x){
   return(dpearson(x , moments = c(X[1],X[2]^2,X[3],X[4])) )
 }
@@ -665,4 +653,54 @@ FM_CalulateDistance <- function(X , ValidVector ){
   X <- apply( X , 2 , DP_NormaliseData)
   m <- apply(X[ValidVector,] , 2 , mean)
   return( apply(X , 1 , function(x){return(sum((x - m )^2))}) ) 
+}
+FM_PwaveWave2Logic <- function(NonImplausibleX,PriorNonImplausibleSet,PWaveEmulatorParametersCDFMean,PWaveEmulatorParametersCDFMax,ObservedIm_rr,ObservedIm_rrmax){
+  if(dim(NonImplausibleX)[1]>1000){
+    sampleIndicies <- rbind(sample(1:(dim(NonImplausibleX)[1]-3), 1000))  
+    Pwavextmp <- rbind(NonImplausibleX[sampleIndicies,] , PriorNonImplausibleSet[dim(PriorNonImplausibleSet)[1],] )
+    PwaveOIEOutputMax <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Pwavextmp ,EmulatorSettings = PWaveEmulatorParametersCDFMax  )
+    PwaveOIEOutputMean <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Pwavextmp ,EmulatorSettings = PWaveEmulatorParametersCDFMean  )
+    
+    indicies <- apply(as.matrix(MeanIm[c(which(tmplog)[sampleIndicies],dim(PriorNonImplausibleSet)[1])]),1,function(X){which.min(abs(X - ObservedIm_rr)) })
+    PwaveOIEOutputMean <- 1 - (PwaveOIEOutputMean$E_D_fX[ cbind(1:dim(Pwavextmp)[1] , indicies)] - diag(PwaveOIEOutputMean$C_D_fX)*PwaveOIEOutputMean$SigmaHat[cbind(indicies,indicies)] )
+    
+    indicies <- apply(as.matrix(MaxIm[c(which(tmplog)[sampleIndicies],dim(PriorNonImplausibleSet)[1])]),1,function(X){which.min(abs(X - ObservedIm_rrmax)) })
+    PwaveOIEOutputMax <- 1 - (PwaveOIEOutputMax$E_D_fX[ cbind(1:dim(Pwavextmp)[1] , indicies)] + diag(PwaveOIEOutputMax$C_D_fX)*PwaveOIEOutputMax$SigmaHat[cbind(indicies,indicies)] )
+    
+    Pdistance <- PwaveOIEOutputMean*PwaveOIEOutputMax
+    
+    NPwavep <- Pdistance[length(Pdistance)]
+    Pwavep <- max(Pdistance[1:(length(Pdistance)-3) ])
+    
+    if(NPwavep/Pwavep > 2){
+      return( TRUE )
+    }else{
+      return( FALSE )
+    }
+    
+  }else{
+    
+    sampleIndicies <- c(1:dim(NonImplausibleX)[1])
+    Pwavextmp <- rbind(NonImplausibleX[sampleIndicies,] , PriorNonImplausibleSet[dim(PriorNonImplausibleSet)[1],] )
+    PwaveOIEOutputMax <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Pwavextmp ,EmulatorSettings = PWaveEmulatorParametersCDFMax  )
+    PwaveOIEOutputMean <- BE_BayesLinearEmulatorLSEstimatesMO(xstar = Pwavextmp ,EmulatorSettings = PWaveEmulatorParametersCDFMean  )
+    
+    indicies <- apply(as.matrix(MeanIm[c(which(tmplog)[sampleIndicies],dim(PriorNonImplausibleSet)[1])]),1,function(X){which.min(abs(X - ObservedIm_rr)) })
+    PwaveOIEOutputMean <- 1 - (PwaveOIEOutputMean$E_D_fX[ cbind(1:dim(Pwavextmp)[1] , indicies)] - diag(PwaveOIEOutputMean$C_D_fX)*PwaveOIEOutputMean$SigmaHat[cbind(indicies,indicies)] )
+    
+    indicies <- apply(as.matrix(MaxIm[c(which(tmplog)[sampleIndicies],dim(PriorNonImplausibleSet)[1])]),1,function(X){which.min(abs(X - ObservedIm_rrmax)) })
+    PwaveOIEOutputMax <- 1 - (PwaveOIEOutputMax$E_D_fX[ cbind(1:dim(Pwavextmp)[1] , indicies)] + diag(PwaveOIEOutputMax$C_D_fX)*PwaveOIEOutputMax$SigmaHat[cbind(indicies,indicies)] )
+    
+    Pdistance <- PwaveOIEOutputMean*PwaveOIEOutputMax
+    
+    NPwavep <- Pdistance[length(Pdistance)]
+    Pwavep <- max(Pdistance[1:(length(Pdistance)-3) ])
+    
+    if(NPwavep/Pwavep > 2){
+      return(TRUE)
+    }else{
+      return(FALSE)
+    }
+    
+  }
 }

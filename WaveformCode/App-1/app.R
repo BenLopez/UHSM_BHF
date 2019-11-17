@@ -423,6 +423,18 @@
                                                                                 step = 0.01,
                                                                                 max = 2 ,
                                                                                 value = 0.3),
+                                                                    sliderInput(inputId = "PwaveMD_beta" , 
+                                                                                label = '$$\\beta$$' , 
+                                                                                min =  0 ,
+                                                                                step = 0.01,
+                                                                                max = 1 ,
+                                                                                value = 0.5),
+                                                                    sliderInput(inputId = "PwaveMD_gamma" , 
+                                                                                label = '$$\\gamma$$' , 
+                                                                                min =  0 ,
+                                                                                step = 1,
+                                                                                max = 100 ,
+                                                                                value = 5),
                                                                     actionButton(inputId = 'PwaveMD_Updateplot' , label = 'Sample P-waves')
                                                                     
                                                ) ),
@@ -843,10 +855,11 @@
     # Pwave Model discrepancy Elements
     {  
       # Sample dataPwaveMD_ModelDis PwaveMD_Pwave
-      observeEvent(c( input$PwaveMD_Updateplot , input$PwaveMD_CorrelationLength , input$PwaveMD_a , input$PwaveMD_b ),{
+      observeEvent(c( input$PwaveMD_Updateplot , input$PwaveMD_CorrelationLength , input$PwaveMD_a , input$PwaveMD_b, input$PwaveMD_beta , input$PwaveMD_gamma),{
         output$PwaveMD_Pwave <- renderPlot({
           Cr <- CF_ExponentialFamily(p_t , p_t , input$PwaveMD_CorrelationLength , 2)
-          V <- as.matrix(ModelDiscrepancy(XP , p_t , PsimulatorFunction ,input$PwaveMD_a , input$PwaveMD_b))
+          V <- as.matrix(ModelDiscrepancy(XP , p_t , PsimulatorFunction ,input$PwaveMD_a , input$PwaveMD_b)) +
+            input$PwaveMD_gamma*(dbeta(seq(0.01,0.99,(0.99-0.01)/(length(p_t)-1)), input$PwaveMD_beta , input$PwaveMD_beta ) - dbeta(0.5, input$PwaveMD_beta , input$PwaveMD_beta ) )
           CV <- DP_AddNugget(sqrt(V%*%t(V))*Cr,  0.00001*diag(diag(sqrt(V%*%t(V))*Cr)))
           W <- t(rmvnorm(n = 1 , mean = rep(0,length(p_t)) , sigma = CV ))
           z <-  MDPfx + W
@@ -855,14 +868,15 @@
             geom_line(col = 'blue') +
             ggtitle('P-wave Morphology')+
             geom_line(data = data.frame(t = p_t, V = MDPfx ), aes(t,V), col = 'black')+
-            geom_line(data = data.frame(t = p_t, V = MDPfx + 3*sqrt(ModelDiscrepancy(XP, p_t, PsimulatorFunction , input$PwaveMD_a , input$PwaveMD_b )) ), aes(t,V), col = 'red')+
-            geom_line(data = data.frame(t = p_t, V = MDPfx - 3*sqrt(ModelDiscrepancy(XP, p_t, PsimulatorFunction , input$PwaveMD_a , input$PwaveMD_b )) ), aes(t,V), col = 'red')
+            geom_line(data = data.frame(t = p_t, V = MDPfx + 3*sqrt(V )), aes(t,V), col = 'red')+
+            geom_line(data = data.frame(t = p_t, V = MDPfx - 3*sqrt(V )), aes(t,V), col = 'red')
           print(p1_Pwave)
         },width = 450,height = 450)
       })
-      observeEvent(c( input$PwaveMD_Updateplot , input$PwaveMD_CorrelationLength , input$PwaveMD_a , input$PwaveMD_b ),{
+      observeEvent(c( input$PwaveMD_CorrelationLength , input$PwaveMD_a , input$PwaveMD_b , input$PwaveMD_beta , input$PwaveMD_gamma),{
         output$PwaveMD_ModelDis <- renderPlot({
-          V <- as.matrix(ModelDiscrepancy(XP , p_t , PsimulatorFunction ,input$PwaveMD_a , input$PwaveMD_b))
+          V <- as.matrix(ModelDiscrepancy(XP , p_t , PsimulatorFunction ,input$PwaveMD_a , input$PwaveMD_b))+
+            input$PwaveMD_gamma*(dbeta(seq(0.01,0.99,(0.99-0.01)/(length(p_t)-1)), input$PwaveMD_beta , input$PwaveMD_beta ) - dbeta(0.5, input$PwaveMD_beta , input$PwaveMD_beta ) )
           
           p1_Pwave <- ggplot(data.frame(t = p_t, Var = V ), aes(t,Var) ) + 
             geom_line(col = 'blue') +
