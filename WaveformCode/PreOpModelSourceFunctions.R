@@ -368,15 +368,10 @@ POM_FillEmptyRecords <- function(PatientData){
   return(PatientData)
 }
 POM_FindFirstGoodRecord <- function(PatientData){
-  dayOfRecord <- as.Date.POSIXct(PatientData$time)
-  DayOne <- which((dayOfRecord - dayOfRecord[1]) ==1)
-  
-#if(sum(!is.na(PatientData$Platelets[DayOne])*!is.na(PatientData$Bilirubin[DayOne])*!is.na(PatientData$Creatinine[DayOne])) == 0 ){
-    output <- PatientData$time[DayOne[length(DayOne)]] #<- PatientData$time[DayOne[1]]
-#}
-#if(sum(!is.na(PatientData$Platelets[DayOne])*!is.na(PatientData$Bilirubin[DayOne])*!is.na(PatientData$Creatinine[DayOne])) >= 1 ){
-#  output <- PatientData$time[which(!is.na(PatientData$Platelets[DayOne])*!is.na(PatientData$Bilirubin[DayOne])*!is.na(PatientData$Creatinine[DayOne])>0)[1]]
-#}
+  dayOfRecord <- PatientData$time
+  DayOne <- which( difftime(dayOfRecord , dayOfRecord[1], units = 'hours') < 24)
+  output <- PatientData$time[DayOne[length(DayOne)]] #<- PatientData$time[DayOne[1]]
+
   return(output)
 }
 POM_ExtractFirstGoodRecord <- function(PatientData){

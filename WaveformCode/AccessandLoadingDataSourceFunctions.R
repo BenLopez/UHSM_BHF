@@ -573,7 +573,9 @@ DP_StripTime <- function(X){
   if(is.na(output)){output <- strptime(X ,  format = "%d/%m/%Y %H:%M:%S")}
   if(is.na(output)){output <- strptime(X ,  format = "%Y-%m-%d %H:%M:%S")}
   if(is.na(output)){output <- strptime(X ,  format = "%Y-%m-%d")}
+  if(is.na(output)){output <- strptime(X ,  format = "%d/%m/%Y %H:%M")}
   }
+  
 return(output)    
 } 
 DP_numberhoursgreaterthan <- function(PatIndex2017 , PatientsId , numberofhours = 6){

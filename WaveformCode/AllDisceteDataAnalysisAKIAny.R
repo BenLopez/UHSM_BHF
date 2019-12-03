@@ -48,7 +48,8 @@ source('ADDAProcessData2.R')
                                          "IntravenousNitratesOrAnyHeparin",
                                          "ExtracardiacArteriopathy",
                                          "Planned.Valve.Surgery",
-                                         "Pre")
+                                         "Pre_OperativeHeartRhythm",
+                                         "RenalDisease")
   
   NameofVariable <- NamesofPeropCategoricalVariables[1]
   PreOpCategoricalUnivariateResults <- POM_CategoricalUnivariateAnalysis(CategoricalData = as.factor(MasterData[ , which(names(MasterData) == NameofVariable)]) ,
@@ -168,7 +169,8 @@ source('ADDAProcessData2.R')
                                         'Lac',
                                         'FiO26num',
                                         'GCSnum',
-                                        'PaO2OverFiO2')
+                                        'PaO2OverFiO2',
+                                        'Urine')
   
   NameofVariable <- NamesofPostopContinuousVariables[1]
   ContinuousData <- MasterData[ ,which(names(MasterData) == NameofVariable)]

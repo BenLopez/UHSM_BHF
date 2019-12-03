@@ -1,4 +1,4 @@
-if(!file.exists('MasterData.RData')){
+if(!file.exists('MasterDataAKI.RData')){
   MasterData <- POM_ExtractFirstRecords( AllDataStructure )
   save(MasterData , file = 'MasterDataAKI.RData')
 }else{
@@ -14,7 +14,6 @@ MasterData <- MasterData[apply(as.matrix(MasterData$NewPseudoId) , 1 , DP_Extrac
 
 MasterData$ConfirmedFirstNewAF[is.na(MasterData$ConfirmedFirstNewAF)] <- 'NA'
 MasterData$AFLogical = ((!is.na(MasterData$FirstNewAF)) & (MasterData$ConfirmedFirstNewAF != 'CNAF'))
-
 
 # Process vasoactive drugs
 {MasterData$NoradrenalineStandardised <- (MasterData$Noradrenaline..80mcg.ml.Volume/((1/80)*60*MasterData$Weight) )
@@ -52,7 +51,7 @@ MasterData$AFLogical = ((!is.na(MasterData$FirstNewAF)) & (MasterData$ConfirmedF
 MasterData$IntubatedInSurgury <- abs(DP_StripTime(MasterData$DateTubed) - DP_StripTime(MasterData$FirstITUEntry)) <=0
 
 MasterData$GCSnum[is.na(MasterData$GCSnum) & (MasterData$IntubatedInSurgury == 0)] <- 15
-
+MasterData$Urine <- MasterData$Urine..mL./MasterData$Weight 
 # Fix strings which should be numeric
 
 ListNumericVariables <- c('Age' ,
@@ -102,7 +101,8 @@ ListNumericVariables <- c('Age' ,
                           'ArtPO2',
                           'Lac',
                           'FiO26num',
-                          'GCSnum')
+                          'GCSnum',
+                          'Urine')
 
 MasterData$CPB[MasterData$CPB == 'not recorded'] = NA
 MasterData$CPB[is.na(MasterData$CPB)] <- 0
@@ -134,11 +134,10 @@ ListofCategoricalVariables  <- c('AFlogical',
                                  "IntravenousInotropesPriorToAnaesthesia",
                                  "IntravenousNitratesOrAnyHeparin",
                                  "ExtracardiacArteriopathy",
-                                 "Planned.Valve.Surgery")
+                                 "Planned.Valve.Surgery",
+                                 "Pre_OperativeHeartRhythm")
 
 MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] , 2 , as.factor )
-
-
 
 # Outliers
 
@@ -281,6 +280,7 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation== 'No'] <- 'VentilatedPreOperation(No)'
   MasterData$VentilatedPreOperation[MasterData$VentilatedPreOperation == 'Yes'] <- 'VentilatedPreOperation(Yes)'
   
+  MasterData$RenalDisease[MasterData$RenalDisease == '' ] <- NA
   
   MasterData$CardiogenicShock_pre_Operation[MasterData$CardiogenicShock_pre_Operation == ''] <- NA
   MasterData$CardiogenicShock_pre_Operation[MasterData$CardiogenicShock_pre_Operation== 'No'] <- 'CardiogenicShock_pre_Operation(No)'
@@ -368,7 +368,16 @@ MasterData$Planned.Valve.Surgery[MasterData$Valve == "Procedure Details(Valve)" 
   MasterData$dAlb <- abs( DP_NormaliseData(MasterData$dAlb) )
 }
 
+
+MasterData <- MasterData[MasterData$RenalDisease != "ARF - Dialysis;" , ]
+
+# Remove patients who have AKI before end on day one
+tmp <- MasterData$time - apply(cbind(as.numeric(DP_StripTime(MasterData$FirstAKI1AbsoluteCr)) , as.numeric(DP_StripTime(MasterData$FirstAKI1UO)), as.numeric(DP_StripTime(MasterData$FirstAKI1RelativeCr) )) , 1 , function(X){min(X , na.rm = T)})
+tmp[is.infinite(tmp)]<- NA
+
+MasterData <- MasterData[tmp < 0 , ]
+  
 MasterData$Filter[is.na(MasterData$Filter) ] <- "CVVHDyalysis(No)"
 #MasterData <- MasterData[MasterData$Filter == "CVVHDyalysis(No)",]
-MasterData$AFLogical = !is.na(MasterData$FirstAKI1AbsoluteCr) | !is.na(MasterData$FirstAKI1UO) | !is.na(MasterData$FirstAKI1RelativeCr) | MasterData$Filter == "CVVHDyalysis(Yes)"
+MasterData$AFLogical = !is.na(MasterData$FirstAKI1AbsoluteCr) | !is.na(MasterData$FirstAKI1UO) | !is.na(MasterData$FirstAKI1RelativeCr) 
 AFLogical <- MasterData$AFLogical
