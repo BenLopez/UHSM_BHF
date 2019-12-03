@@ -766,11 +766,26 @@ BC_PlotCreateECGPlots <- function(RPeaksStruct ,  ECGStruct  , timestart = ECGSt
   t1 <- t[t %in% t1]
   #RA2 <- RPeaksStruct[[ECGindex]]$RA[(RPeaksStruct[[ECGindex]]$t > timestart )*(RPeaksStruct[[ECGindex]]$t < (timestart+timeindex) ) == 1]
   
-  plotstruct <- ggplot(data.frame(t = t , f_t = f_t ) , aes(t , f_t))+
+  plotstruct <- ggplot(data.frame(t = as.numeric(t) , f_t = f_t ) , aes(t , f_t))+
     geom_line(colour= color) + 
     ylab('V') + 
     xlab('t') +
-    geom_point(data = data.frame(t = t1 , RA = RA1) , aes(t , RA) , colour = 'red' )
+    geom_point(data = data.frame(t = as.numeric(t1) , RA = RA1) , aes(t , RA) , colour = 'red' )
+  
+  plotstruct <- plotstruct + theme(
+    panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
+                                    size = 2, linetype = "solid"),
+    panel.grid.major = element_line(size = 1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25)), 
+    panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25)),
+    axis.ticks.x=element_blank(),
+    axis.text.x=element_blank()
+  )
+  
+  plotstruct <- plotstruct  + scale_y_continuous(minor_breaks = seq(-200, 200, 10) , breaks = seq(-200, 200, 50)) +
+  scale_x_continuous(limits = as.numeric(c(t[1],t[length(t)])) , minor_breaks = as.numeric(seq(t[1], t[length(t)], 0.04)[-seq(1,251,5)]) , breaks  = as.numeric(seq(t[1], t[length(t)], 0.2)) )
+  
   return(plotstruct)  
 }
 BC_PlotECGAlignAxis <- function(plotstruct , timerange){

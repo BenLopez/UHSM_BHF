@@ -1,8 +1,8 @@
 if(!file.exists('MasterData.RData')){
   MasterData <- POM_ExtractFirstRecords( AllDataStructure )
-  save(MasterData , file = 'MasterData.RData')
+  save(MasterData , file = 'MasterDataAKI.RData')
 }else{
-  load('MasterData.RData')
+  load('MasterDataAKI.RData')
 }
 
 #### Process Data ####
@@ -10,22 +10,11 @@ if(!file.exists('MasterData.RData')){
 
 MasterData <- MasterData[apply(as.matrix(MasterData$NewPseudoId) , 1 , DP_ExtractOpCodeFromNewPatinetID) == '-1-1-1' , ]
 
-#MasterData$ProcDetails <- DP_AssignSurgeryLabels(MasterData$ProcDetails)
-#MasterData$ProcDetails[MasterData$ProcDetails == 'MCS' | MasterData$ProcDetails == 'PP' | MasterData$ProcDetails == 'SP' | MasterData$ProcDetails == 'Transplant'] = 'Other'
-
 # Create AFLogical
 
 MasterData$ConfirmedFirstNewAF[is.na(MasterData$ConfirmedFirstNewAF)] <- 'NA'
 MasterData$AFLogical = ((!is.na(MasterData$FirstNewAF)) & (MasterData$ConfirmedFirstNewAF != 'CNAF'))
 
-# Remove treated with AFib medication
-
-AFMedication <- POM_ExtractAFMedication(AllDataStructure = AllDataStructure)
-MasterData <- MasterData[-which(  ((MasterData$AFLogical ==0)&(AFMedication$DidoxinLogical == 1)) | ((MasterData$AFLogical ==0)&(AFMedication$AmiodaroneLogical == 1)) ),]
-
-# Remove Pre_op AFib
-
-MasterData <- MasterData[MasterData$Pre_OperativeHeartRhythm != "Atrial fibrillation/flutter" , ]
 
 # Process vasoactive drugs
 {MasterData$NoradrenalineStandardised <- (MasterData$Noradrenaline..80mcg.ml.Volume/((1/80)*60*MasterData$Weight) )
@@ -116,8 +105,8 @@ ListNumericVariables <- c('Age' ,
                           'GCSnum')
 
 MasterData$CPB[MasterData$CPB == 'not recorded'] = NA
-MasterData$CPB[is.na(MasterData$CPB)] <- "00:00"
-MasterData$CPB <- as.numeric(difftime(strptime(x = MasterData$CPB ,  format = '%R') ,  sort(strptime(x = MasterData$CPB ,  format = '%R'))[1],units = c('mins') ))
+MasterData$CPB[is.na(MasterData$CPB)] <- 0
+#MasterData$CPB <- as.numeric(difftime(strptime(x = MasterData$CPB ,  format = '%R') ,  sort(strptime(x = MasterData$CPB ,  format = '%R'))[1],units = c('mins') ))
 
 MasterData[ ,names(MasterData) %in% ListNumericVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListNumericVariables ] , 2 , as.numeric )
 
@@ -199,8 +188,9 @@ for(i in 1:dim(MasterData)[1]){
 MasterData$LogisticEUROScore <- log(MasterData$LogisticEUROScore)
 MasterData$SCTSLogisticEuroSCORE <- MasterData$SCTSLogisticEuroSCORE
 
-MasterData$CRP <- log(MasterData$CRP)
-MasterData$PreOpCRP <- log(MasterData$PreOpCRP)
+MasterData$PreOpCRP[MasterData$PreOpCRP ==0] <- NA
+#MasterData$CRP <- log(MasterData$CRP)
+#MasterData$PreOpCRP <- log(MasterData$PreOpCRP)
 
 MasterData$RACE <- log(MasterData$RACE)
 MasterData$logCASUS <- log(MasterData$logCASUS)
@@ -210,7 +200,8 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
 
 
 # Categorical data fixes for odd fields
-{MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == ''] <- NA
+{
+  MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == ''] <- NA
   MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Not measured"] <- NA
   MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Good (LVEF > 50%)"] <- "LVEF > 50%"
   MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Fair (LVEF 30-50%)"] <- "LVEF  30-50%"
@@ -233,6 +224,7 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$AnginaGrade[MasterData$AnginaGrade == "Any Activity or At Rest (IV)"     ] <- 'AnginaGrade(IV-IV)'
   MasterData$AnginaGrade[MasterData$AnginaGrade == "No"     ] <- 'AnginaGrade(O-II)'
   
+  MasterData$Pre_OperativeHeartRhythm[MasterData$Pre_OperativeHeartRhythm == ""] = NA
   
   #MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == ' TRUE'] <- 'IntupatedInSurgery'
   #MasterData$IntubatedInSurgury[MasterData$IntubatedInSurgury == 'FALSE'] <- 'NotIntupatedInSurgery'
@@ -252,7 +244,6 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$HTN[MasterData$HTN == 'Unknown'] <- NA
   MasterData$HTN[MasterData$HTN== 'No'] <- 'HTN(No)'
   MasterData$HTN[MasterData$HTN == 'Yes'] <- 'HTN(Yes)'
-  
   
   MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysfunction == ''] <- NA
   MasterData$HistoryOfNeurologicalDysfunction[MasterData$HistoryOfNeurologicalDysfunction== 'No'] <- 'HistoryOfNeurologicalDysfunction(No)'
@@ -316,7 +307,7 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   
   MasterData$ProcDetails[(MasterData$ProcDetails == 'CABG') & (MasterData$Planned.Valve.Surgery != 'None')] = "CABG and Valve"
   
-  MasterData <- cbind(MasterData , DP_AssignSurgeryLabels2(MasterData$ProcDetails , ProcedureDetails ))
+  MasterData <- cbind(MasterData[, -c(400:404)] , DP_AssignSurgeryLabels2(MasterData$ProcDetails , ProcedureDetails ))
   
   MasterData$Complex <- as.vector(MasterData$Complex)
   MasterData$Complex[MasterData$Complex == 'Y'] = 'Procedure Details(Complex)'
@@ -378,6 +369,6 @@ MasterData$Planned.Valve.Surgery[MasterData$Valve == "Procedure Details(Valve)" 
 }
 
 MasterData$Filter[is.na(MasterData$Filter) ] <- "CVVHDyalysis(No)"
-MasterData <- MasterData[MasterData$Filter == "CVVHDyalysis(No)",]
-MasterData$AFLogical = !is.na(MasterData$FirstAKI1AbsoluteCr)
+#MasterData <- MasterData[MasterData$Filter == "CVVHDyalysis(No)",]
+MasterData$AFLogical = !is.na(MasterData$FirstAKI1AbsoluteCr) | !is.na(MasterData$FirstAKI1UO) | !is.na(MasterData$FirstAKI1RelativeCr) | MasterData$Filter == "CVVHDyalysis(Yes)"
 AFLogical <- MasterData$AFLogical

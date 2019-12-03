@@ -230,4 +230,66 @@ PER_CreatePwaveECGXReg <- function(t = 1 , X1 =6 , X2 =6 , X3 = 0.125 , X4 = 0.1
   X_Sim[22] <- 18 #TAR
   return(X_Sim)
 }
-
+HREL_BigeminySampleECG <- function( X ){
+  
+  RRTimes <-  FM_SampleGMMBigeminy(X , 100 )
+  t_observation = seq(0.25  , 10 , 0.005)
+  t = cumsum(RRTimes)
+  RRTimes[RRTimes<0.3] <- 0.3
+  RRTimes[RRTimes>2] <- 2
+  ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
+  p3 <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) + geom_line(col =rgb(0,0,0,0.9) , size = 0.7)
+  p3 <- p3 + theme(
+    panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
+                                    size = 2, linetype = "solid"),
+    panel.grid.major = element_line(size = 1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25)), 
+    panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25))
+  ) 
+  
+  p3 <-p3 + scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
+  return(p3)
+}
+HREL_SampleECG <- function( X ){
+  
+  RRTimes <-  FM_SampleGMM(X , 100 )
+  t_observation = seq(0.25  , 10 , 0.005)
+  RRTimes[RRTimes<0.4] <- 0.4
+  RRTimes[RRTimes>2] <- 2
+  t = cumsum(RRTimes)
+  ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
+  p3 <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) + geom_line(col =rgb(0,0,0,0.9) , size = 0.7)
+  p3 <- p3 + theme(
+    panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
+                                    size = 2, linetype = "solid"),
+    panel.grid.major = element_line(size = 1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25)), 
+    panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25))
+  ) 
+  
+  p3 <-p3 + scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
+  return(p3)
+}
+HREL_RegularSampleECG <- function( X ){
+  
+  RRTimes <-  FM_SamplePearonsRegular(X , 100 )
+  t_observation = seq(0.25  , 10 , 0.005)
+  t = cumsum(RRTimes)
+  RRTimes[RRTimes<0.3] <- 0.4
+  RRTimes[RRTimes>2] <- 2
+  ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
+  p3 <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) + geom_line(col =rgb(0,0,0,0.9) , size = 0.7)
+  p3 <- p3 + theme(
+    panel.background = element_rect(fill = rgb(1,0,0,alpha = 0.08), colour = "pink",
+                                    size = 2, linetype = "solid"),
+    panel.grid.major = element_line(size = 1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25)), 
+    panel.grid.minor = element_line(size = 0.1, linetype = 'solid',
+                                    colour = rgb(1,0,0,0.25))
+  ) 
+  
+  p3 <-p3 + scale_x_continuous(limits = c(0.4,9.6) , minor_breaks = seq(0, 10, 0.04)[-seq(1,251,5)] , breaks  = seq(0, 10, 0.2) ) + scale_y_continuous(minor_breaks = seq(-50, 200, 10) , breaks = seq(-50, 200, 50))
+  return(p3)
+}

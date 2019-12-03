@@ -847,3 +847,14 @@ DP_ExtractIfEverhadRRT <- function(AllDataStructure){
 DP_CalculateDiagonalElements<- function(A , B){
   return(rowSums( A*t(B%*%t(A)) ))
 }
+DP_ConvertFolderoftxttocsv <- function(){
+  
+  filelocation = choose.dir()
+  setwd(filelocation)
+  FILES <- list.files( pattern = ".txt")
+  
+  for (i in 1:length(FILES)) {
+    FILE=read.table(file=FILES[i],header=T,sep="\t")
+    write.table(FILE,file=paste0(filelocation,sub(".txt","",FILES[i]),".csv"),row.names=F,quote=F,sep=",")
+  }  
+}

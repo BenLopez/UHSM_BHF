@@ -66,14 +66,14 @@ PatientID <- DP_choosepatient( listAllPatients )
     timemat[i] <-  RPeakData$RRCombined[rangeofbeats[length(rangeofbeats)],1]
     StartBeatMat[i] <- StartBeat
     
-    
+    if(median(RRtimes) > 0.6){
     if(abs(1-t_tmp)>0.1){
       disp(t_tmp)
       RpeaksFail[i] <- 1
       StartBeat <- StartBeat + numberofBeats
       next
     }
-    
+    }
     # HM Heart-rhythm
     ReHmOutput <- FM_HistoryMatchRRCulmativeDensity( PriorNonImplausibleSet = PriorNonImplausibleSetRegular, 
                                                      x = xreg ,
@@ -110,7 +110,13 @@ PatientID <- DP_choosepatient( listAllPatients )
     }else{
       RegularLogical2[i] <- F
     }
-
+    if(median(RRtimes) > 0.6 & median(RRtimes) < 1 & var(RRtimes) < 0.0075){
+      RegularLogical2[i] <- T
+      RegularyIrregularLogical2[i] <- F
+      disp('Regular Heart-rhythm by variance alone.')
+    }else{
+      RegularLogical2[i] <- F
+    }
     
     # HM P-waves
     source('FM_HistoryMatchMeanPWave.R')
@@ -199,7 +205,7 @@ PatientID <- DP_choosepatient( listAllPatients )
 {
 
 {
-StartBeat <-  4001
+StartBeat <-  9501
 rangeofbeats <- c(StartBeat: min(dim(RPeakData$RRCombined)[1] , (StartBeat + numberofBeats)) )
 RRtimes <-  RPeakData$RRCombined[rangeofbeats,3]
 mm <- FM_EmulatorEstimate( Y = RRtimes )

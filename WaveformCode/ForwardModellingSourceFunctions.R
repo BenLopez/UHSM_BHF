@@ -488,7 +488,7 @@ HREL_RegularSampleECG <- function( X ){
   RRTimes <-  FM_SamplePearonsRegular(X , 100 )
   t_observation = seq(0.25  , 10 , 0.005)
   t = cumsum(RRTimes)
-  RRTimes[RRTimes<0.3] <- 0.3
+  RRTimes[RRTimes<0.3] <- 0.5
   RRTimes[RRTimes>2] <- 2
   ECG <- PER_CreateECGReg( t , t_observation , RRTimes )
   p3 <- ggplot(data.frame(t = t_observation , V = ECG ) , aes(t , V)) + geom_line(col =rgb(0,0,0,0.9) , size = 0.7)

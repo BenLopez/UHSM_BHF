@@ -14,10 +14,26 @@
     #next
       }
   if((length(QS_Struct$Date) == 0)){
-    QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
-    #StartBeat <- StartBeat + numberofBeats
-    #next
+    #QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
+    StartBeat <- StartBeat + numberofBeats
+    next
     }
+  
+  if(is.null(QS_Struct$Date) ){
+    #QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
+    StartBeat <- StartBeat + numberofBeats
+    next
+  }
+  if((length(QS_Struct$Date) == 1)){
+    #QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
+     StartBeat <- StartBeat + numberofBeats
+    next
+  }
+  if((length(QS_Struct$Date) == 0)){
+    #QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
+    StartBeat <- StartBeat + numberofBeats
+    next
+  }
   
   EmulatedQS <- FMPWaveHM_EmulateTQSegment( QS_Struct = QS_Struct , EmulatorParameters = EmulatorParameters , Xstar = seq(0.5 , 1 , 0.5/51) )
   if(is.null(dim(EmulatedQS))){

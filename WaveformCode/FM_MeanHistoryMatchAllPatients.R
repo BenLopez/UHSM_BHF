@@ -1,5 +1,6 @@
 
-for(PatientID in listAllPatients[26:length(listAllPatients)] ){
+for(PatientID in listAllPatients[360:length(listAllPatients)] ){
+#for(PatientID in c( 'z556') ){
   {
     MetaData <- DP_ExtractPatientRecordforIndex( PatIndex2017 = PatIndex2017 , PatientCode = PatientID )
     if(DP_CheckIfAFPatient(MetaData)){next}
@@ -41,11 +42,14 @@ for(PatientID in listAllPatients[26:length(listAllPatients)] ){
       timemat[i] <- PE_CleanRpeaks( RPeakData$RRCombined )[rangeofbeats[length(rangeofbeats)],1]
       StartBeatMat[i] <- StartBeat
       
-      if(abs(1-t_tmp)>0.1){
-        disp(t_tmp)
-        RpeaksFail[i] <- 1
-        StartBeat <- StartBeat + numberofBeats
-        next
+      
+      if(median(RRtimes) > 0.6){
+        if(abs(1-t_tmp)>0.1){
+          disp(t_tmp)
+          RpeaksFail[i] <- 1
+          StartBeat <- StartBeat + numberofBeats
+          next
+        }
       }
       if(var( RRtimes)==0){next}
       
@@ -95,7 +99,12 @@ for(PatientID in listAllPatients[26:length(listAllPatients)] ){
       }else{
         RegularLogical2[i] <- F
       }
-      
+      if(median(RRtimes) > 0.6 & median(RRtimes) < 1 & var(RRtimes) < 0.0075){
+        RegularLogical2[i] <- T
+        disp('Regular Heart-rhythm')
+      }else{
+        RegularLogical2[i] <- F
+      }
       
       # HM P-waves
       source('FM_HistoryMatchMeanPWave.R')
