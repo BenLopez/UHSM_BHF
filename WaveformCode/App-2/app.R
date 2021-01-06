@@ -5,8 +5,8 @@
   source("LibrariesAndSettings.R" , print.eval  = TRUE )
   DP_LoadPatientIndex()
   DP_ChooseDataReps()
-  FilestoProcess <- DP_ChooseECGstoProcess() 
-  HoursBeforeandAfter <- DP_SelectHoursBeforeandAfter() 
+  FilestoProcess <- c( "ECGI" ,  "ECGII" , "ECGIII")#DP_ChooseECGstoProcess() 
+  HoursBeforeandAfter <- setNames(list(5 , 1) , c('numberhoursbefore' , 'numberhoursafter')) #DP_SelectHoursBeforeandAfter() 
   if(sum(listAllPatients == 'z1007') > 0){
   listAllPatients <- DP_FilterPatients(listAllPatients , PatIndex2017 , HowtoFilterops , path , FilestoProcess)}
   set.seed( 1 )

@@ -4,17 +4,18 @@
 
 
 DP_LoadPatientIndex <- function(){
-  filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
-                         title = 'Choose File Type For Patient Index', graphics = TRUE )
-if(filetype == 'csv')
-{
-     PatIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 PatientIndex.csv file"), stringsAsFactors = FALSE)
-}    
-if(filetype == 'RData')
-{
+# Old code for csv files.
+#filetype = select.list(c('csv' , 'RData'), preselect = NULL, multiple = TRUE,
+#                        title = 'Choose File Type For Patient Index', graphics = TRUE )
+#if(filetype == 'csv')
+#{
+#     PatIndex2017 <<- read.csv(file=choose.files(caption="Select 2017 PatientIndex.csv file"), stringsAsFactors = FALSE)
+#}    
+#if(filetype == 'RData')
+#{
   load(choose.files( caption = 'Select PatientIndexMaster.RData'))
   PatIndex2017 <<- PatIndex2017
-}
+#}
   return(PatIndex2017)
 }
 DP_LoadPatientDendrite <- function(){
@@ -295,10 +296,10 @@ DP_LoadPatientsandProcessRPeaks <- function(path , subList , numberrep =1 , Load
 
 DP_ChooseDataReps <- function(){
   
-setofrepositorynumbers = c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
-numberrep <<-  as.numeric(select.list(setofrepositorynumbers, preselect = setofrepositorynumbers[1], multiple = FALSE,
-                                    title = 'Select number of reporsitory locations', graphics = TRUE ))
-
+#setofrepositorynumbers = c('1' , '2' , '3' , '4' , '5' , '6' , '7' , '8')
+#numberrep <<-  as.numeric(select.list(setofrepositorynumbers, preselect = setofrepositorynumbers[1], multiple = FALSE,
+              #                      title = 'Select number of reporsitory locations', graphics = TRUE ))
+numberrep <<- 1
 # Select reporsitories
 path <<- list()
 for(i in 1:numberrep)
@@ -605,7 +606,7 @@ DP_SaveFile <- function( object , path , PatientID , Name){
   save( object , file = paste0(path , '\\' , PatientID , '\\Zip_out\\', Name , '.RData') )
 }
 DP_WaitBar <- function(A){
-  print(paste0(A*100 , '% complete'))
+  print(paste0(round(A*100,4) , '% complete'))
 }  
 DP_CreateDummyMetaData <- function(PatIndex2017 , Name = NA , FirstNewAF = NA){
   output <- setNames(data.frame(NA , NA , NA , NA , NA , NA , NA , NA , NA , NA,

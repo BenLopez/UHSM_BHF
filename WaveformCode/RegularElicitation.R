@@ -23,9 +23,9 @@ HREL_NSRRuleFailure <- function(X){
   
   output <- matrix(0,3,1)
   
-  if(!(X[1] > 0.6) ){output[1]<- 1}
-  if(!(X[1] < 1) ){output[2]<- 1}
-  if(!(X[2] < (0.04/3)) ){{output[3]<- 1}}
+  if(!c(X[1] > 0.6) ){output[1]<- 1}
+  if(!c(X[1] < 1) ){output[2]<- 1}
+  if(!c(X[2] < (0.04/3)) ){{output[3]<- 1}}
   return(output)
 }
 
@@ -175,7 +175,7 @@ TestPoints <- rbind(PriorNonImplausibleSetNSR2[which(ValidVector)[1:5], ],
                     PriorNonImplausibleSetNSR2[EdgeValid2[1:5], ],
                     PriorNonImplausibleSetNSR2[EdgeNotValid2[1:5],],
                     PriorNonImplausibleSetNSR[EdgeValid[1:5], ])
-NumericOutputs <- list(PermutedList , GroundTruth,TestPoints,TestSet)
+NumericOutputs <- list(PermutedList , GroundTruth,TestPoints,TestSet2)
 
 
 #save(NumericOutputs , file = 'C:\\Users\\Ben\\Documents\\HeartRhythm Elicitation\\NSR\\IterationTwo\\NumericOutputs.RData' )
@@ -198,3 +198,71 @@ grid.arrange( TestSet2[[PermutedList[21]]] , TestSet2[[PermutedList[22]]] , Test
 x11(20,15)
 grid.arrange( TestSet2[[PermutedList[26]]] , TestSet2[[PermutedList[27]]] , TestSet2[[PermutedList[28]]] , TestSet2[[PermutedList[29]]] , TestSet2[[PermutedList[30]]] , nrow = 5)
 }
+
+resultsitr2 <- read.csv(file = "C:\\Users\\Ben\\Documents\\HeartRhythm Elicitation\\NSR\\IterationTwo\\NSRItr2Form(results).csv")
+xtable(resultsitr2[,2:dim(resultsitr2)[2]])
+
+
+##### Iteration Three #####
+
+set.seed(3)
+
+numberofsamples <- 100000
+PriorNonImplausibleSetNSR3 <- BE_SampleLHSinab(a = c(0.7,0.0000001,-10,1.8) , b = c(0.9,(0.20/3),10,40) , numberofsamples)
+PriorNonImplausibleSetNSR3 <- PriorNonImplausibleSetNSR3[(PriorNonImplausibleSetNSR3[,3] > -sqrt((PriorNonImplausibleSetNSR3[,4] -0.9) - 0.01))&(PriorNonImplausibleSetNSR3[,3] < sqrt((PriorNonImplausibleSetNSR3[,4] -0.9) - 0.01)),] 
+
+
+Group1 <- which(PriorNonImplausibleSetNSR3[,2] < 0.04/3)
+Group2 <- which((PriorNonImplausibleSetNSR3[,2] > 0.04/3) & (PriorNonImplausibleSetNSR3[,2] < 0.08/3))
+Group3 <- which((PriorNonImplausibleSetNSR3[,2] > 0.08/3) & (PriorNonImplausibleSetNSR3[,2] < 0.12/3))
+Group4 <- which((PriorNonImplausibleSetNSR3[,2] > 0.12/3) & (PriorNonImplausibleSetNSR3[,2] < 0.16/3))
+Group5 <- which((PriorNonImplausibleSetNSR3[,2] > 0.16/3) & (PriorNonImplausibleSetNSR3[,2] < 0.20/3))
+
+
+TestSet3 <- list()
+for(i in c( 1:5 ) ){
+  TestSet3[[i]] <- HREL_RegularSampleECG(X = PriorNonImplausibleSetNSR3[Group1[i],] )
+}
+for(i in c( 6:10 ) ){
+  TestSet3[[i]] <- HREL_RegularSampleECG(X = PriorNonImplausibleSetNSR3[Group2[i-5],] )
+}
+for(i in c( 11:15 ) ){
+  TestSet3[[i]] <- HREL_RegularSampleECG(X = PriorNonImplausibleSetNSR3[Group3[i-10],] )
+}
+for(i in c( 16:20 ) ){
+  TestSet3[[i]] <- HREL_RegularSampleECG(X = PriorNonImplausibleSetNSR3[Group4[i-15],] )
+}
+for(i in c( 21:25 ) ){
+  TestSet3[[i]] <- HREL_RegularSampleECG(X = PriorNonImplausibleSetNSR3[Group5[i-20],] )
+}
+
+PermutedList <- sample(1:length(TestSet3) , length(TestSet3))
+#PermutedList <- 1:30 #sample(1:length(TestSet2) , length(TestSet2))
+
+GroundTruth <- PermutedList
+
+TestPoints <- rbind(PriorNonImplausibleSetNSR3[ Group1[1:5] , ],
+                    PriorNonImplausibleSetNSR3[ Group2[1:5] , ],
+                    PriorNonImplausibleSetNSR3[ Group3[1:5] , ],
+                    PriorNonImplausibleSetNSR3[ Group4[1:5] , ],
+                    PriorNonImplausibleSetNSR3[ Group5[1:5] , ])
+NumericOutputs <- list(PermutedList , GroundTruth,TestPoints,TestSet3)
+
+
+#save(NumericOutputs , file = 'C:\\Users\\Ben\\Documents\\HeartRhythm Elicitation\\NSR\\IterationThree\\NumericOutputs.RData' )
+
+
+x11(20,15)
+grid.arrange( TestSet3[[PermutedList[1]]] , TestSet3[[PermutedList[2]]] , TestSet3[[PermutedList[3]]] , TestSet3[[PermutedList[4]]] , TestSet3[[PermutedList[5]]] , nrow = 5)
+
+x11(20,15)
+grid.arrange( TestSet3[[PermutedList[6]]] , TestSet3[[PermutedList[7]]] , TestSet3[[PermutedList[8]]] , TestSet3[[PermutedList[9]]] , TestSet3[[PermutedList[10]]] , nrow = 5)
+
+x11(20,15)
+grid.arrange( TestSet3[[PermutedList[11]]] , TestSet3[[PermutedList[12]]] , TestSet3[[PermutedList[13]]] , TestSet3[[PermutedList[14]]] , TestSet3[[PermutedList[15]]] , nrow = 5)
+
+x11(20,15)
+grid.arrange( TestSet3[[PermutedList[16]]] , TestSet3[[PermutedList[17]]] , TestSet3[[PermutedList[18]]] , TestSet3[[PermutedList[19]]] , TestSet3[[PermutedList[20]]] , nrow = 5)
+
+x11(20,15)
+grid.arrange( TestSet3[[PermutedList[21]]] , TestSet3[[PermutedList[22]]] , TestSet3[[PermutedList[23]]] , TestSet3[[PermutedList[24]]] , TestSet3[[PermutedList[25]]] , nrow = 5)

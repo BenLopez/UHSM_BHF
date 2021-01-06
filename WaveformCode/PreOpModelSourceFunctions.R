@@ -371,7 +371,9 @@ POM_FindFirstGoodRecord <- function(PatientData){
   dayOfRecord <- PatientData$time
   DayOne <- which( difftime(dayOfRecord , dayOfRecord[1], units = 'hours') < 24)
   output <- PatientData$time[DayOne[length(DayOne)]] #<- PatientData$time[DayOne[1]]
-
+  #dayOfRecord <- as.Date.POSIXct(PatientData$time)
+  #  DayOne <- which((dayOfRecord - dayOfRecord[1]) == 0)
+  # output <- PatientData$time[DayOne[length(DayOne)]] #<- PatientData$time[DayOne[1]]
   return(output)
 }
 POM_ExtractFirstGoodRecord <- function(PatientData){
@@ -395,13 +397,13 @@ POM_ExtractFirstRecords <- function(AllDataStructure){
   return(output)
 }
 POM_CategoricalCreateFieldNames <- function(){
-  return(c('VariableNames' , 'n' , 'nNAFib' , 'nAFib' , 'PerNAFib' , 'PerAFib' ,'PValueProp','LO' , 'L_CI' , 'U_CI' , 'PValue' ))
+  return(c('VariableNames' , 'n' , 'nNAFib' , 'nAFib' , 'PerNAFib' , 'PerAFib' ,'PValueProp','LO' , 'L_CI' , 'U_CI' , 'PValue' ,'CV AUC'))
 }
 POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , MasterData , NameofVariable ){
   
   CategoricalData <- as.factor(CategoricalData)
   
-  output <- data.frame(matrix(NA , length(levels(CategoricalData)) , 11 ))
+  output <- data.frame(matrix(NA , length(levels(CategoricalData)) , length(POM_CategoricalCreateFieldNames()) ))
   output[,1] <- levels(CategoricalData)
   names(output) <- POM_CategoricalCreateFieldNames()
   
@@ -418,7 +420,12 @@ POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , Mast
     # logistic regression analysis
   }
   
-  model <- glm(FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'Valve'), which(names(MasterData) == 'CABG'), which(names(MasterData) == 'Aortic') ,  which(names(MasterData) == 'Complex') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData ) ,
+  Formula1 <- FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'Valve'), which(names(MasterData) == 'CABG'), which(names(MasterData) == 'Aortic') ,  which(names(MasterData) == 'Complex') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData )
+  basevariables <-  unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'Valve'), which(names(MasterData) == 'CABG'), which(names(MasterData) == 'Aortic') ,  which(names(MasterData) == 'Complex') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) )
+  if(sum(basevariables == which(names(MasterData) == NameofVariable))>0){basevariables <- basevariables[-which(basevariables == which(names(MasterData) == NameofVariable))]}
+  Formula2 <- FB_CreateFormula('AFLogical' , basevariables , MasterData )
+  
+  model <- glm(Formula1 ,
                family=binomial(link='logit'),
                data = MasterData)
   
@@ -429,10 +436,11 @@ POM_CategoricalUnivariateAnalysis <- function(CategoricalData , AFLogical , Mast
   output[ , 2:11] <- signif(output[,2:11] , 4)
   
   output[1 , 8:11] <- NA
+  output[1 , 12] <- (FC_CalculateCrossValidatedROC(Formula1 , which(FC_ExtractIndiciesFromFormula(names(MasterData),Formula1) ==1) , MasterData = MasterData)-FC_CalculateCrossValidatedROC(Formula2 , which(FC_ExtractIndiciesFromFormula(names(MasterData),Formula1) ==1) , MasterData = MasterData))
   return(output)
 }
 POM_ContinuousCreateFieldNames <- function(){
-  return(c('VariableNames' , 'n' , 'M-NAF' , 'SD-NAF' , 'M-AF' , 'SD-AF' ,'P-M' , 'LO' , 'L_CI' , 'U_CI' , 'PValue' ))
+  return(c('VariableNames' , 'n' , 'M-NAF' , 'SD-NAF' , 'M-AF' , 'SD-AF' ,'P-M' , 'LO' , 'L_CI' , 'U_CI' , 'PValue' ,'CV AUC'))
 }
 POM_ContinuousUnivariateAnalysis <- function(ContinuousData , AFLogical , MasterData , NameofVariable){
   ContinuousData <- as.numeric(ContinuousData)
@@ -449,6 +457,11 @@ POM_ContinuousUnivariateAnalysis <- function(ContinuousData , AFLogical , Master
   tmptest <- t.test(ContinuousData[AFLogical ==1] , ContinuousData[AFLogical ==0])
   output[,7] <- tmptest$p.value
   
+  Formula1 <- FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'Valve'), which(names(MasterData) == 'CABG'), which(names(MasterData) == 'Aortic') ,  which(names(MasterData) == 'Complex') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData )
+  basevariables <-  unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'Valve'), which(names(MasterData) == 'CABG'), which(names(MasterData) == 'Aortic') ,  which(names(MasterData) == 'Complex') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) )
+  if(sum(basevariables == which(names(MasterData) == NameofVariable))>0){basevariables <- basevariables[-which(basevariables == which(names(MasterData) == NameofVariable))]}
+  Formula2 <- FB_CreateFormula('AFLogical' , basevariables , MasterData )
+  
   model <- glm(FB_CreateFormula('AFLogical' , unique(c(which(names(MasterData) == NameofVariable), which(names(MasterData) == 'ProcDetails') ,which(names(MasterData) == 'LogisticEUROScore'),which(names(MasterData) == 'CPB')  ) ) , MasterData ) ,
                family=binomial(link='logit'),
                data = MasterData)
@@ -456,6 +469,7 @@ POM_ContinuousUnivariateAnalysis <- function(ContinuousData , AFLogical , Master
   output[ , 9:10] <- exp(confint(model) )[2,]
   output[ , 11] <- summary(model)$coefficients[2,4]  
   output[ , 2:11] <- signif(output[,2:11] , 4)
+  output[ , 12] <- (FC_CalculateCrossValidatedROC(Formula1 , which(FC_ExtractIndiciesFromFormula(names(MasterData),Formula1) ==1) , MasterData = MasterData)-FC_CalculateCrossValidatedROC(Formula2 , which(FC_ExtractIndiciesFromFormula(names(MasterData),Formula1) ==1) , MasterData = MasterData))
   
   return(output)
 }
@@ -473,8 +487,8 @@ POM_GroupComparison <- function(NamesofVariables , MasterData , ControlModel = 0
   }else{
   AUC1 <- FC_CalculateCrossValidatedROC( formulaformodel = stepaicoutput$formula , PreoperativeIndices = IndiciesVariables , MasterData )
   }
-  StepOutputAUC <- FC_StepWiseForwardAUC(PreoperativeIndices =  IndiciesVariables , MasterData =MasterData,matrixforstep = diag(length(IndiciesVariables)) )
-  AUC2 <- StepOutputAUC[[1]]
+  StepOutputAUC <- FC_StepWiseForwardBackwardAUC(PreoperativeIndices =  IndiciesVariables , MasterData =MasterData , matrixforstep = diag(length(IndiciesVariables)) )
+  AUC2 <- FC_CalculateCrossValidatedROC(StepOutputAUC[[2]] ,IndiciesVariables, MasterData)
   #StepOutputAUC <- list(NA,NA)
   #AUC2 <- NA
   
@@ -494,4 +508,12 @@ POM_CalulateProbabilitiesFromModel <- function(formula , DataForLogistic){
                , family = binomial(link = "logit"),  data = DataForLogistic)
   return(LogisticProbility <- predict(model , DataForLogistic , type = c('response')))
   
+}
+POM_AddSquarestonames <- function(NamesofVariables , ListNumericVariables){
+  return(c(NamesofVariables, apply( as.matrix( NamesofVariables[ NamesofVariables %in% ListNumericVariables ]) , 1 , function(X){paste0(X , '_sq')}))  )
+}
+POM_PlotPPVSen <-function( output ){
+  p1<- ggplot(data.frame(PPV = output[,3] , Sensitivity = (output[,4])  ) , aes(PPV , Sensitivity)) +
+    geom_point(color = 'blue')
+  return(p1)
 }

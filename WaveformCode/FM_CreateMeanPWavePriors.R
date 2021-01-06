@@ -9,12 +9,12 @@ PsimulatorFunction <- function( x , t_observation ){
   output2 <- (ECGSim_Gaussian( x = t_observation , mu = Pcen2 , sigma = Pwidth2 ))
   return( x[5]*(output1 /max(ECGSim_Gaussian( x = seq(0.5,1,0.5/510) , mu = Pcen , sigma = Pwidth ))) + x[6]*(output1 / max(ECGSim_Gaussian( x = seq(0.5,1,0.5/510) , mu = Pcen2 , sigma = Pwidth2 ))))  
 }
-ModelDiscrepancy <- function(x , t_observation, PsimulatorFunction , eta = 0.02 , alpha = 0.1){
+ModelDiscrepancy <- function(x , t_observation, PsimulatorFunction , eta = 0.02 , alpha = 0.1,gamma = 0.25){
   if(x[5] == 0){
-    return( rep(0.25, length(t_observation) ) )  
+    return( rep(gamma, length(t_observation) ) )  
   }else{
     ff <- PsimulatorFunction(x , t_observation)
-    return( (alpha*abs(ff)) +  ((eta*max(abs(ff)))/(abs(ff) + 1)) +0.25  )
+    return( (alpha*abs(ff)) +  ((eta*max(abs(ff)))/(abs(ff) + 1)) +gamma  )
   }
 }
 CalculateImplausability <- function( t_observation , x ,  z  , mdfun = ModelDiscrepancy){
@@ -62,10 +62,10 @@ EmulatorParameters <- PWaveHM_CreateDefaultEmulationclass()
     FStruct <- apply(PriorNonImplausibleSet , 1 , function(X){
       return(  PsimulatorFunction(X , Xstar) )
     })
-    PriorNonImplausibleSet <- PriorNonImplausibleSet[(apply(abs(FStruct) , 2 , max) > 8) & (apply(abs(FStruct) , 2 , max)) < 40 & (abs(FStruct[1,]) < 4)  , ]
+  PriorNonImplausibleSet <- PriorNonImplausibleSet[(apply(abs(FStruct) , 2 , max) > 8) & (apply(abs(FStruct) , 2 , max)) < 40 & (abs(FStruct[1,]) < 4)  , ]
 
     
-    PriorNonImplausibleSet <- rbind(PriorNonImplausibleSet,t(matrix(c(0.5582675203818015 , 0.0467545697912930 , 0.6674129303324217  ,0.0334750326009201 , 0 , 0) , 6 , 2)) )
+  PriorNonImplausibleSet <- rbind(PriorNonImplausibleSet,t(matrix(c(0.5582675203818015 , 0.0467545697912930 , 0.6674129303324217  ,0.0334750326009201 , 0 , 0) , 6 , 2)) )
     FStruct <- apply(PriorNonImplausibleSet , 1 , function(X){
       return(  PsimulatorFunction(X , Xstar) )
     })

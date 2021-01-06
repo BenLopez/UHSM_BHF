@@ -9,11 +9,11 @@ if(!file.exists('MasterDataAKI.RData')){
 # Procedure details 
 
 MasterData <- MasterData[apply(as.matrix(MasterData$NewPseudoId) , 1 , DP_ExtractOpCodeFromNewPatinetID) == '-1-1-1' , ]
-
+MasterData$ProcDetails <- DP_AssignSurgeryLabels(MasterData$ProcDetails)
 # Create AFLogical
 
-MasterData$ConfirmedFirstNewAF[is.na(MasterData$ConfirmedFirstNewAF)] <- 'NA'
-MasterData$AFLogical = ((!is.na(MasterData$FirstNewAF)) & (MasterData$ConfirmedFirstNewAF != 'CNAF'))
+#MasterData$ConfirmedFirstNewAF[is.na(MasterData$ConfirmedFirstNewAF)] <- 'NA'
+#MasterData$AFLogical = ((!is.na(MasterData$FirstNewAF)) & (MasterData$ConfirmedFirstNewAF != 'CNAF'))
 
 # Process vasoactive drugs
 {MasterData$NoradrenalineStandardised <- (MasterData$Noradrenaline..80mcg.ml.Volume/((1/80)*60*MasterData$Weight) )
@@ -52,6 +52,7 @@ MasterData$IntubatedInSurgury <- abs(DP_StripTime(MasterData$DateTubed) - DP_Str
 
 MasterData$GCSnum[is.na(MasterData$GCSnum) & (MasterData$IntubatedInSurgury == 0)] <- 15
 MasterData$Urine <- MasterData$Urine..mL./MasterData$Weight 
+
 # Fix strings which should be numeric
 
 ListNumericVariables <- c('Age' ,
@@ -104,9 +105,9 @@ ListNumericVariables <- c('Age' ,
                           'GCSnum',
                           'Urine')
 
-MasterData$CPB[MasterData$CPB == 'not recorded'] = NA
 MasterData$CPB[is.na(MasterData$CPB)] <- 0
-#MasterData$CPB <- as.numeric(difftime(strptime(x = MasterData$CPB ,  format = '%R') ,  sort(strptime(x = MasterData$CPB ,  format = '%R'))[1],units = c('mins') ))
+MasterData$CPB[MasterData$CPB == 'not recorded'] = NA
+MasterData$CPB <- as.numeric(difftime(strptime(x = MasterData$CPB ,  format = '%R') ,  sort(strptime(x = MasterData$CPB ,  format = '%R'))[1],units = c('mins') ))
 
 MasterData[ ,names(MasterData) %in% ListNumericVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListNumericVariables ] , 2 , as.numeric )
 
@@ -206,7 +207,6 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Fair (LVEF 30-50%)"] <- "LVEF  30-50%"
   MasterData$EjectionFractionCategory[MasterData$EjectionFractionCategory == "Poor (LVEF < 30%)"] <- "LVEF < 30%"
   
-  
   MasterData$NYHAGrade[MasterData$NYHAGrade == ''] <- NA
   MasterData$NYHAGrade[MasterData$NYHAGrade == 'Not Known'] <- NA
   MasterData$NYHAGrade[MasterData$NYHAGrade == "Slight Limitation (II)"] <- 'NYHA(O-II)'
@@ -234,9 +234,10 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$IABP2[MasterData$IABP2 == 'No'] <- 'IABP2(No)'
   MasterData$IABP2[MasterData$IABP2 == 'Yes'] <- 'IABP2(Yes)'
   
-  
   MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == ''] <- NA
+  MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'Unknown'] <- NA
   MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'No'] <- 'Active.Endocarditis(No)'
+  MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'No '] <- 'Active.Endocarditis(No)'
   MasterData$Active.Endocarditis[MasterData$Active.Endocarditis == 'Yes'] <- 'Active.Endocarditis(Yes)'
   
   MasterData$HTN[MasterData$HTN == ''] <- NA
@@ -306,33 +307,43 @@ MasterData$Bilirubin <- log(MasterData$Bilirubin)
   MasterData$Planned.Valve.Surgery[!(MasterData$Planned.Valve.Surgery == 'Mitral Valve') & !(MasterData$Planned.Valve.Surgery == "Aortic Valve") & !(MasterData$Planned.Valve.Surgery == "Tricuspid Valve") & !(MasterData$Planned.Valve.Surgery =='None') ] <- 'Multiple'
   
   MasterData$ProcDetails[(MasterData$ProcDetails == 'CABG') & (MasterData$Planned.Valve.Surgery != 'None')] = "CABG and Valve"
+  MasterData$ProcDetails[!(MasterData$ProcDetails %in% c("CABG","Valve","CABG and Valve" ,  "Complex","Aortic",NA))] <- 'Procedure Details(other)'
   
-  MasterData <- cbind(MasterData[, -c(400:404)] , DP_AssignSurgeryLabels2(MasterData$ProcDetails , ProcedureDetails ))
   
-  MasterData$Complex <- as.vector(MasterData$Complex)
-  MasterData$Complex[MasterData$Complex == 'Y'] = 'Procedure Details(Complex)'
-  MasterData$Valve <- as.vector(MasterData$Valve)
-  MasterData$Valve[MasterData$Valve == 'Y'] = 'Procedure Details(Valve)'
-  MasterData$CABG <- as.vector(MasterData$CABG)
-  MasterData$CABG[MasterData$CABG == 'Y'] = 'Procedure Details(CABG)'
-  MasterData$Aortic <- as.vector(MasterData$Aortic)
-  MasterData$Aortic[MasterData$Aortic == 'Y'] = 'Procedure Details(Aortic)'
-  MasterData$Other <- as.vector(MasterData$Other)
-  MasterData$Other[MasterData$Other == 'Y'] = 'Procedure Details(Other)'
+  MasterData$ProcDetails[MasterData$ProcDetails == "CABG"] <- 'Procedure Details(CABG)'
+  MasterData$ProcDetails[MasterData$ProcDetails == "CABG and Valve"] <- 'Procedure Details(CABG and Valve)'
+  MasterData$ProcDetails[MasterData$ProcDetails == "Valve"] <- 'Procedure Details(Valve)'
+  MasterData$ProcDetails[MasterData$ProcDetails == "Complex"] <- 'Procedure Details(Complex)'
+  MasterData$ProcDetails[MasterData$ProcDetails == "Aortic"] <- 'Procedure Details(Aortic)'
   
-  MasterData[MasterData$Other == 'N',]
+  
+  MasterData$ProcDetailsReduced <- MasterData$ProcDetails == 'Procedure Details(CABG)'
+  MasterData$ProcDetailsReduced[MasterData$ProcDetailsReduced == T] =='Procedure Details(CABG)'
+  MasterData$ProcDetailsReduced[MasterData$ProcDetailsReduced == F] =='Procedure Details(Not CABG)'
+  
+  MasterData$UrgencyReduced <- MasterData$Urgency == 'Urgent'
+  MasterData$UrgencyReduced[MasterData$UrgencyReduced == T] <- 'Urgent'
+  MasterData$UrgencyReduced[MasterData$UrgencyReduced == F] <- 'Not Urgent'
+  #MasterData <- cbind(MasterData[, -c(400:404)] , DP_AssignSurgeryLabels2(MasterData$ProcDetails , ProcedureDetails ))
+  
+  #MasterData$Complex <- as.vector(MasterData$Complex)
+  #MasterData$Complex[MasterData$Complex == 'Y'] = 'Procedure Details(Complex)'
+  #MasterData$Valve <- as.vector(MasterData$Valve)
+  #MasterData$Valve[MasterData$Valve == 'Y'] = 'Procedure Details(Valve)'
+  #MasterData$CABG <- as.vector(MasterData$CABG)
+  #MasterData$CABG[MasterData$CABG == 'Y'] = 'Procedure Details(CABG)'
+  #MasterData$Aortic <- as.vector(MasterData$Aortic)
+  #MasterData$Aortic[MasterData$Aortic == 'Y'] = 'Procedure Details(Aortic)'
+  #MasterData$Other <- as.vector(MasterData$Other)
+  #MasterData$Other[MasterData$Other == 'Y'] = 'Procedure Details(Other)'
+  #MasterData[MasterData$Other == 'N',]
   
 }
 
 ListofCategoricalVariables  <- c('AFlogical',
                                  'Gender' ,
                                  'ProcDetails' ,
-                                 'Valve',
-                                 'CABG',
-                                 'Aortic',
-                                 'Complex',
-                                 'Other',
-                                 "EjectionFractionCategory",
+                                  "EjectionFractionCategory",
                                  "NYHAGrade",
                                  "AnginaGrade",
                                  "Filter",
@@ -351,33 +362,101 @@ ListofCategoricalVariables  <- c('AFlogical',
                                  "IntravenousInotropesPriorToAnaesthesia",
                                  "IntravenousNitratesOrAnyHeparin",
                                  "ExtracardiacArteriopathy",
-                                 "Planned.Valve.Surgery")
+                                 "Planned.Valve.Surgery",
+                                 "UrgencyReduced",
+                                 "ProcDetailsReduced")
+
 
 MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] <- apply(MasterData[ ,names(MasterData) %in% ListofCategoricalVariables ] , 2 , as.factor )
 
 MasterData$Planned.Valve.Surgery[MasterData$Valve == "Procedure Details(Valve)" & MasterData$Planned.Valve.Surgery == 'None'] <-  "Aortic Valve" 
 
-# difference transforms
-{
-  MasterData$dUrea <- abs(DP_NormaliseData(MasterData$dUrea) )
-  MasterData$dK <-abs(DP_NormaliseData(MasterData$dK))
-  MasterData$dCreat <- abs(DP_NormaliseData(MasterData$dCreat) )
-  MasterData$dNa <- abs( DP_NormaliseData(MasterData$dNa) )
-  MasterData$dCRP <- abs( DP_NormaliseData(abs(DP_NormaliseData(MasterData$dCRP) )))
-  MasterData$dWBC <- abs( DP_NormaliseData(MasterData$dWBC) )
-  MasterData$dAlb <- abs( DP_NormaliseData(MasterData$dAlb) )
-}
 
+ListNumericVariables <- c('Age' ,
+                          'Weight' , 
+                          "LogisticEUROScore" ,
+                          'PreOpNa',
+                          'PreOpK',
+                          'PreopMg',
+                          'PreopUrea' ,
+                          'PreOpCRP',
+                          'PreOpAlb' ,
+                          'PreopBili' ,
+                          'PreopCreat',
+                          "PreopHb" ,
+                          "PreopPLT" ,
+                          "PreopWBC",
+                          "PreopPT",
+                          "PreopAPTT",
+                          'CPB',
+                          'Na', 
+                          'K',
+                          'Urea',
+                          'Creatinine',
+                          'CRP',
+                          'Albumin',
+                          'Bilirubin',
+                          'Mg',
+                          'WBC',
+                          'Hb',
+                          'Platelets',
+                          'PT',
+                          'APTT',
+                          'INR',
+                          'Fibrinogen',
+                          'HR',
+                          "ReliableART.S",
+                          "ReliableART.M",
+                          "ReliableART.D",
+                          "CVP",
+                          "SpO2",
+                          'NoradrenalineStandardised',
+                          'DopamineStandardised',
+                          'AdrenalineStandardised',
+                          'MilrinoneStandardised',
+                          'DobutamineStandardised',
+                          'ArtPO2',
+                          'Lac',
+                          'FiO26num',
+                          'GCSnum',
+                          'Urine',
+                          'dAlb',
+                          'dAPTT',
+                          'dBili',
+                          'dCreat',
+                          'dK',
+                          'dPT',
+                          'dCRP',
+                          'dPLT',
+                          'dHb',
+                          'dWBC')
 
-MasterData <- MasterData[MasterData$RenalDisease != "ARF - Dialysis;" , ]
+# add in squares
+MasterDataSq <- MasterData[,which(names(MasterData) %in% ListNumericVariables)]^2
+colnames(MasterDataSq) <- c(apply(as.matrix(ListNumericVariables) , 1 , function(X){paste0(X , '_sq')} ))
+  
+MasterData <- cbind(MasterData,MasterDataSq)
+
+# Extractions
+MasterData <- MasterData[which(MasterData$RenalDisease != "ARF - Dialysis;") , ]
+MasterData <- MasterData[ which(MasterData$RenalDisease != "Creatinine Greater Than 200 umol/L;"),]
 
 # Remove patients who have AKI before end on day one
-tmp <- MasterData$time - apply(cbind(as.numeric(DP_StripTime(MasterData$FirstAKI1AbsoluteCr)) , as.numeric(DP_StripTime(MasterData$FirstAKI1UO)), as.numeric(DP_StripTime(MasterData$FirstAKI1RelativeCr) )) , 1 , function(X){min(X , na.rm = T)})
-tmp[is.infinite(tmp)]<- NA
+tmp1 <- MasterData$time - as.numeric(DP_StripTime(MasterData$FirstAKI1AbsoluteCr))
+tmp1[is.na(tmp1)]<- 0
+tmp2 <- MasterData$time - as.numeric(DP_StripTime(MasterData$FirstAKI1UO))
+tmp2[is.na(tmp2)]<- 0
+tmp3 <- MasterData$time - as.numeric(DP_StripTime(MasterData$FirstAKI1RelativeCr))
+tmp3[is.na(tmp3)]<- 0
 
-MasterData <- MasterData[tmp < 0 , ]
-  
-MasterData$Filter[is.na(MasterData$Filter) ] <- "CVVHDyalysis(No)"
+MasterData$AKIUODayOne <- as.factor(!is.na(MasterData$FirstAKI1UO) & (tmp2 >= 0))
+
+tmp <- MasterData$time - apply(cbind(as.numeric(DP_StripTime(MasterData$FirstAKI1AbsoluteCr)) , as.numeric(DP_StripTime(MasterData$FirstAKI1RelativeCr) )) , 1 , function(X){min(X , na.rm = T)})
+tmp[is.infinite(tmp)]<- 0
+
+MasterData <- MasterData[which(tmp <= 0) , ]
+
+MasterData$Filter[ is.na(MasterData$Filter) ] <- "CVVHDyalysis(No)"
 #MasterData <- MasterData[MasterData$Filter == "CVVHDyalysis(No)",]
-MasterData$AFLogical = !is.na(MasterData$FirstAKI1AbsoluteCr) | !is.na(MasterData$FirstAKI1UO) | !is.na(MasterData$FirstAKI1RelativeCr) 
+MasterData$AFLogical = !is.na(MasterData$FirstAKI1AbsoluteCr) | !is.na(MasterData$FirstAKI1RelativeCr) 
 AFLogical <- MasterData$AFLogical

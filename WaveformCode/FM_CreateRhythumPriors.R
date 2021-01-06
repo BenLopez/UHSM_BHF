@@ -46,12 +46,9 @@
     }
       
   }
-  
-    
-    
-    
-    MDFunction <- function(F_x , X){
-      output <- sqrt((F_x*(1-F_x))/c + (F_x*(1-F_x))/n + 0.005^2 )
+  # SPecify function of measurement error and model discrepancy.
+    MDFunction <- function(F_x , X,gamma = 0.005^2){
+      output <- sqrt((F_x*(1-F_x))/c + (F_x*(1-F_x))/n + gamma )
       return(output)
     }
     

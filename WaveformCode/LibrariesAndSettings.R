@@ -1,7 +1,7 @@
 # A script to load appropriate libraries and settings.
 # Load in libraries
-
-check.packages <- function(pkg){
+{
+{check.packages <- function(pkg){
   new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
   if (length(new.pkg)) 
     install.packages(new.pkg, dependencies = TRUE)
@@ -50,7 +50,7 @@ packages<-c("ggplot2",
             'PearsonDS',
             'gsl')
 check.packages(packages)
-
+}
 library( ggplot2 )#
 library( plotly )#
 library( peakPick )#
@@ -88,10 +88,10 @@ library(mice)
 library(shiny)
 library(xtable)
 library(PearsonDS)
-
+library(boot)
 # Load Data
 options(digits = 15)
-options(digits.secs=3)
+options(digits.secs=3)}
 
 source( "FourierSourceFunctions.R" )
 source( "WaveSplitSourceFunctions.R" )
@@ -107,7 +107,6 @@ source( 'ECGSimulatorSourceFunctions.R')
 source( 'HistoryMatchingSourceFunctions.R')
 source( 'PlottingSourceFunctions.R' )
 source( 'VectorisedOperationsSourceFunctions.R' )
-source( 'DenistyFunctionsSourceFunctions.R' )
 source( 'DenistyFunctionsSourceFunctions.R' )
 source( 'BayesClassifierSourceFunctions.R' )
 source( 'KernelDensityEstimationSourceFunctions.R' )

@@ -14,9 +14,6 @@
 }
 
 
-DataStructure <- array(0 , c(length(listAllPatients) , 13 , 400))
-
-
 for(i in 1:length(listAllPatients) ){
   PatientID <- listAllPatients[[i]]
   if(DP_CheckFileExists(path , PatientID , Name = paste0(PatientID , '_RRDistributionSummariesForeCasting'))){
@@ -62,11 +59,11 @@ indextoview <- (dim(DataStructure)[3] - 29  )
   Im <- BLBL_CrossValidateImplausabilitiesALL(TrainingData = DataStructure[, -c( 13), indextoview] , AFLogical)
   ImAF <- Im[,1]
   ImNAF <- Im[,2]
- 
+  
   ImAF <- (ImAF - mean(ImAF[AFLogical] , na.rm = T))/sqrt(var(ImAF[AFLogical]))
   ImNAF <- (ImNAF - mean(ImNAF[AFLogical ==0] , na.rm = T))/sqrt(var(ImNAF[AFLogical==0], na.rm = T))
   
-   
+  
   x11()
   par(mfrow =c(1,2))
   print(BC_PlotCompareSingleHists((ImAF[AFLogical ==F]) , (ImAF[AFLogical ==T])  ,breaks = 15 ,  main = 'Implausabilty of Going into AF', xlab = 'Im'))
@@ -80,7 +77,7 @@ indextoview <- (dim(DataStructure)[3] - 29  )
   
   PosteriorProbability <- BLBF_CrossValidateKDEall( ImAF , ImNAF , AFLogical  )
   PosteriorProbability[is.na(PosteriorProbability)] = c(sum(AFLogical)/length(AFLogical))
-
+  
   x11(20,14)
   EmpericalProbabilityStructure <- BC_CleanProbCalibrationOutput(BC_CreateCalibrationStructure(cbind(PosteriorProbability , AFLogical == T), BinWidth = 0.1))
   print(BC_PlotCreateProbabilityCalibrationPlot(EmpericalProbabilityStructure) + ggtitle('Forecasting Emperical Probabilities'))
@@ -97,7 +94,7 @@ StartIndex <- 382
 NumberofPoints <- 1
 VariablesToView <- c(1:12)
 test <- BLBF_DoubleCrossValidateInference(DataStructure ,AFLogical, StartIndex , NumberofPoints , VariablesToView  )
- 
+
 
 test[,1]= (test[,1] - mean(test[AFLogical,1]))/sqrt(var(test[AFLogical,1]))
 test[,2]= (test[,2] - mean(test[AFLogical ==0,2]))/sqrt(var(test[AFLogical==0,2]))

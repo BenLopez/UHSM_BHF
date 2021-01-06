@@ -711,7 +711,7 @@ BC_PlotCreateggPosteriorProbabilitiesBase <- function(TimeVector , PosteriorProb
   return(Posteriorplot)
 }  
 BC_PlotCreateRRTimesPlots <- function( RPeaksStruct , color = 'blue' ,  MetaData = DP_CreateDummyMetaData() ){
-  t <- RPeaksStruct$RRCombined$t[seq(1 , length(RPeaksStruct$RRCombined$t) , 3)]   
+  {t <- RPeaksStruct$RRCombined$t[seq(1 , length(RPeaksStruct$RRCombined$t) , 3)]   
   RR <- RPeaksStruct$RRCombined$RR[seq(1 ,  length(RPeaksStruct$RRCombined$t)  , 3)] 
   
   plotstruct <- ggplot(data.frame( t = t , RR=RR ), aes(t , RR) ) +
@@ -721,6 +721,36 @@ BC_PlotCreateRRTimesPlots <- function( RPeaksStruct , color = 'blue' ,  MetaData
     ylab( "RR" ) + 
    coord_cartesian(ylim = c(0, 1.5))
   plotstruct <- BC_PlotAddAFLines(plotstruct = plotstruct , MetaData = MetaData)  
+  }
+  if(file.exists(paste0(path ,'\\',MetaData$PseudoId,'\\Zip_out\\', "HMOutput" , MetaData$PseudoId , '.RData'))){
+    {
+      load(paste0(path ,'\\',MetaData$PseudoId,'\\Zip_out\\', "HMOutput" , MetaData$PseudoId , '.RData'))
+      
+      t <- FM_ExtractTimeFromHMOutput(outputstruct ) 
+      t <- t + (t[2] - t[1])
+      AnnotationVectors <- outputstruct[[length(outputstruct)]]
+      AnnotationVectors <- AnnotationVectors[2:(dim(AnnotationVectors)[1]) , ]
+      
+      RegularLogical <- AnnotationVectors[,1]
+      RegularLogical2 <- AnnotationVectors[,2]
+      RegularyIrregularLogical <- AnnotationVectors[,3]
+      RegularyIrregularLogical2 <- AnnotationVectors[,4]
+      BadDataLogical<- AnnotationVectors[,5]
+
+      RegularLogicalTotal <- (RegularLogical ==1) & (RegularLogical2 ==1) & (RegularyIrregularLogical == 0)&(RegularyIrregularLogical2 == 0)
+      IrregularlyIrregularLogical <- (RegularyIrregularLogical == 1)&(RegularyIrregularLogical2 == 1)&(RegularLogical ==0) & (RegularLogical2 ==0)
+      RegularlyIrregularLogical <- (RegularLogicalTotal ==0) &(IrregularlyIrregularLogical ==0)
+      
+      RegIrRegulartimePoints <- ASWF_GetStartEndAF(t , logicaltimeseries = IrregularlyIrregularLogical , minutethreshold = 1)
+      RegulartimePoints <- ASWF_GetStartEndAF(t , logicaltimeseries = RegularLogicalTotal , minutethreshold = 1)
+      IrtimePoints <- ASWF_GetStartEndAF(t , logicaltimeseries = RegularlyIrregularLogical, minutethreshold = 1)
+     
+      plotstruct <- BC_plotAddColouredRegions(plotstruct = plotstruct , Locations = RegulartimePoints , fillcolor = 'green')
+      plotstruct <- BC_plotAddColouredRegions(plotstruct = plotstruct , Locations = IrtimePoints , fillcolor = 'orange')
+      plotstruct <- BC_plotAddColouredRegions(plotstruct = plotstruct , Locations = RegIrRegulartimePoints , fillcolor = 'red')
+    }
+  }
+  
   return(plotstruct)
 }
 BC_PlotAddAFLines<- function(plotstruct , MetaData , color = 'purple'){
@@ -783,9 +813,10 @@ BC_PlotCreateECGPlots <- function(RPeaksStruct ,  ECGStruct  , timestart = ECGSt
     axis.text.x=element_blank()
   )
   
+  if(length(t) > 1){
   plotstruct <- plotstruct  + scale_y_continuous(minor_breaks = seq(-200, 200, 10) , breaks = seq(-200, 200, 50)) +
   scale_x_continuous(limits = as.numeric(c(t[1],t[length(t)])) , minor_breaks = as.numeric(seq(t[1], t[length(t)], 0.04)[-seq(1,251,5)]) , breaks  = as.numeric(seq(t[1], t[length(t)], 0.2)) )
-  
+  }
   return(plotstruct)  
 }
 BC_PlotECGAlignAxis <- function(plotstruct , timerange){
@@ -1092,15 +1123,22 @@ BC_PerformanceSweep <- function(GlobalProbCalibrationStruct , thresholds = seq(0
 }
 BC_PlotsCreateROC <- function( output ){
   p1<- ggplot(data.frame(Sensitivity = output[,1] , OneMinusSpecificity = (1-output[,2])  ) , aes(OneMinusSpecificity , Sensitivity)) +
-    geom_point(color = 'blue')
+    geom_line(color = 'blue',se=FALSE,size=0.5)
   return(p1)
 }
-
 BC_PlotsCreateNPVPPV <- function( output ){
   p1<- ggplot(data.frame(PPV = output[,3] , NPV = (output[,4])  ) , aes(NPV , PPV)) +
-    geom_point(color = 'blue')
+    geom_line(color = 'blue',se=FALSE,size=0.5)
+  return(p1)
+}
+BC_PlotPPVSen <- function( output ){
+  p1<- ggplot(data.frame(PPV = 100*output[,3] , Sensitivity = 100*(output[,1])  ) , aes(  PPV , Sensitivity)) +
+    geom_path(color = 'blue',size=0.5)
   return(p1)
 }
 BC_CalculateAreaUnderCurve <- function(PerformanceSweep){
-  return(trapz(rev(1-PerformanceSweep[,2]) , rev(PerformanceSweep[,1])))
+  return(c(trapz(rev(1-PerformanceSweep[,2]) , rev(PerformanceSweep[,1])))) 
+}
+BC_CalculateAreaUnderCurve2 <- function(PerformanceSweep){
+  return(c(trapz(rev(1-PerformanceSweep[,2]) , rev(PerformanceSweep[,1])) , trapz((PerformanceSweep[!is.na(PerformanceSweep[,3]),3]) , (PerformanceSweep[!is.na(PerformanceSweep[,3]),1]))) )
 }

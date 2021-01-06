@@ -19,9 +19,9 @@ source('FM_CreateRhythumPriors.R')
 # Some functions
 {
 FM_CalulateDistance <- function(X , ValidVector ){
-    X <- apply( X , 2 , DP_NormaliseData)
     m <- apply(X[ValidVector,] , 2 , mean)
-    return( apply(X , 1 , function(x){return(sum((x - m )^2))}) ) 
+    CovarianceMatrix = cov(X[ValidVector,])
+    return( return(mahalanobis(X , m , CovarianceMatrix)) ) 
   }
   
 FM_FindWhyNotValid <- function(X){
@@ -70,9 +70,9 @@ PriorNonImplausibleSetBigeminy[ , 4] <- runif(numberofsamples,0.2 , 2)
 PriorNonImplausibleSetBigeminy[ , 5] <- 0.00000001
 PriorNonImplausibleSetBigeminy[ , 6] <- runif(numberofsamples,0.2 , 2)
 
-PriorNonImplausibleSetBigeminy[ , 7] <- runif(numberofsamples,0.000001 , 0.08)
+PriorNonImplausibleSetBigeminy[ , 7] <- runif(numberofsamples,0.000001 , 0.16)
 PriorNonImplausibleSetBigeminy[ , 8] <- 0.00000001
-PriorNonImplausibleSetBigeminy[ , 9] <- runif(numberofsamples,0.000001 , 0.08)
+PriorNonImplausibleSetBigeminy[ , 9] <- runif(numberofsamples,0.000001 , 0.16)
 
 PriorNonImplausibleSetBigeminy[ , 10] <- 1
 
@@ -87,7 +87,7 @@ ValidVector <- (PriorNonImplausibleSetBigeminy[ , 4] < PriorNonImplausibleSetBig
   (abs(PriorNonImplausibleSetBigeminy[ , 4] - PriorNonImplausibleSetBigeminy[ , 6]) > Mu12_LB(PriorNonImplausibleSetBigeminy[ , 4]) ) &
   (abs(PriorNonImplausibleSetBigeminy[ , 4] - PriorNonImplausibleSetBigeminy[ , 6]) < Mu12_UB(PriorNonImplausibleSetBigeminy[ , 4]) )
 
-Sigma12_UB = function(x){  return( ((0.08)/(0.9))*x + -0.008888888888888 ) } 
+Sigma12_UB = function(x){  return( ((-0.001 + 0.09)/(-0.03 + 1.7))*x +   -0.000598802395209581 ) } 
 
 ValidVector <- (PriorNonImplausibleSetBigeminy[ , 4] < PriorNonImplausibleSetBigeminy[ , 6]) & 
   ((PriorNonImplausibleSetBigeminy[ , 6]) < 2) &
@@ -95,20 +95,20 @@ ValidVector <- (PriorNonImplausibleSetBigeminy[ , 4] < PriorNonImplausibleSetBig
   (abs(PriorNonImplausibleSetBigeminy[ , 4] - PriorNonImplausibleSetBigeminy[ , 6]) > Mu12_LB(PriorNonImplausibleSetBigeminy[ , 4]) ) &
   (abs(PriorNonImplausibleSetBigeminy[ , 4] - PriorNonImplausibleSetBigeminy[ , 6]) < Mu12_UB(PriorNonImplausibleSetBigeminy[ , 4]) ) &  
   (abs(PriorNonImplausibleSetBigeminy[ , 7] + PriorNonImplausibleSetBigeminy[ , 9]) < 0.16)&
-  (PriorNonImplausibleSetBigeminy[ , 7] < Sigma12_UB(abs(PriorNonImplausibleSetBigeminy[ , 4] - PriorNonImplausibleSetBigeminy[ , 6]) ))
+  ((PriorNonImplausibleSetBigeminy[ , 7] + PriorNonImplausibleSetBigeminy[ , 9]) < Sigma12_UB(abs(PriorNonImplausibleSetBigeminy[ , 4] - PriorNonImplausibleSetBigeminy[ , 6]) ))
 
-BC_PlotPairs(PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c(4 , 6 ,7 , 9)] , alpha = 0.1)
+BC_PlotPairs(PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c(4 , 7 ,6 , 9)] , alpha = 0.1)
+
+BC_PlotPairs(cbind(PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c(4)],
+                   PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c(6 )]-PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c(4)],
+             PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c( 7)],
+             PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c( 7)] + PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000], c( 9)]), alpha = 0.1)
+
 
 
 TestSet <- list()
 for(i in 1:5){
 TestSet[[i]] <- HREL_BigeminySampleECG(X=PriorNonImplausibleSetBigeminy[which(ValidVector)[i],] )
-}
-
-FM_CalulateDistance <- function(X , ValidVector ){
-  X <- apply( X , 2 , DP_NormaliseData)
-  m <- apply(X[ValidVector,] , 2 , mean)
-  return( apply(X , 1 , function(x){return(sum((x - m )^2))}) ) 
 }
 
 DistanceVector <- FM_CalulateDistance(X = PriorNonImplausibleSetBigeminy[ , c( 4, 6, 7 , 9)] , ValidVector = ValidVector )
@@ -126,9 +126,9 @@ EdgeNotValid <- which( (PriorNonImplausibleSetBigeminy[ , 4] < PriorNonImplausib
 
 
 
-BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000] , c(4 , 6 ,7 , 9)] ,
-                              PriorNonImplausibleSetBigeminy[EdgeValid[1:1000] , c(4 , 6 ,7 , 9)] ,
-                               PriorNonImplausibleSetBigeminy[EdgeNotValid[1:1000] , c(4 , 6 ,7 , 9)] )
+BC_PlotPairsFromThreeVariables(PriorNonImplausibleSetBigeminy[which(ValidVector)[1:1000] , c(4 , 7 ,6 , 9)] ,
+                               PriorNonImplausibleSetBigeminy[EdgeValid[1:1000] , c(4 , 7 ,6 , 9)] ,
+                               PriorNonImplausibleSetBigeminy[EdgeNotValid[1:1000] , c(4 , 7 ,6 , 9)] )
 
  
 for(i in c(6:10) ){
@@ -174,17 +174,4 @@ grid.arrange( TestSet[[PermutedList[16]]] , TestSet[[PermutedList[17]]] , TestSe
 
 ##### End Elicitation One #####
 
-# Sam Failed 
-
-#SamFailed <- PriorNonImplausibleSetBigeminy[1:6,]
-#SamFailed[1,4] <- 0.207
-#SamFailed[1,6] <- 0.589
-#SamFailed[1,7] <- 0.085
-#SamFailed[1,8] <- 0.048
-
-#SamFailed[2,4] <- 1.1
-#SamFailed[2,5] <- 1.19
-#SamFailed[2,6] <- 1.19
-
-#SamFailed[2,7] <- 0.023
-#SamFailed[2,8] <- 0.02
+xtable(read.csv(file = "C:\\Users\\Ben\\Documents\\HeartRhythm Elicitation\\Bigeminy\\IterationOne\\BigeminyItr1Form(withanswers).csv"))

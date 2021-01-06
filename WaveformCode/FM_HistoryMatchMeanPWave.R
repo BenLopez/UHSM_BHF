@@ -3,17 +3,17 @@
   QSwidth = 12
 
   QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGII , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
-  if(is.null(QS_Struct$Date) ){
+  if(is.null(QS_Struct$Date) || is.null(dim(QS_Struct$Value)) ){
     QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
     #StartBeat <- StartBeat + numberofBeats
     #next
     }
-  if((length(QS_Struct$Date) == 1)){
+  if((length(QS_Struct$Date) == 1)|| is.null(dim(QS_Struct$Value))){
     QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
     # StartBeat <- StartBeat + numberofBeats
     #next
       }
-  if((length(QS_Struct$Date) == 0)){
+  if((length(QS_Struct$Date) == 0)|| is.null(dim(QS_Struct$Value))){
     #QS_Struct <- AFD_ExtractAllSQ(ECG = ECGs$ECGI , RPeaks = RPeakData$RRCombined[rangeofbeats,] , QSwidth = QSwidth)
     StartBeat <- StartBeat + numberofBeats
     next
@@ -142,7 +142,20 @@
     NonImplausibleX = t(as.matrix(NonImplausibleX))
   }
   
+  if(length(NonImplausibleX) > 5){
+    if(sum(NonImplausibleX[,5] == 0) > 0 ){
+      RegularyIrregularLogical[i] = 1
+      disp('Pwave Abscent')
+    }
+    if(sum(NonImplausibleX[,5] != 0) > 0 ){
+      RegularLogical[i] = 1
+      disp('Pwave Present')
+    }
+    
+  }
+  
   Wave2Pwave <- FALSE
+  
   if(sum(tmplog) > 2 & tmplog[length(tmplog)] ==1  ){
   Wave2Pwave <-   FM_PwaveWave2Logic(NonImplausibleX,PriorNonImplausibleSet,PWaveEmulatorParametersCDFMean,PWaveEmulatorParametersCDFMax,ObservedIm_rr,ObservedIm_rrmax)
   if(Wave2Pwave == TRUE ){
@@ -151,6 +164,13 @@
     disp('Pwave present in wave two.')
   }
   
+  if(Wave2Pwave ){
+    RegularLogical[i] <- 0
+    RegularyIrregularLogical[i] <- 1
+  }else{
+    RegularLogical[i] <- 1
+    RegularyIrregularLogical[i] <- 0
+  }
   }
   
 if(dovalidationplots == 1 ){

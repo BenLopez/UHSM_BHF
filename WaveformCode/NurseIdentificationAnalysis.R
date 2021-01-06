@@ -13,10 +13,17 @@
   set.seed(1)
 }
 
+{
+  PatIndex2017$ConfirmedFirstNewAF[PatIndex2017$PseudoId == 'z209'] = "07/10/2016 10:46"
+  PatIndex2017$EndFirstNewAF[PatIndex2017$PseudoId == 'z209'] = "07/10/2016 11:29"
+  
+  PatIndex2017$ConfirmedFirstNewAF[PatIndex2017$PseudoId == 'z925'] = "10/06/2017 08:31"
+  PatIndex2017$ConfirmedFirstNewAF[PatIndex2017$PseudoId == 'z401'] = "04/12/2016 19:27"
+  PatIndex2017$ConfirmedFirstNewAF[PatIndex2017$PseudoId == 'z1281'] = "26/10/2017 01:04"
+  PatIndex2017$ConfirmedFirstNewAF[PatIndex2017$PseudoId == 'z580'] = "04/02/2017 06:10"
+}
 
-TotalUsable <- (PatIndex2017$Usable == 1)*(PatIndex2017$TotalITUTimeHRS <= 100)
-TotalUsable[is.na(TotalUsable)] <- FALSE
-TotalUsable <- 750
+TotalUsable <- length(listAllPatients)
 
 TotalAF <- (PatIndex2017$Usable == 1)*(PatIndex2017$TotalITUTimeHRS <= 100)*(!is.na(PatIndex2017$ConfirmedFirstNewAF))*(PatIndex2017$ConfirmedFirstNewAF != 'CNAF')
 TotalAF[is.na(TotalAF)] <- 0

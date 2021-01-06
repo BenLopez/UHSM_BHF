@@ -95,14 +95,15 @@ FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x 
   # Build kdeestimate for history matching  
   #m <- rollmedian( RRtimes , k = 21 , na.pad = T )
   
+  if(var(RRtimes)>0){
   if(abs(cor(1:length(RRtimes),RRtimes))>0.1){
   mm <- FM_EmulatorEstimate( RRtimes )
   m <- median(RRtimes)}else{
-    mm <- 0
-    m <- 0
+  mm <- 0
+  m <- 0
   }
-  
-  RRtimes <- RRtimes + m - mm + rnorm(length(RRtimes) , 0 , 0.01 )
+  }
+  RRtimes <- RRtimes + m - mm 
   RRtimes <- RRtimes[!is.na(RRtimes)]
   
   y <- matrix(FM_CalculateCDFS( RRtimes = RRtimes , xx = x ) , dim(x)[1] , dim(x)[2])
@@ -125,7 +126,7 @@ FM_HistoryMatchRRCulmativeDensity <- function( PriorNonImplausibleSet , x , F_x 
   #Im2 <- colMeans( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} )/ t(MD[ , NonZeroLogical] + 0.0045)  , na.rm = T)
   #Im <- apply( apply( as.matrix(F_x[ , NonZeroLogical]) , 1 , function(X){abs(X - y[ NonZeroLogical])} ) / t(MD[ , NonZeroLogical] + 0.0045) , 2 , function(X){max(X , na.rm = T)} )
   
-  RPeakKDEEstmate <- kde( RRtimes )
+  RPeakKDEEstmate <- kde( RRtimes + rnorm(length(RRtimes) , 0 , 0.001) )
   z <- predict(RPeakKDEEstmate , x = x[which.min(Im2) , ])
   
   LogicalVector <- (Im <= imthreshold)&(Im2 <  imthreshold2)
@@ -530,7 +531,7 @@ FM_DubiousCaseLogic <- function(RRtimes, ReIreHmOutput,ReHmOutput,ObservedIm_xx,
                                                            ObservedIm_xx = ObservedIm_xx)
   if((max(ReMeanProb)<0.01 || max(ReMaxProb)<0.01) & ((max(IrReMaxProb)>0.01 || max(IrReMeanProb)>0.01))){
     return(TRUE)
-  }
+  }else{
   
   maxIrIrIndex <- max(IrReMeanProb*IrReMaxProb)
   maxRegIndex <- max(ReMeanProb*ReMaxProb)
@@ -540,8 +541,7 @@ FM_DubiousCaseLogic <- function(RRtimes, ReIreHmOutput,ReHmOutput,ObservedIm_xx,
   }else{
     return(FALSE)
   }
-  
-  
+  }
 }
 FM_CreateAFAnnoation <- function(AnnotationVectors){
   
@@ -549,11 +549,11 @@ FM_CreateAFAnnoation <- function(AnnotationVectors){
   RegularLogical2 <- AnnotationVectors[,2]
   RegularyIrregularLogical <- AnnotationVectors[,3]
   RegularyIrregularLogical2 <- AnnotationVectors[,4]
-  SecondWaveLogical<- AnnotationVectors[,5]
+  BadDataLogcal<- AnnotationVectors[,5]
   
   IrregularlyIrregularLogical <- (RegularyIrregularLogical == 1)&(RegularyIrregularLogical2 == 1)&(RegularLogical ==0) & (RegularLogical2 ==0)
-  #Undecided <- (RegularLogical == 0) & (RegularLogical2 ==1) & (RegularyIrregularLogical2 == 1) & (RegularyIrregularLogical == 1)
-  IrregularlyIrregularLogical[SecondWaveLogical == 1] <- 1
+  IrregularlyIrregularLogical[BadDataLogcal == 1] <- 0
+
   
   return(IrregularlyIrregularLogical)
   
@@ -565,14 +565,26 @@ FM_ExtractTimeFromHMOutput <- function(outputstruct){
   j <- j+1
     }
   output <-rep(outputstruct[[j]][[5]] , length(outputstruct) -2 )
-  
   for(ii in c(1:(length(outputstruct) -2)) ){
     if(is.null(outputstruct[[ii]][[5]])){
       next
     }
     output[ii]  <- outputstruct[[ii]][[5]]
   }
+  output[output == outputstruct[[j]][[5]]] <- NA
+  output[1] <- outputstruct[[j]][[5]]
+  
+  
+  # horror code to replace so NAs
+  output <- FM_RemoveNAfromTimeSeries(output)
   return(output)
+}
+FM_RemoveNAfromTimeSeries <- function(t){
+  NaIndexes <- which(is.na(t))
+  for(jj in NaIndexes){
+    t[jj] <- t[which(!is.na(t))[which.min( abs((jj-1) - which(!is.na(t)) )) ]] + abs(t[which(!is.na(t))[which.min( abs((jj-1) - which(!is.na(t)) ))]] - t[which(!is.na(t))[which.min(abs(which(!is.na(t))- (jj+1)) )]])/2
+  }
+  return(t)
 }
 FM_ExtractNonAFibNonImplausibleSets <- function(PatientID  , PatIndex2017){
   load(paste0(path ,'\\',PatientID,'\\Zip_out\\', "HMOutput" , PatientID , '.RData'))

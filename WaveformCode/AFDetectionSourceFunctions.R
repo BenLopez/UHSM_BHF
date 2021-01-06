@@ -214,18 +214,22 @@ AFD_GetStartEndAF <- function( t , logicaltimeseries , minutethreshold = 10){
   logicaltimeseries[length(logicaltimeseries)] = FALSE
   logicaltimeseries[1] = FALSE
   d_logicaltimeseries <- diff(logicaltimeseries)
-  
-  if(sum(d_logicaltimeseries) == 1)
-  {
-    d_logicaltimeseries[length(d_logicaltimeseries)] = -1
+
+  # horror code to replace so NAs
+  NaIndexes <- which(is.na(t))
+  for(jj in NaIndexes){
+    t[jj] <- t[which(!is.na(t))[which.min( abs((jj-1) - which(!is.na(t)) )) ]] + abs(t[which(!is.na(t))[which.min( abs((jj-1) - which(!is.na(t)) ))]] - t[which(!is.na(t))[which.min(abs(which(!is.na(t))- (jj+1)) )]])/2
   }
   
-  if(sum(d_logicaltimeseries) == -1)
-  {
+  
+  if(sum(d_logicaltimeseries) == 1){
+    d_logicaltimeseries[length(d_logicaltimeseries)] = -1
+  }
+  if(sum(d_logicaltimeseries) == -1){
     d_logicaltimeseries[1] = 1
   }
   
-  output <- setNames(data.frame( t[c(d_logicaltimeseries , 0) == 1]  , t[c(d_logicaltimeseries , 0) == -1]) , c("Start" , "End"))
+  output <- setNames(data.frame( sort(t[c(d_logicaltimeseries , 0) == 1])  , sort(t[c(d_logicaltimeseries , 0) == -1]) ) , c("Start" , "End"))
   output <- output[ difftime(output$End , output$Start , units = 'secs') > (minutethreshold*60) , ]
   return(output)
 }
